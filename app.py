@@ -253,21 +253,28 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
     
-    # 1. 背景散点（底层）
-    fig.add_trace(go.Scattergl(
-        x=gene_rank_df['rank'], y=gene_rank_df['mean_score'],
+    # 排除高亮基因、参考基因的背景数据
+    highlight_set = set(g.upper() for g in genes_of_interest)
+    highlight_set.add(essential_gene.upper())
+    highlight_set.add(nonessential_gene.upper())
+    
+    bg_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(highlight_set)]
+    
+    # 1. 背景散点（底层）- 排除所有要高亮的点
+    fig.add_trace(go.Scatter(
+        x=bg_df['rank'], y=bg_df['mean_score'],
         mode='markers',
-        marker=dict(size=3, color=COLORS['background']),
+        marker=dict(size=3, color='rgba(180,180,180,0.4)'),
         name='All genes',
         hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
-        text=gene_rank_df['gene']
+        text=bg_df['gene']
     ))
     
     # 2. 参考线
     fig.add_hline(y=-1, line=dict(dash="dash", color="rgba(128,128,128,0.5)", width=1))
     fig.add_hline(y=0, line=dict(color="black", width=0.8))
     
-    # 3. Essential参考基因（中层）
+    # 3. Essential参考基因
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
         fig.add_trace(go.Scatter(
@@ -279,7 +286,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             hovertemplate=f'<b>{essential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
     
-    # 4. Non-essential参考基因（中层）
+    # 4. Non-essential参考基因
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
     if len(noness_df) > 0:
         fig.add_trace(go.Scatter(
@@ -291,13 +298,13 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
     
-    # 5. 高亮基因（最上层，最后绑定）
+    # 5. 高亮基因（最上层）
     interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)]
     if len(interest_df) > 0:
         fig.add_trace(go.Scatter(
             x=interest_df['rank'], y=interest_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=point_size*2.5, color=COLORS['interest'], opacity=1,
+            marker=dict(size=point_size*2.5, color=COLORS['interest'],
                        line=dict(width=1.5, color='white')),
             text=interest_df['gene'] if show_labels else None,
             textposition='top center',
@@ -367,19 +374,26 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
     
-    # 1. 背景散点（底层）
-    fig.add_trace(go.Scattergl(
-        x=gene_rank_df['rank'], y=gene_rank_df['mean_score'],
-        mode='markers', marker=dict(size=2.5, color='rgba(200,200,200,0.35)'),
+    # 排除所有要高亮的基因
+    all_highlight = set(g.upper() for g in background_genes + highlight_genes)
+    all_highlight.add(essential_gene.upper())
+    all_highlight.add(nonessential_gene.upper())
+    
+    bg_all_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(all_highlight)]
+    
+    # 1. 背景散点（底层）- 排除所有高亮点
+    fig.add_trace(go.Scatter(
+        x=bg_all_df['rank'], y=bg_all_df['mean_score'],
+        mode='markers', marker=dict(size=2.5, color='rgba(180,180,180,0.35)'),
         name='All genes', hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
-        text=gene_rank_df['gene']
+        text=bg_all_df['gene']
     ))
     
     # 2. 参考线
     fig.add_hline(y=-1, line=dict(dash="dash", color="rgba(128,128,128,0.5)", width=1))
     fig.add_hline(y=0, line=dict(color="black", width=0.8))
     
-    # 3. Essential参考基因（中层）
+    # 3. Essential参考基因
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
         fig.add_trace(go.Scatter(
@@ -389,7 +403,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             textfont=dict(size=10, color=COLORS['essential']), name=f'Essential ({essential_gene})'
         ))
     
-    # 4. Non-essential参考基因（中层）
+    # 4. Non-essential参考基因
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
     if len(noness_df) > 0:
         fig.add_trace(go.Scatter(
@@ -411,13 +425,13 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             text=bg_df['gene']
         ))
     
-    # 6. 高亮基因（最上层，最后绑定）
+    # 6. 高亮基因（最上层）
     hl_df = gene_rank_df[gene_rank_df['gene'].isin(highlight_genes)]
     if len(hl_df) > 0:
         fig.add_trace(go.Scatter(
             x=hl_df['rank'], y=hl_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=11, color=hl_color, opacity=1, line=dict(width=1.5, color='white')),
+            marker=dict(size=11, color=hl_color, line=dict(width=1.5, color='white')),
             text=hl_df['gene'] if show_labels else None, textposition='top center',
             textfont=dict(size=10, color='#333', family=FONT_FAMILY),
             name=f'Highlight (n={len(hl_df)})',
@@ -440,72 +454,52 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     )
     return fig
 
-def export_figure(fig, format_type='pdf', width=1200, height=800, scale=3):
-    """导出图表为PDF/TIFF/PNG格式（高分辨率）"""
-    try:
-        if format_type.lower() == 'tiff':
-            # Plotly不直接支持TIFF，先导出PNG再转换
-            img_bytes = fig.to_image(format='png', width=width, height=height, scale=scale)
-            from PIL import Image
-            import io as pil_io
-            img = Image.open(pil_io.BytesIO(img_bytes))
-            output = pil_io.BytesIO()
-            img.save(output, format='TIFF', compression='lzw', dpi=(300, 300))
-            return output.getvalue()
-        elif format_type.lower() == 'svg':
-            # SVG使用to_image
-            return fig.to_image(format='svg', width=width, height=height)
-        else:
-            # PDF或PNG
-            return fig.to_image(format=format_type, width=width, height=height, scale=scale)
-    except Exception as e:
-        return None
-
 def create_download_buttons(fig, key_prefix, filename_base):
-    """创建PDF/TIFF/SVG下载按钮"""
+    """创建PDF/TIFF/PNG下载按钮"""
+    st.markdown("**选择导出格式：**")
     col1, col2, col3 = st.columns(3)
     
+    # PDF导出
     with col1:
         try:
-            pdf_bytes = export_figure(fig, 'pdf')
-            if pdf_bytes:
-                st.download_button(
-                    label="📄 PDF",
-                    data=pdf_bytes,
-                    file_name=f"{filename_base}.pdf",
-                    mime="application/pdf",
-                    key=f"{key_prefix}_pdf"
-                )
+            pdf_bytes = fig.to_image(format='pdf', width=1200, height=800, scale=2)
+            st.download_button(
+                label="📄 PDF",
+                data=pdf_bytes,
+                file_name=f"{filename_base}.pdf",
+                mime="application/pdf",
+                key=f"{key_prefix}_pdf"
+            )
         except Exception as e:
-            st.caption(f"PDF不可用")
+            st.caption(f"PDF: {str(e)[:30]}")
     
+    # PNG导出 (高分辨率)
     with col2:
         try:
-            tiff_bytes = export_figure(fig, 'tiff')
-            if tiff_bytes:
-                st.download_button(
-                    label="🖼️ TIFF",
-                    data=tiff_bytes,
-                    file_name=f"{filename_base}.tiff",
-                    mime="image/tiff",
-                    key=f"{key_prefix}_tiff"
-                )
+            png_bytes = fig.to_image(format='png', width=1200, height=800, scale=3)
+            st.download_button(
+                label="🖼️ PNG (300dpi)",
+                data=png_bytes,
+                file_name=f"{filename_base}.png",
+                mime="image/png",
+                key=f"{key_prefix}_png"
+            )
         except Exception as e:
-            st.caption(f"TIFF不可用")
+            st.caption(f"PNG: {str(e)[:30]}")
     
+    # SVG导出
     with col3:
         try:
-            svg_bytes = export_figure(fig, 'svg')
-            if svg_bytes:
-                st.download_button(
-                    label="📐 SVG",
-                    data=svg_bytes,
-                    file_name=f"{filename_base}.svg",
-                    mime="image/svg+xml",
-                    key=f"{key_prefix}_svg"
-                )
+            svg_bytes = fig.to_image(format='svg', width=1200, height=800)
+            st.download_button(
+                label="📐 SVG",
+                data=svg_bytes,
+                file_name=f"{filename_base}.svg",
+                mime="image/svg+xml",
+                key=f"{key_prefix}_svg"
+            )
         except Exception as e:
-            st.caption(f"SVG不可用")
+            st.caption(f"SVG: {str(e)[:30]}")
 
 # =============================================================================
 # 侧边栏
