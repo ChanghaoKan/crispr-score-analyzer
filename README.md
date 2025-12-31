@@ -28,7 +28,7 @@
 
 - **数据来源**: [DepMap Portal](https://depmap.org) (Broad Institute)
 - **开发辅助**: [Claude](https://www.anthropic.com/claude) (Anthropic)
-- **团队支持**: [DengLab(https://www.deng-lab.org/) (Team)
+- **团队支持**: [DengLab](https://www.deng-lab.org/) (Team)
 - 
 ---
 
