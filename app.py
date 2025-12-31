@@ -28,7 +28,7 @@ st.set_page_config(
 # 分享链接格式: https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing
 # 只需要提取 YOUR_FILE_ID 部分填入下方
 
-GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
+GOOGLE_DRIVE_FILE_ID = None  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
 
 # =============================================================================
 # 自定义CSS样式 - Cell Journal 风格
@@ -103,27 +103,49 @@ if 'n_cell_lines' not in st.session_state:
 @st.cache_data(show_spinner=False, ttl=86400)
 def download_from_gdrive(file_id: str):
     """从Google Drive下载数据（缓存24小时）"""
-    import urllib.request
     import tempfile
     import os
     
-    url = f"https://drive.google.com/uc?export=download&id={file_id}&confirm=t"
+    try:
+        import gdown
+    except ImportError:
+        return None, False, "缺少 gdown 库"
+    
+    url = f"https://drive.google.com/uc?id={file_id}"
     
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as tmp:
             tmp_path = tmp.name
         
-        urllib.request.urlretrieve(url, tmp_path)
+        # gdown 自动处理大文件的确认下载
+        gdown.download(url, tmp_path, quiet=True, fuzzy=True)
+        
+        # 检查下载的文件是否是CSV（而非HTML警告页）
+        with open(tmp_path, 'r', encoding='utf-8', errors='ignore') as f:
+            first_line = f.readline()
+            if '<html' in first_line.lower() or '<!doctype' in first_line.lower():
+                os.unlink(tmp_path)
+                return None, False, "下载失败：可能是文件权限问题，请确保设置为'任何人都可以查看'"
+        
         df = pd.read_csv(tmp_path)
         os.unlink(tmp_path)
-        return df, True
+        return df, True, None
     except Exception as e:
-        return None, False
+        return None, False, f"下载错误: {str(e)}"
 
 @st.cache_data(show_spinner=False)
 def load_uploaded_data(file_content):
     """加载用户上传的数据"""
     return pd.read_csv(io.StringIO(file_content.decode('utf-8')))
+
+def extract_gene_name(col_name: str) -> str:
+    """从列名提取基因名，支持 'MYC (4609)' 格式"""
+    import re
+    # 匹配 "GENE (ID)" 或 "GENE (ENTREZ_ID)" 格式
+    match = re.match(r'^([A-Za-z0-9_.-]+)\s*\(', str(col_name))
+    if match:
+        return match.group(1)
+    return str(col_name)
 
 @st.cache_data(show_spinner=False)
 def compute_gene_rankings(df: pd.DataFrame):
@@ -133,24 +155,32 @@ def compute_gene_rankings(df: pd.DataFrame):
     meta_cols = []
     
     for col in df.columns:
-        if df[col].dtype in ['float64', 'float32', 'int64']:
-            sample_vals = df[col].dropna()
-            if len(sample_vals) > 0:
-                mean_val = sample_vals.mean()
-                if -3 < mean_val < 1:
-                    gene_cols.append(col)
-                    continue
+        # 尝试转换为数值类型
+        try:
+            # 检查是否是数值列
+            if pd.api.types.is_numeric_dtype(df[col]):
+                sample_vals = df[col].dropna()
+                if len(sample_vals) > 10:  # 至少有一些数据
+                    mean_val = sample_vals.mean()
+                    std_val = sample_vals.std()
+                    # CRISPR scores 通常在 -3 到 1 之间，标准差 > 0
+                    if -5 < mean_val < 2 and std_val > 0.01:
+                        gene_cols.append(col)
+                        continue
+        except:
+            pass
         meta_cols.append(col)
     
     if not gene_cols:
-        return None, 0
+        return None, 0, "未找到符合CRISPR score特征的数值列"
     
     # 计算每个基因的平均score
     mean_scores = df[gene_cols].mean().sort_values()
     
-    # 创建排名DataFrame
+    # 创建排名DataFrame，提取纯基因名
     rankings = pd.DataFrame({
-        'gene': mean_scores.index,
+        'gene_raw': mean_scores.index,  # 原始列名
+        'gene': [extract_gene_name(col) for col in mean_scores.index],  # 提取的基因名
         'mean_score': mean_scores.values,
         'rank': range(1, len(mean_scores) + 1),
         'percentile': [(i / len(mean_scores)) * 100 for i in range(1, len(mean_scores) + 1)]
@@ -159,7 +189,7 @@ def compute_gene_rankings(df: pd.DataFrame):
     # 创建大写映射用于匹配
     rankings['gene_upper'] = rankings['gene'].str.upper()
     
-    return rankings, len(df)
+    return rankings, len(df), None
 
 def filter_genes_by_list(gene_rank_df: pd.DataFrame, gene_list: list):
     """根据基因列表筛选（大小写不敏感）"""
@@ -450,13 +480,13 @@ if uploaded_file is not None:
 # 否则从 Google Drive 下载
 elif GOOGLE_DRIVE_FILE_ID and st.session_state.crispr_data is None:
     with st.spinner("🔄 首次加载，正在从云端下载数据（约1-2分钟）..."):
-        gdrive_df, success = download_from_gdrive(GOOGLE_DRIVE_FILE_ID)
+        gdrive_df, success, gdrive_error = download_from_gdrive(GOOGLE_DRIVE_FILE_ID)
         if success:
             st.session_state.crispr_data = gdrive_df
             st.success(f"✅ 数据加载成功！后续访问将秒开")
             data_loaded = True
         else:
-            st.error("❌ 下载失败，请检查文件ID或网络连接")
+            st.error(f"❌ 下载失败：{gdrive_error}")
 
 elif st.session_state.crispr_data is not None:
     data_loaded = True
@@ -485,12 +515,18 @@ if not data_loaded:
 
 # 计算基因排名
 df = st.session_state.crispr_data
-gene_rankings, n_cell_lines = compute_gene_rankings(df)
+gene_rankings, n_cell_lines, error_msg = compute_gene_rankings(df)
 st.session_state.gene_rankings = gene_rankings
 st.session_state.n_cell_lines = n_cell_lines
 
 if gene_rankings is None:
-    st.error("❌ 无法识别基因列，请检查数据格式")
+    st.error(f"❌ 无法识别基因列：{error_msg}")
+    # 显示调试信息
+    with st.expander("🔍 数据诊断信息"):
+        st.write("**前10列名称：**", list(df.columns[:10]))
+        st.write("**数据形状：**", df.shape)
+        st.write("**各列数据类型：**")
+        st.dataframe(df.dtypes.head(15).to_frame("dtype"))
     st.stop()
 
 # 显示数据概览
