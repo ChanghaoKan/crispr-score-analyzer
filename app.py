@@ -28,7 +28,7 @@ st.set_page_config(
 # 分享链接格式: https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing
 # 只需要提取 YOUR_FILE_ID 部分填入下方
 
-GOOGLE_DRIVE_FILE_ID = None  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
+GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
 
 # =============================================================================
 # 自定义CSS样式 - Cell Journal 风格
@@ -782,4 +782,4 @@ with st.expander("📚 Citation"):
     **Portal:** https://depmap.org/portal/
     """)
 
-st.markdown('<div style="text-align:center; color:#999; font-size:0.8rem; padding:1rem;">CRISPR Score Analyzer v2.0 | Developed by Kan\'s Lab</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; color:#999; font-size:0.8rem; padding:1rem;">CRISPR Score Analyzer v2.0 | Developed by Deng\'s Lab</div>', unsafe_allow_html=True)
