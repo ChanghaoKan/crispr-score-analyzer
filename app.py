@@ -2,7 +2,7 @@
 CRISPR Score Analysis Web Application
 基因必需性分析交互式平台 - 高质量可视化版本
 
-Author: Kan's Lab
+Author: Deng Lab
 """
 
 import streamlit as st
@@ -450,6 +450,9 @@ def export_figure(fig, format_type='pdf', width=1200, height=800, scale=3):
             output = pil_io.BytesIO()
             img.save(output, format='TIFF', compression='lzw', dpi=(300, 300))
             return output.getvalue()
+        elif format_type.lower() == 'svg':
+            # SVG使用to_image
+            return fig.to_image(format='svg', width=width, height=height)
         else:
             # PDF或PNG
             return fig.to_image(format=format_type, width=width, height=height, scale=scale)
@@ -465,42 +468,42 @@ def create_download_buttons(fig, key_prefix, filename_base):
             pdf_bytes = export_figure(fig, 'pdf')
             if pdf_bytes:
                 st.download_button(
-                    label="📄 Download PDF",
+                    label="📄 PDF",
                     data=pdf_bytes,
                     file_name=f"{filename_base}.pdf",
                     mime="application/pdf",
                     key=f"{key_prefix}_pdf"
                 )
-        except:
-            st.caption("PDF导出不可用")
+        except Exception as e:
+            st.caption(f"PDF不可用")
     
     with col2:
         try:
             tiff_bytes = export_figure(fig, 'tiff')
             if tiff_bytes:
                 st.download_button(
-                    label="🖼️ Download TIFF",
+                    label="🖼️ TIFF",
                     data=tiff_bytes,
                     file_name=f"{filename_base}.tiff",
                     mime="image/tiff",
                     key=f"{key_prefix}_tiff"
                 )
-        except:
-            st.caption("TIFF导出不可用")
+        except Exception as e:
+            st.caption(f"TIFF不可用")
     
     with col3:
         try:
-            svg_bytes = fig.to_image(format='svg')
+            svg_bytes = export_figure(fig, 'svg')
             if svg_bytes:
                 st.download_button(
-                    label="📐 Download SVG",
+                    label="📐 SVG",
                     data=svg_bytes,
                     file_name=f"{filename_base}.svg",
                     mime="image/svg+xml",
                     key=f"{key_prefix}_svg"
                 )
-        except:
-            st.caption("SVG导出不可用")
+        except Exception as e:
+            st.caption(f"SVG不可用")
 
 # =============================================================================
 # 侧边栏
@@ -512,7 +515,6 @@ with st.sidebar:
     
     if has_gdrive:
         st.info("☁️ 云端数据 (Google Drive)")
-        st.caption("首次加载需下载，之后秒开")
     else:
         st.warning("⚠️ 未配置数据源")
         st.caption("请在 app.py 中配置 GOOGLE_DRIVE_FILE_ID")
@@ -553,7 +555,7 @@ elif GOOGLE_DRIVE_FILE_ID and st.session_state.crispr_data is None:
         gdrive_df, success, gdrive_error = download_from_gdrive(GOOGLE_DRIVE_FILE_ID)
         if success:
             st.session_state.crispr_data = gdrive_df
-            st.success(f"✅ 数据加载成功！后续访问将秒开")
+            st.success("✅ 数据加载成功！")
             data_loaded = True
         else:
             st.error(f"❌ 下载失败：{gdrive_error}")
@@ -782,4 +784,4 @@ with st.expander("📚 Citation"):
     **Portal:** https://depmap.org/portal/
     """)
 
-st.markdown('<div style="text-align:center; color:#999; font-size:0.8rem; padding:1rem;">CRISPR Score Analyzer v2.0 | Developed by Deng\'s Lab</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; color:#999; font-size:0.8rem; padding:1rem;">CRISPR Score Analyzer v2.0 | Developed by Deng Lab</div>', unsafe_allow_html=True)
