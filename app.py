@@ -244,8 +244,8 @@ COLORS = {
 }
 FONT_FAMILY = "Helvetica Neue, Arial, sans-serif"
 
-def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', 
-                     nonessential_gene='PTEN', n_cell_lines=0, show_labels=True, point_size=4):
+def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='TP53', 
+                     nonessential_gene='AAVS1', n_cell_lines=0, show_labels=True, point_size=4):
     """创建基因排名散点图"""
     fig = go.Figure()
     
@@ -253,7 +253,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
     
-    # 背景散点
+    # 1. 背景散点（底层）
     fig.add_trace(go.Scattergl(
         x=gene_rank_df['rank'], y=gene_rank_df['mean_score'],
         mode='markers',
@@ -263,27 +263,11 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
         text=gene_rank_df['gene']
     ))
     
-    # 参考线
+    # 2. 参考线
     fig.add_hline(y=-1, line=dict(dash="dash", color="rgba(128,128,128,0.5)", width=1))
     fig.add_hline(y=0, line=dict(color="black", width=0.8))
     
-    # 高亮基因
-    interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)]
-    if len(interest_df) > 0:
-        fig.add_trace(go.Scatter(
-            x=interest_df['rank'], y=interest_df['mean_score'],
-            mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=point_size*2.5, color=COLORS['interest'], opacity=1,
-                       line=dict(width=1, color='white')),
-            text=interest_df['gene'] if show_labels else None,
-            textposition='top center',
-            textfont=dict(size=10, color=COLORS['interest'], family=FONT_FAMILY),
-            name='Genes of interest',
-            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
-            customdata=interest_df['percentile']
-        ))
-    
-    # Essential参考基因
+    # 3. Essential参考基因（中层）
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
         fig.add_trace(go.Scatter(
@@ -295,7 +279,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             hovertemplate=f'<b>{essential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
     
-    # Non-essential参考基因
+    # 4. Non-essential参考基因（中层）
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
     if len(noness_df) > 0:
         fig.add_trace(go.Scatter(
@@ -305,6 +289,22 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             textfont=dict(size=10, color=COLORS['nonessential'], family=FONT_FAMILY),
             name=f'Non-essential ({nonessential_gene})',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
+        ))
+    
+    # 5. 高亮基因（最上层，最后绑定）
+    interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)]
+    if len(interest_df) > 0:
+        fig.add_trace(go.Scatter(
+            x=interest_df['rank'], y=interest_df['mean_score'],
+            mode='markers+text' if show_labels else 'markers',
+            marker=dict(size=point_size*2.5, color=COLORS['interest'], opacity=1,
+                       line=dict(width=1.5, color='white')),
+            text=interest_df['gene'] if show_labels else None,
+            textposition='top center',
+            textfont=dict(size=10, color=COLORS['interest'], family=FONT_FAMILY),
+            name='Genes of interest',
+            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
+            customdata=interest_df['percentile']
         ))
     
     # 布局
@@ -358,7 +358,7 @@ def create_lineage_boxplot(lineage_data, genes):
 
 def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, 
                                  bg_color='#7FB3D5', hl_color='#E74C3C',
-                                 essential_gene='MYC', nonessential_gene='PTEN', 
+                                 essential_gene='TP53', nonessential_gene='AAVS1', 
                                  n_cell_lines=0, show_labels=True):
     """创建多层标注排名图"""
     fig = go.Figure()
@@ -367,7 +367,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
     
-    # 背景
+    # 1. 背景散点（底层）
     fig.add_trace(go.Scattergl(
         x=gene_rank_df['rank'], y=gene_rank_df['mean_score'],
         mode='markers', marker=dict(size=2.5, color='rgba(200,200,200,0.35)'),
@@ -375,10 +375,31 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         text=gene_rank_df['gene']
     ))
     
+    # 2. 参考线
     fig.add_hline(y=-1, line=dict(dash="dash", color="rgba(128,128,128,0.5)", width=1))
     fig.add_hline(y=0, line=dict(color="black", width=0.8))
     
-    # 背景基因集
+    # 3. Essential参考基因（中层）
+    ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
+    if len(ess_df) > 0:
+        fig.add_trace(go.Scatter(
+            x=ess_df['rank'], y=ess_df['mean_score'], mode='markers+text',
+            marker=dict(size=9, color=COLORS['essential'], symbol='diamond'),
+            text=[essential_gene], textposition='bottom center',
+            textfont=dict(size=10, color=COLORS['essential']), name=f'Essential ({essential_gene})'
+        ))
+    
+    # 4. Non-essential参考基因（中层）
+    noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
+    if len(noness_df) > 0:
+        fig.add_trace(go.Scatter(
+            x=noness_df['rank'], y=noness_df['mean_score'], mode='markers+text',
+            marker=dict(size=9, color=COLORS['nonessential'], symbol='diamond'),
+            text=[nonessential_gene], textposition='top center',
+            textfont=dict(size=10, color=COLORS['nonessential']), name=f'Non-essential ({nonessential_gene})'
+        ))
+    
+    # 5. 背景基因集
     bg_only = [g for g in background_genes if g not in highlight_genes]
     bg_df = gene_rank_df[gene_rank_df['gene'].isin(bg_only)]
     if len(bg_df) > 0:
@@ -390,37 +411,18 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             text=bg_df['gene']
         ))
     
-    # 高亮基因
+    # 6. 高亮基因（最上层，最后绑定）
     hl_df = gene_rank_df[gene_rank_df['gene'].isin(highlight_genes)]
     if len(hl_df) > 0:
         fig.add_trace(go.Scatter(
             x=hl_df['rank'], y=hl_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=11, color=hl_color, line=dict(width=1.5, color='black')),
+            marker=dict(size=11, color=hl_color, opacity=1, line=dict(width=1.5, color='white')),
             text=hl_df['gene'] if show_labels else None, textposition='top center',
             textfont=dict(size=10, color='#333', family=FONT_FAMILY),
             name=f'Highlight (n={len(hl_df)})',
             hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
             customdata=hl_df['percentile']
-        ))
-    
-    # 参考基因
-    ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
-    if len(ess_df) > 0:
-        fig.add_trace(go.Scatter(
-            x=ess_df['rank'], y=ess_df['mean_score'], mode='markers+text',
-            marker=dict(size=9, color=COLORS['essential'], symbol='diamond'),
-            text=[essential_gene], textposition='bottom center',
-            textfont=dict(size=10, color=COLORS['essential']), name=f'Essential ({essential_gene})'
-        ))
-    
-    noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
-    if len(noness_df) > 0:
-        fig.add_trace(go.Scatter(
-            x=noness_df['rank'], y=noness_df['mean_score'], mode='markers+text',
-            marker=dict(size=9, color=COLORS['nonessential'], symbol='diamond'),
-            text=[nonessential_gene], textposition='top center',
-            textfont=dict(size=10, color=COLORS['nonessential']), name=f'Non-essential ({nonessential_gene})'
         ))
     
     y_label = f"Mean CRISPR Score<br><span style='font-size:11px'>({n_cell_lines} cell lines)</span>" if n_cell_lines > 0 else "Mean CRISPR Score"
@@ -527,9 +529,9 @@ with st.sidebar:
     st.markdown("## ⚙️ 参考基因")
     col1, col2 = st.columns(2)
     with col1:
-        essential_gene = st.text_input("Essential", value="MYC")
+        essential_gene = st.text_input("Essential", value="TP53")
     with col2:
-        nonessential_gene = st.text_input("Non-essential", value="PTEN")
+        nonessential_gene = st.text_input("Non-essential", value="AAVS1")
     
     st.markdown("---")
     
@@ -633,7 +635,7 @@ with tab1:
     genes_of_interest = []
     
     if input_method == "直接输入基因名":
-        gene_input = st.text_area("输入基因列表", value="KIF18A\nE2F1\nE2F8\nCCNB1\nCDK1\nAURKA",
+        gene_input = st.text_area("输入基因列表", value="MYC\nKRAS\nCDK1\nPLK1\nAURKA\nRPS6",
                                   height=150, help="每行一个基因名，或用逗号分隔")
         genes_of_interest = [g.strip() for g in gene_input.replace(',', '\n').replace(' ', '\n').split('\n') if g.strip()]
     else:
@@ -685,7 +687,7 @@ with tab2:
     
     genes_for_box = []
     if input_method2 == "直接输入基因名":
-        gene_input2 = st.text_area("输入基因", value="KIF18A\nE2F1\nMYC", height=120, key="box_text")
+        gene_input2 = st.text_area("输入基因", value="TP53\nMYC\nKRAS", height=120, key="box_text")
         genes_for_box = [g.strip() for g in gene_input2.replace(',', '\n').split('\n') if g.strip()]
     else:
         uploaded2 = st.file_uploader("上传基因列表", type=['csv', 'txt'], key="box_file")
@@ -727,7 +729,7 @@ with tab3:
         bg_color = st.color_picker("背景颜色", "#7FB3D5", key="bg_color")
     with col2:
         st.markdown("**高亮基因**")
-        hl_input = st.text_area("高亮基因", value="KIF18A\nE2F8", height=150, key="hl")
+        hl_input = st.text_area("高亮基因", value="PLK1\nAURKA", height=150, key="hl")
         hl_color = st.color_picker("高亮颜色", "#E74C3C", key="hl_color")
     
     bg_genes = [g.strip() for g in bg_input.replace(',', '\n').split('\n') if g.strip()]
