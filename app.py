@@ -28,7 +28,7 @@ st.set_page_config(
 # 分享链接格式: https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing
 # 只需要提取 YOUR_FILE_ID 部分填入下方
 
-GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
+GOOGLE_DRIVE_FILE_ID = None  # ← 替换为你的文件ID，例如: "1AbCdEfGhIjKlMnOpQrS"
 
 # =============================================================================
 # 自定义CSS样式 - Cell Journal 风格
@@ -273,8 +273,8 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
         fig.add_trace(go.Scatter(
             x=interest_df['rank'], y=interest_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=point_size*2.5, color=COLORS['interest'], opacity=0.9,
-                       line=dict(width=0.5, color='white')),
+            marker=dict(size=point_size*2.5, color=COLORS['interest'], opacity=1,
+                       line=dict(width=1, color='white')),
             text=interest_df['gene'] if show_labels else None,
             textposition='top center',
             textfont=dict(size=10, color=COLORS['interest'], family=FONT_FAMILY),
@@ -313,10 +313,12 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
     
     fig.update_layout(
         title=dict(text='<b>Gene Dependency Ranking</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
-        xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1, linecolor='black',
-                   tickformat=',d', ticks='outside', ticklen=5, range=[0, len(gene_rank_df)*1.02]),
-        yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1, linecolor='black',
-                   tickvals=y_tickvals, ticks='outside', ticklen=5, range=[y_min-0.1*y_range, y_max+0.15*y_range]),
+        xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5, linecolor='black',
+                   tickformat=',d', ticks='outside', ticklen=5, tickcolor='black', 
+                   tickfont=dict(color='black'), range=[0, len(gene_rank_df)*1.02]),
+        yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5, linecolor='black',
+                   tickvals=y_tickvals, ticks='outside', ticklen=5, tickcolor='black',
+                   tickfont=dict(color='black'), range=[y_min-0.1*y_range, y_max+0.15*y_range]),
         legend=dict(orientation='v', yanchor='bottom', y=0.02, xanchor='right', x=0.98,
                    font=dict(size=9), bgcolor='rgba(255,255,255,0.9)', borderwidth=1),
         plot_bgcolor='white', paper_bgcolor='white', height=550, margin=dict(l=70, r=30, t=60, b=60)
@@ -344,8 +346,10 @@ def create_lineage_boxplot(lineage_data, genes):
         title=dict(text='<b>CRISPR Score by Cancer Type</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
         height=220*n_genes+80, plot_bgcolor='white', paper_bgcolor='white', showlegend=False
     )
-    fig.update_xaxes(tickangle=45, categoryarray=lineages, showline=True, linecolor='black')
-    fig.update_yaxes(title_text='CRISPR Score', showgrid=False, showline=True, linecolor='black', dtick=0.5)
+    fig.update_xaxes(tickangle=-45, categoryarray=lineages, showline=True, linewidth=1.5, linecolor='black',
+                     tickfont=dict(color='black'), ticks='outside', ticklen=5, tickcolor='black')
+    fig.update_yaxes(title_text='CRISPR Score', showgrid=False, showline=True, linewidth=1.5, linecolor='black',
+                     tickfont=dict(color='black'), ticks='outside', ticklen=5, tickcolor='black', dtick=0.5)
     
     for i in range(1, n_genes):
         fig.update_xaxes(showticklabels=False, row=i, col=1)
@@ -424,13 +428,79 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     
     fig.update_layout(
         title=dict(text='<b>Multi-layer Gene Annotation</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
-        xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linecolor='black', tickformat=',d'),
-        yaxis=dict(title=y_label, showgrid=False, showline=True, linecolor='black', tickvals=y_tickvals,
+        xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5, linecolor='black', 
+                   tickformat=',d', ticks='outside', ticklen=5, tickcolor='black', tickfont=dict(color='black')),
+        yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5, linecolor='black', 
+                   tickvals=y_tickvals, ticks='outside', ticklen=5, tickcolor='black', tickfont=dict(color='black'),
                    range=[y_min-0.1*y_range, y_max+0.15*y_range]),
         legend=dict(yanchor='bottom', y=0.02, xanchor='right', x=0.98, font=dict(size=9)),
         plot_bgcolor='white', paper_bgcolor='white', height=550
     )
     return fig
+
+def export_figure(fig, format_type='pdf', width=1200, height=800, scale=3):
+    """导出图表为PDF/TIFF/PNG格式（高分辨率）"""
+    try:
+        if format_type.lower() == 'tiff':
+            # Plotly不直接支持TIFF，先导出PNG再转换
+            img_bytes = fig.to_image(format='png', width=width, height=height, scale=scale)
+            from PIL import Image
+            import io as pil_io
+            img = Image.open(pil_io.BytesIO(img_bytes))
+            output = pil_io.BytesIO()
+            img.save(output, format='TIFF', compression='lzw', dpi=(300, 300))
+            return output.getvalue()
+        else:
+            # PDF或PNG
+            return fig.to_image(format=format_type, width=width, height=height, scale=scale)
+    except Exception as e:
+        return None
+
+def create_download_buttons(fig, key_prefix, filename_base):
+    """创建PDF/TIFF/SVG下载按钮"""
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        try:
+            pdf_bytes = export_figure(fig, 'pdf')
+            if pdf_bytes:
+                st.download_button(
+                    label="📄 Download PDF",
+                    data=pdf_bytes,
+                    file_name=f"{filename_base}.pdf",
+                    mime="application/pdf",
+                    key=f"{key_prefix}_pdf"
+                )
+        except:
+            st.caption("PDF导出不可用")
+    
+    with col2:
+        try:
+            tiff_bytes = export_figure(fig, 'tiff')
+            if tiff_bytes:
+                st.download_button(
+                    label="🖼️ Download TIFF",
+                    data=tiff_bytes,
+                    file_name=f"{filename_base}.tiff",
+                    mime="image/tiff",
+                    key=f"{key_prefix}_tiff"
+                )
+        except:
+            st.caption("TIFF导出不可用")
+    
+    with col3:
+        try:
+            svg_bytes = fig.to_image(format='svg')
+            if svg_bytes:
+                st.download_button(
+                    label="📐 Download SVG",
+                    data=svg_bytes,
+                    file_name=f"{filename_base}.svg",
+                    mime="image/svg+xml",
+                    key=f"{key_prefix}_svg"
+                )
+        except:
+            st.caption("SVG导出不可用")
 
 # =============================================================================
 # 侧边栏
@@ -592,6 +662,10 @@ with tab1:
                                   n_cell_lines, show_labels, point_size)
             st.plotly_chart(fig, use_container_width=True)
             
+            # 导出按钮
+            with st.expander("📥 导出高分辨率图片", expanded=False):
+                create_download_buttons(fig, "rank_plot", "gene_ranking")
+            
             with st.expander("📋 基因详细信息", expanded=True):
                 detail = gene_rankings[gene_rankings['gene'].isin(matched_genes)].sort_values('mean_score').copy()
                 detail['Essential'] = detail['mean_score'].apply(lambda x: '🔴 Yes' if x < -0.5 else '⚪ No')
@@ -633,6 +707,10 @@ with tab2:
             if lineage_data is not None:
                 fig = create_lineage_boxplot(lineage_data, matched)
                 st.plotly_chart(fig, use_container_width=True)
+                
+                # 导出按钮
+                with st.expander("📥 导出高分辨率图片", expanded=False):
+                    create_download_buttons(fig, "boxplot", "lineage_boxplot")
             else:
                 st.error("未找到 lineage 列")
 
@@ -664,6 +742,10 @@ with tab3:
                                               bg_color, hl_color, essential_gene, nonessential_gene,
                                               n_cell_lines, show_labels)
             st.plotly_chart(fig, use_container_width=True)
+            
+            # 导出按钮
+            with st.expander("📥 导出高分辨率图片", expanded=False):
+                create_download_buttons(fig, "multilayer", "multilayer_annotation")
 
 # =============================================================================
 # 致谢与页脚
