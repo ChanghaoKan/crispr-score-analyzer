@@ -244,8 +244,8 @@ COLORS = {
 }
 FONT_FAMILY = "Helvetica Neue, Arial, sans-serif"
 
-def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='TP53', 
-                     nonessential_gene='AAVS1', n_cell_lines=0, show_labels=True, point_size=4):
+def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', 
+                     nonessential_gene='PTEN', n_cell_lines=0, show_labels=True, point_size=4):
     """创建基因排名散点图"""
     fig = go.Figure()
     
@@ -358,7 +358,7 @@ def create_lineage_boxplot(lineage_data, genes):
 
 def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, 
                                  bg_color='#7FB3D5', hl_color='#E74C3C',
-                                 essential_gene='TP53', nonessential_gene='AAVS1', 
+                                 essential_gene='MYC', nonessential_gene='PTEN', 
                                  n_cell_lines=0, show_labels=True):
     """创建多层标注排名图"""
     fig = go.Figure()
@@ -529,9 +529,9 @@ with st.sidebar:
     st.markdown("## ⚙️ 参考基因")
     col1, col2 = st.columns(2)
     with col1:
-        essential_gene = st.text_input("Essential", value="TP53")
+        essential_gene = st.text_input("Essential", value="MYC")
     with col2:
-        nonessential_gene = st.text_input("Non-essential", value="AAVS1")
+        nonessential_gene = st.text_input("Non-essential", value="PTEN")
     
     st.markdown("---")
     
@@ -635,7 +635,7 @@ with tab1:
     genes_of_interest = []
     
     if input_method == "直接输入基因名":
-        gene_input = st.text_area("输入基因列表", value="MYC\nKRAS\nCDK1\nPLK1\nAURKA\nRPS6",
+        gene_input = st.text_area("输入基因列表", value="E2F1\nE2F2\nE2F3\nE2F4\nE2F5\nE2F6\nE2F7\nE2F8",
                                   height=150, help="每行一个基因名，或用逗号分隔")
         genes_of_interest = [g.strip() for g in gene_input.replace(',', '\n').replace(' ', '\n').split('\n') if g.strip()]
     else:
@@ -687,7 +687,7 @@ with tab2:
     
     genes_for_box = []
     if input_method2 == "直接输入基因名":
-        gene_input2 = st.text_area("输入基因", value="TP53\nMYC\nKRAS", height=120, key="box_text")
+        gene_input2 = st.text_area("输入基因", value="E2F1\nE2F2", height=120, key="box_text")
         genes_for_box = [g.strip() for g in gene_input2.replace(',', '\n').split('\n') if g.strip()]
     else:
         uploaded2 = st.file_uploader("上传基因列表", type=['csv', 'txt'], key="box_file")
