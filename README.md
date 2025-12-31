@@ -32,4 +32,4 @@
   
 ---
 
-Developed by Kan's Lab
+Developed by Deng's Lab
