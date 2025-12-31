@@ -1,6 +1,6 @@
 # 🧬 CRISPR Score Analyzer
 
-基于 DepMap 数据的基因必需性分析平台。
+基于 DepMap 数据的基因必需性分析平台。 https://crispr-score-analyzer-szbl-denglab.streamlit.app/
 
 ## 功能
 
