@@ -455,51 +455,8 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     return fig
 
 def create_download_buttons(fig, key_prefix, filename_base):
-    """创建PDF/TIFF/PNG下载按钮"""
-    st.markdown("**选择导出格式：**")
-    col1, col2, col3 = st.columns(3)
-    
-    # PDF导出
-    with col1:
-        try:
-            pdf_bytes = fig.to_image(format='pdf', width=1200, height=800, scale=2)
-            st.download_button(
-                label="📄 PDF",
-                data=pdf_bytes,
-                file_name=f"{filename_base}.pdf",
-                mime="application/pdf",
-                key=f"{key_prefix}_pdf"
-            )
-        except Exception as e:
-            st.caption(f"PDF: {str(e)[:30]}")
-    
-    # PNG导出 (高分辨率)
-    with col2:
-        try:
-            png_bytes = fig.to_image(format='png', width=1200, height=800, scale=3)
-            st.download_button(
-                label="🖼️ PNG (300dpi)",
-                data=png_bytes,
-                file_name=f"{filename_base}.png",
-                mime="image/png",
-                key=f"{key_prefix}_png"
-            )
-        except Exception as e:
-            st.caption(f"PNG: {str(e)[:30]}")
-    
-    # SVG导出
-    with col3:
-        try:
-            svg_bytes = fig.to_image(format='svg', width=1200, height=800)
-            st.download_button(
-                label="📐 SVG",
-                data=svg_bytes,
-                file_name=f"{filename_base}.svg",
-                mime="image/svg+xml",
-                key=f"{key_prefix}_svg"
-            )
-        except Exception as e:
-            st.caption(f"SVG: {str(e)[:30]}")
+    """提示用户使用Plotly内置下载"""
+    st.info("💡 点击图表右上角的 📷 相机图标可直接下载 PNG，或使用 💾 图标下载 SVG")
 
 # =============================================================================
 # 侧边栏
@@ -658,9 +615,21 @@ with tab1:
         if matched_genes:
             fig = create_rank_plot(gene_rankings, matched_genes, essential_gene, nonessential_gene, 
                                   n_cell_lines, show_labels, point_size)
-            st.plotly_chart(fig, use_container_width=True)
             
-            # 导出按钮
+            # 配置下载选项
+            config = {
+                'toImageButtonOptions': {
+                    'format': 'svg',
+                    'filename': 'gene_ranking',
+                    'height': 800,
+                    'width': 1200,
+                    'scale': 3
+                },
+                'displaylogo': False
+            }
+            st.plotly_chart(fig, use_container_width=True, config=config)
+            
+            # 导出提示
             with st.expander("📥 导出高分辨率图片", expanded=False):
                 create_download_buttons(fig, "rank_plot", "gene_ranking")
             
@@ -704,9 +673,20 @@ with tab2:
             lineage_data = get_lineage_data(df, matched)
             if lineage_data is not None:
                 fig = create_lineage_boxplot(lineage_data, matched)
-                st.plotly_chart(fig, use_container_width=True)
                 
-                # 导出按钮
+                config = {
+                    'toImageButtonOptions': {
+                        'format': 'svg',
+                        'filename': 'lineage_boxplot',
+                        'height': 800,
+                        'width': 1200,
+                        'scale': 3
+                    },
+                    'displaylogo': False
+                }
+                st.plotly_chart(fig, use_container_width=True, config=config)
+                
+                # 导出提示
                 with st.expander("📥 导出高分辨率图片", expanded=False):
                     create_download_buttons(fig, "boxplot", "lineage_boxplot")
             else:
@@ -739,9 +719,20 @@ with tab3:
             fig = create_multilayer_rank_plot(gene_rankings, bg_matched, hl_matched,
                                               bg_color, hl_color, essential_gene, nonessential_gene,
                                               n_cell_lines, show_labels)
-            st.plotly_chart(fig, use_container_width=True)
             
-            # 导出按钮
+            config = {
+                'toImageButtonOptions': {
+                    'format': 'svg',
+                    'filename': 'multilayer_annotation',
+                    'height': 800,
+                    'width': 1200,
+                    'scale': 3
+                },
+                'displaylogo': False
+            }
+            st.plotly_chart(fig, use_container_width=True, config=config)
+            
+            # 导出提示
             with st.expander("📥 导出高分辨率图片", expanded=False):
                 create_download_buttons(fig, "multilayer", "multilayer_annotation")
 
