@@ -527,7 +527,7 @@ PLOT_CONFIG = {
 }
 
 
-def centered_plot(fig, config=None, ratio=(1, 8, 1)):
+def centered_plot(fig, config=None, ratio=(1, 4, 1)):
     """将图表居中显示，两侧留白，改善宽高比"""
     _, center, _ = st.columns(ratio)
     with center:
