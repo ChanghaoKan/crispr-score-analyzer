@@ -34,12 +34,11 @@ USE_HUGGINGFACE = True
 # =============================================================================
 # Citation / DOI 配置
 # =============================================================================
-# 在 Zenodo 为本工具分配 DOI 后填入，留空则显示"pending"占位
-ZENODO_DOI = ""  # e.g. "10.5281/zenodo.12345678"
+ZENODO_DOI = "10.5281/zenodo.19607603"  
 TOOL_VERSION = "v1.0"
-TOOL_AUTHORS = "Kan, C. and Deng Lab"
+TOOL_AUTHORS = "Kan, C"
 TOOL_YEAR = "2026"
-GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"  # 如仓库名不同请修改
+GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"  
 
 # =============================================================================
 # 国际化
