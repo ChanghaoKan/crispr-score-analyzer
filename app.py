@@ -36,7 +36,7 @@ USE_HUGGINGFACE = True
 # =============================================================================
 ZENODO_DOI = "10.5281/zenodo.19607603"  
 TOOL_VERSION = "v1.0"
-TOOL_AUTHORS = "Kan, C"
+TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
 GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"  
 
@@ -630,8 +630,8 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Gene Dependency Ranking</b>',
-                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
+        title=dict(text='<b>Gene Dependency Ranking</b>',font=dict(size=16, family=FONT_FAMILY),
+                   x=0.5,xanchor='center',xref='paper',),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5,
                    range=[0, len(gene_rank_df) * 1.02]),
@@ -643,7 +643,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
                     font=dict(size=11),
                     bgcolor=th['plot_bg'], borderwidth=1,
                     bordercolor=th['border']),
-        height=600, margin=dict(l=70, r=30, t=60, b=60)
+        height=650, margin=dict(l=80, r=80, t=60, b=60)
     )
     return apply_theme_to_fig(fig)
 
@@ -668,9 +668,11 @@ def create_lineage_boxplot(lineage_data, genes):
                       row=i, col=1)
 
     fig.update_layout(
-        title=dict(text='<b>CRISPR Score by Cancer Type</b>',
-                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
-        height=220 * n_genes + 80, showlegend=False,
+    title=dict(text='<b>CRISPR Score by Cancer Type</b>',
+               font=dict(size=16, family=FONT_FAMILY),
+               x=0.5, xanchor='center', xref='paper'),
+    height=220 * n_genes + 80, showlegend=False,
+    margin=dict(l=80, r=80, t=80, b=80)
     )
     fig.update_xaxes(tickangle=-45, categoryarray=lineages,
                      showline=True, linewidth=1.5, ticks='outside', ticklen=5)
@@ -761,8 +763,8 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Multi-layer Gene Annotation</b>',
-                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
+        title=dict(text='<b>Multi-layer Gene Annotation</b>', font=dict(size=16, family=FONT_FAMILY),
+                   x=0.5, xanchor='center', xref='paper'),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5),
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
@@ -771,7 +773,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         legend=dict(yanchor='bottom', y=0.02, xanchor='right', x=0.98,
                     font=dict(size=11), bgcolor=th['plot_bg'],
                     bordercolor=th['border']),
-        height=600
+        height=650, margin=dict(l=80, r=80, t=60, b=60)
     )
     return apply_theme_to_fig(fig)
 
