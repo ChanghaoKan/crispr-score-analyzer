@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import io
 import re
+import copy
 
 # =============================================================================
 # 页面配置
@@ -22,23 +23,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-def centered_plot(fig, config=None, ratio=(1, 8, 1)):
-    """把图表居中显示，两侧留白，改善宽高比观感"""
-    _, center, _ = st.columns(ratio)
-    with center:
-        st.plotly_chart(fig, use_container_width=True, config=config or {})
+
 # =============================================================================
-# 数据源配置
+# 数据源配置 (Hugging Face)
 # =============================================================================
 HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
 USE_HUGGINGFACE = True
 
-# Google Drive fallback removed - using HuggingFace as primary source
-#GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"
+# =============================================================================
+# Citation / DOI 配置
+# =============================================================================
+# 在 Zenodo 为本工具分配 DOI 后填入，留空则显示"pending"占位
+ZENODO_DOI = ""  # e.g. "10.5281/zenodo.12345678"
+TOOL_VERSION = "v1.0"
+TOOL_AUTHORS = "Kan, C. and Deng Lab"
+TOOL_YEAR = "2026"
+GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"  # 如仓库名不同请修改
 
 # =============================================================================
-# 国际化（i18n）
+# 国际化
 # =============================================================================
 TRANSLATIONS = {
     'en': {
@@ -93,13 +97,15 @@ TRANSLATIONS = {
         'no_data_warn': '⚠️ Please configure a data source or upload data',
         'loading_upload': 'Loading uploaded data...',
         'loading_hf': '🔄 Loading data from Hugging Face...',
-        'loading_gdrive': '🔄 First load, downloading from cloud (1-2 min)...',
         'loaded': '✅ Loaded',
         'acknowledgements': 'Acknowledgements',
         'data_from': 'Data Source',
         'dev_with': 'Development Assistance',
         'ai_dev': 'AI-assisted development',
-        'citation': '📚 Citation',
+        'citation': '📚 How to Cite',
+        'cite_this_tool': 'Cite this tool',
+        'copy_bibtex': 'Copy BibTeX',
+        'doi_pending': 'DOI pending — please cite by URL until release',
     },
     'zh': {
         'app_title': 'CRISPR 基因必需性分析器',
@@ -153,25 +159,26 @@ TRANSLATIONS = {
         'no_data_warn': '⚠️ 请配置数据源或上传数据文件',
         'loading_upload': '正在加载上传的数据...',
         'loading_hf': '🔄 正在从 Hugging Face 加载数据...',
-        'loading_gdrive': '🔄 首次加载，正在从云端下载数据（约1-2分钟）...',
         'loaded': '✅ 已加载',
         'acknowledgements': '致谢',
         'data_from': '数据来源',
         'dev_with': '开发协助',
         'ai_dev': 'AI 辅助开发',
-        'citation': '📚 引用',
+        'citation': '📚 引用方式',
+        'cite_this_tool': '引用本工具',
+        'copy_bibtex': '复制 BibTeX',
+        'doi_pending': 'DOI 申请中 — 正式发布前请用网址引用',
     }
 }
 
 
 def t(key: str) -> str:
-    """Translation lookup"""
     lang = st.session_state.get('lang', 'en')
     return TRANSLATIONS[lang].get(key, key)
 
 
 # =============================================================================
-# Session State 初始化
+# Session State
 # =============================================================================
 if 'lang' not in st.session_state:
     st.session_state.lang = 'en'
@@ -180,7 +187,7 @@ if 'theme' not in st.session_state:
 
 
 # =============================================================================
-# 主题系统
+# 主题
 # =============================================================================
 THEMES = {
     'light': {
@@ -229,65 +236,42 @@ def get_theme():
 
 
 def inject_css():
-    """注入基于当前主题的 CSS"""
     th = get_theme()
     st.markdown(f"""
     <style>
-        /* ====== Global ====== */
-        .stApp {{
-            background-color: {th['bg']};
-            color: {th['text']};
-        }}
-        
-        /* Sidebar */
+        .stApp {{ background-color: {th['bg']}; color: {th['text']}; }}
         section[data-testid="stSidebar"] {{
             background-color: {th['bg_secondary']};
             border-right: 1px solid {th['border']};
         }}
-        section[data-testid="stSidebar"] * {{
-            color: {th['text']};
-        }}
-        
-        /* Main content text */
-        .stApp p, .stApp label, .stApp span, .stApp div {{
-            color: {th['text']};
-        }}
-        
-        /* ====== Typography ====== */
+        section[data-testid="stSidebar"] * {{ color: {th['text']}; }}
+        .stApp p, .stApp label, .stApp span, .stApp div {{ color: {th['text']}; }}
+
         .main-header {{
             font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 2.5rem; font-weight: 700;
             background: linear-gradient(135deg, {th['accent']} 0%, {th['accent_hover']} 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.3rem;
-            letter-spacing: -1px;
-            line-height: 1.1;
+            margin-bottom: 0.3rem; letter-spacing: -1px; line-height: 1.1;
         }}
         .sub-header {{
             font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 1.05rem;
-            color: {th['text_muted']};
-            margin-bottom: 1.8rem;
-            font-weight: 400;
+            font-size: 1.05rem; color: {th['text_muted']};
+            margin-bottom: 1.8rem; font-weight: 400;
         }}
         h1, h2, h3, h4, h5 {{
             color: {th['text']} !important;
             font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
         }}
-        
-        /* ====== Gene Tag ====== */
+
         .gene-tag {{
             display: inline-block;
             background: linear-gradient(135deg, {th['accent']}22 0%, {th['accent']}11 100%);
-            color: {th['accent']};
-            padding: 0.3rem 0.75rem;
-            border-radius: 6px;
-            margin: 0.2rem;
-            font-size: 0.82rem;
-            font-weight: 600;
+            color: {th['accent']}; padding: 0.3rem 0.75rem;
+            border-radius: 6px; margin: 0.2rem;
+            font-size: 0.82rem; font-weight: 600;
             font-family: 'JetBrains Mono', 'Monaco', 'Consolas', monospace;
             border: 1px solid {th['accent']}33;
             transition: all 0.2s ease;
@@ -296,32 +280,22 @@ def inject_css():
             transform: translateY(-1px);
             box-shadow: {th['shadow_hover']};
         }}
-        
-        /* ====== Divider ====== */
+
         .custom-divider {{
             height: 1px;
             background: linear-gradient(90deg, transparent, {th['border']}, transparent);
-            border: none;
-            margin: 2rem 0;
+            border: none; margin: 2rem 0;
         }}
-        
-        /* ====== Section title ====== */
+
         .input-section-title {{
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: {th['text_muted']};
-            margin-bottom: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 0.8rem; font-weight: 700; color: {th['text_muted']};
+            margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
         }}
-        
-        /* ====== Metric Cards ====== */
+
         div[data-testid="stMetric"] {{
             background: {th['bg_card']};
-            padding: 1.2rem 1.4rem;
-            border-radius: 12px;
-            border: 1px solid {th['border']};
-            box-shadow: {th['shadow']};
+            padding: 1.2rem 1.4rem; border-radius: 12px;
+            border: 1px solid {th['border']}; box-shadow: {th['shadow']};
             transition: all 0.3s ease;
         }}
         div[data-testid="stMetric"]:hover {{
@@ -331,51 +305,35 @@ def inject_css():
         }}
         div[data-testid="stMetricLabel"] {{
             color: {th['text_muted']} !important;
-            font-size: 0.8rem !important;
-            font-weight: 600 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 0.8rem !important; font-weight: 600 !important;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }}
         div[data-testid="stMetricValue"] {{
-            color: {th['text']} !important;
-            font-weight: 700 !important;
+            color: {th['text']} !important; font-weight: 700 !important;
         }}
-        
-        /* ====== Tabs ====== */
+
         .stTabs [data-baseweb="tab-list"] {{
-            gap: 6px;
-            background: {th['bg_secondary']};
-            padding: 6px;
-            border-radius: 12px;
+            gap: 6px; background: {th['bg_secondary']};
+            padding: 6px; border-radius: 12px;
             border: 1px solid {th['border']};
         }}
         .stTabs [data-baseweb="tab"] {{
-            border-radius: 8px;
-            padding: 10px 20px;
-            background: transparent;
-            color: {th['text_muted']};
-            font-weight: 600;
-            transition: all 0.2s ease;
+            border-radius: 8px; padding: 10px 20px;
+            background: transparent; color: {th['text_muted']};
+            font-weight: 600; transition: all 0.2s ease;
         }}
         .stTabs [data-baseweb="tab"]:hover {{
-            background: {th['bg_card']};
-            color: {th['text']};
+            background: {th['bg_card']}; color: {th['text']};
         }}
         .stTabs [aria-selected="true"] {{
-            background: {th['accent']} !important;
-            color: white !important;
+            background: {th['accent']} !important; color: white !important;
             box-shadow: 0 2px 8px {th['accent']}44;
         }}
-        
-        /* ====== Buttons ====== */
+
         .stDownloadButton button, .stButton button {{
-            background: {th['accent']};
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            background: {th['accent']}; color: white; border: none;
+            border-radius: 8px; padding: 0.5rem 1rem;
+            font-weight: 600; transition: all 0.2s ease;
             box-shadow: 0 2px 6px {th['accent']}33;
         }}
         .stDownloadButton button:hover, .stButton button:hover {{
@@ -383,9 +341,8 @@ def inject_css():
             transform: translateY(-1px);
             box-shadow: 0 4px 12px {th['accent']}55;
         }}
-        
-        /* ====== Inputs ====== */
-        .stTextInput input, .stTextArea textarea, .stSelectbox div {{
+
+        .stTextInput input, .stTextArea textarea {{
             background: {th['bg_card']} !important;
             color: {th['text']} !important;
             border-color: {th['border']} !important;
@@ -395,64 +352,63 @@ def inject_css():
             border-color: {th['accent']} !important;
             box-shadow: 0 0 0 2px {th['accent']}22 !important;
         }}
-        
-        /* ====== Expander ====== */
+
         .streamlit-expanderHeader {{
             background: {th['bg_card']} !important;
             border-radius: 8px !important;
             border: 1px solid {th['border']} !important;
             font-weight: 600 !important;
         }}
-        
-        /* ====== Alerts ====== */
+
         .stAlert {{
             border-radius: 10px !important;
             border: 1px solid {th['border']} !important;
         }}
-        
-        /* ====== Dataframe ====== */
+
         .stDataFrame {{
-            border-radius: 10px;
-            overflow: hidden;
+            border-radius: 10px; overflow: hidden;
             border: 1px solid {th['border']};
         }}
-        
-        /* ====== Hide Streamlit branding ====== */
+
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
-        header[data-testid="stHeader"] {{
-            background: transparent;
-        }}
-        
-        /* ====== Radio ====== */
-        .stRadio label {{
-            color: {th['text']} !important;
-        }}
-        
-        /* ====== Footer card ====== */
+        header[data-testid="stHeader"] {{ background: transparent; }}
+
+        .stRadio label {{ color: {th['text']} !important; }}
+
         .footer-card {{
             background: {th['bg_secondary']};
             border: 1px solid {th['border']};
-            padding: 1.8rem;
-            border-radius: 16px;
+            padding: 1.8rem; border-radius: 16px;
             margin-bottom: 1rem;
         }}
-        .footer-card h4 {{
-            color: {th['text']} !important;
-            margin: 0 0 1rem 0;
-        }}
-        .footer-card p {{
-            color: {th['text_muted']} !important;
-            font-size: 0.9rem;
-            margin: 0;
-        }}
+        .footer-card h4 {{ color: {th['text']} !important; margin: 0 0 1rem 0; }}
+        .footer-card p {{ color: {th['text_muted']} !important; font-size: 0.9rem; margin: 0; }}
         .footer-card a {{
             color: {th['accent']} !important;
-            text-decoration: none;
-            font-weight: 600;
+            text-decoration: none; font-weight: 600;
         }}
-        .footer-card a:hover {{
-            text-decoration: underline;
+        .footer-card a:hover {{ text-decoration: underline; }}
+
+        .cite-box {{
+            background: {th['bg_card']};
+            border: 1px solid {th['border']};
+            border-left: 4px solid {th['accent']};
+            padding: 1rem 1.2rem; border-radius: 8px;
+            font-family: 'JetBrains Mono', 'Monaco', monospace;
+            font-size: 0.82rem; color: {th['text']};
+            margin: 0.5rem 0; line-height: 1.6;
+        }}
+        .doi-badge {{
+            display: inline-block;
+            background: {th['accent']};
+            color: white; padding: 0.2rem 0.7rem;
+            border-radius: 4px; font-size: 0.75rem;
+            font-weight: 600; margin-left: 0.5rem;
+            text-decoration: none;
+        }}
+        .doi-badge:hover {{
+            background: {th['accent_hover']}; color: white !important;
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -473,34 +429,6 @@ def download_from_huggingface(repo_id: str, filename: str):
         return df, True, None
     except Exception as e:
         return None, False, f"HF error: {str(e)}"
-
-
-@st.cache_resource(show_spinner=False)
-def download_from_gdrive(file_id: str):
-    import tempfile
-    import os
-    try:
-        import gdown
-    except ImportError:
-        return None, False, "gdown not installed"
-    url = f"https://drive.google.com/uc?id={file_id}"
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as tmp:
-            tmp_path = tmp.name
-        try:
-            gdown.download(url, tmp_path, quiet=True, fuzzy=True)
-        except TypeError:
-            gdown.download(url, tmp_path, quiet=True)
-        with open(tmp_path, 'r', encoding='utf-8', errors='ignore') as f:
-            first_line = f.readline()
-            if '<html' in first_line.lower() or '<!doctype' in first_line.lower():
-                os.unlink(tmp_path)
-                return None, False, "Permission error: set sharing to 'Anyone with link'"
-        df = pd.read_csv(tmp_path)
-        os.unlink(tmp_path)
-        return df, True, None
-    except Exception as e:
-        return None, False, f"Download error: {str(e)}"
 
 
 def load_uploaded_data(file_content):
@@ -576,7 +504,7 @@ def get_lineage_data(df, genes):
 
 
 # =============================================================================
-# 绘图
+# 绘图配置
 # =============================================================================
 PLOT_COLORS = {
     'essential': '#b30035',
@@ -599,8 +527,15 @@ PLOT_CONFIG = {
     }
 }
 
-def apply_theme_to_fig(fig, n_subplots=1):
-    """把当前主题应用到 plotly 图上"""
+
+def centered_plot(fig, config=None, ratio=(1, 8, 1)):
+    """将图表居中显示，两侧留白，改善宽高比"""
+    _, center, _ = st.columns(ratio)
+    with center:
+        st.plotly_chart(fig, use_container_width=True, config=config or PLOT_CONFIG)
+
+
+def apply_theme_to_fig(fig):
     th = get_theme()
     fig.update_layout(
         plot_bgcolor=th['plot_bg'],
@@ -620,19 +555,23 @@ def apply_theme_to_fig(fig, n_subplots=1):
     return fig
 
 
+# =============================================================================
+# 绘图函数
+# =============================================================================
 def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
-                     nonessential_gene='PTEN', n_cell_lines=0, show_labels=True, point_size=4):
+                     nonessential_gene='PTEN', n_cell_lines=0,
+                     show_labels=True, point_size=4):
     th = get_theme()
     fig = go.Figure()
     y_min = gene_rank_df['mean_score'].min()
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
-    
+
     highlight_set = set(g.upper() for g in genes_of_interest)
     highlight_set.add(essential_gene.upper())
     highlight_set.add(nonessential_gene.upper())
     bg_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(highlight_set)]
-    
+
     fig.add_trace(go.Scatter(
         x=bg_df['rank'], y=bg_df['mean_score'], mode='markers',
         marker=dict(size=3, color=th['plot_scatter_bg']),
@@ -640,65 +579,72 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
         hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
         text=bg_df['gene']
     ))
-    
+
     fig.add_hline(y=-1, line=dict(dash="dash", color=th['text_muted'], width=1))
     fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
-    
+
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
         fig.add_trace(go.Scatter(
             x=ess_df['rank'], y=ess_df['mean_score'], mode='markers+text',
-            marker=dict(size=point_size*2.2, color=PLOT_COLORS['essential'], symbol='diamond'),
+            marker=dict(size=point_size * 2.2, color=PLOT_COLORS['essential'], symbol='diamond'),
             text=[essential_gene], textposition='bottom center',
-            textfont=dict(size=10, color=PLOT_COLORS['essential'], family=FONT_FAMILY),
+            textfont=dict(size=11, color=PLOT_COLORS['essential'], family=FONT_FAMILY),
             name=f'Essential ({essential_gene})',
             hovertemplate=f'<b>{essential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
-    
+
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
     if len(noness_df) > 0:
         fig.add_trace(go.Scatter(
             x=noness_df['rank'], y=noness_df['mean_score'], mode='markers+text',
-            marker=dict(size=point_size*2.2, color=PLOT_COLORS['nonessential'], symbol='diamond'),
+            marker=dict(size=point_size * 2.2, color=PLOT_COLORS['nonessential'], symbol='diamond'),
             text=[nonessential_gene], textposition='top center',
-            textfont=dict(size=10, color=PLOT_COLORS['nonessential'], family=FONT_FAMILY),
+            textfont=dict(size=11, color=PLOT_COLORS['nonessential'], family=FONT_FAMILY),
             name=f'Non-essential ({nonessential_gene})',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
-    
-interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)].copy()
-interest_df = interest_df.sort_values('rank').reset_index(drop=True)
-if len(interest_df) > 0:
-    # 交替标签位置避免重叠
-    text_positions = ['top center' if i % 2 == 0 else 'bottom center' 
-                      for i in range(len(interest_df))]
-    fig.add_trace(go.Scatter(
-        x=interest_df['rank'], y=interest_df['mean_score'],
-        mode='markers+text' if show_labels else 'markers',
-        marker=dict(size=point_size*2.5, color=PLOT_COLORS['interest'],
-                    line=dict(width=1.5, color=th['plot_bg'])),
-        text=interest_df['gene'] if show_labels else None,
-        textposition=text_positions,
-        textfont=dict(size=11, color=PLOT_COLORS['interest'], family=FONT_FAMILY),
-        name='Genes of interest',
-        hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
-        customdata=interest_df['percentile']
-    ))
-    
-    y_label = f"Mean CRISPR Score<br><span style='font-size:11px'>({n_cell_lines} cell lines)</span>" if n_cell_lines > 0 else "Mean CRISPR Score"
-    y_tickvals = np.arange(np.floor(y_min/0.5)*0.5, np.ceil(y_max/0.5)*0.5 + 0.5, 0.5)
-    
+
+    # 目标基因：按 rank 排序，交替 top/bottom 避免标签重叠
+    interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)].copy()
+    interest_df = interest_df.sort_values('rank').reset_index(drop=True)
+    if len(interest_df) > 0:
+        text_positions = ['top center' if i % 2 == 0 else 'bottom center'
+                          for i in range(len(interest_df))]
+        fig.add_trace(go.Scatter(
+            x=interest_df['rank'], y=interest_df['mean_score'],
+            mode='markers+text' if show_labels else 'markers',
+            marker=dict(size=point_size * 2.5, color=PLOT_COLORS['interest'],
+                        line=dict(width=1.5, color=th['plot_bg'])),
+            text=interest_df['gene'] if show_labels else None,
+            textposition=text_positions,
+            textfont=dict(size=11, color=PLOT_COLORS['interest'], family=FONT_FAMILY),
+            name='Genes of interest',
+            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
+            customdata=interest_df['percentile']
+        ))
+
+    y_label = (f"Mean CRISPR Score<br><span style='font-size:11px'>"
+               f"({n_cell_lines} cell lines)</span>" if n_cell_lines > 0
+               else "Mean CRISPR Score")
+    y_tickvals = np.arange(np.floor(y_min / 0.5) * 0.5,
+                           np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
+
     fig.update_layout(
-        title=dict(text='<b>Gene Dependency Ranking</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
+        title=dict(text='<b>Gene Dependency Ranking</b>',
+                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5,
-                   range=[0, len(gene_rank_df)*1.02]),
+                   range=[0, len(gene_rank_df) * 1.02]),
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
                    tickvals=y_tickvals, ticks='outside', ticklen=5,
-                   range=[y_min-0.1*y_range, y_max+0.15*y_range]),
-        legend=dict(orientation='v', yanchor='bottom', y=0.02, xanchor='right', x=0.98,
-                    font=dict(size=9), bgcolor=th['plot_bg'], borderwidth=1, bordercolor=th['border']),
-        height=550, margin=dict(l=70, r=30, t=60, b=60)
+                   range=[y_min - 0.1 * y_range, y_max + 0.15 * y_range]),
+        legend=dict(orientation='v', yanchor='bottom', y=0.02,
+                    xanchor='right', x=0.98,
+                    font=dict(size=11),
+                    bgcolor=th['plot_bg'], borderwidth=1,
+                    bordercolor=th['border']),
+        height=600, margin=dict(l=70, r=30, t=60, b=60)
     )
     return apply_theme_to_fig(fig)
 
@@ -706,10 +652,11 @@ if len(interest_df) > 0:
 def create_lineage_boxplot(lineage_data, genes):
     th = get_theme()
     n_genes = len(genes)
-    fig = make_subplots(rows=n_genes, cols=1, shared_xaxes=True, vertical_spacing=0.08,
+    fig = make_subplots(rows=n_genes, cols=1, shared_xaxes=True,
+                        vertical_spacing=0.08,
                         subplot_titles=[f'<i>{g}</i>' for g in genes])
     lineages = sorted(lineage_data['lineage'].unique())
-    
+
     for i, gene in enumerate(genes, 1):
         gene_data = lineage_data[lineage_data['gene'] == gene]
         fig.add_trace(go.Box(
@@ -718,15 +665,18 @@ def create_lineage_boxplot(lineage_data, genes):
             line=dict(color=th['plot_axis'], width=1),
             fillcolor=PLOT_COLORS['boxplot_fill'], showlegend=False, boxpoints=False
         ), row=i, col=1)
-        fig.add_hline(y=0, line=dict(dash="dot", color=th['plot_axis'], width=1), row=i, col=1)
-    
+        fig.add_hline(y=0, line=dict(dash="dot", color=th['plot_axis'], width=1),
+                      row=i, col=1)
+
     fig.update_layout(
-        title=dict(text='<b>CRISPR Score by Cancer Type</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
-        height=220*n_genes+80, showlegend=False,
+        title=dict(text='<b>CRISPR Score by Cancer Type</b>',
+                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
+        height=220 * n_genes + 80, showlegend=False,
     )
-    fig.update_xaxes(tickangle=-45, categoryarray=lineages, showline=True, linewidth=1.5,
-                     ticks='outside', ticklen=5)
-    fig.update_yaxes(title_text='CRISPR Score', showgrid=False, showline=True, linewidth=1.5,
+    fig.update_xaxes(tickangle=-45, categoryarray=lineages,
+                     showline=True, linewidth=1.5, ticks='outside', ticklen=5)
+    fig.update_yaxes(title_text='CRISPR Score', showgrid=False,
+                     showline=True, linewidth=1.5,
                      ticks='outside', ticklen=5, dtick=0.5)
     for i in range(1, n_genes):
         fig.update_xaxes(showticklabels=False, row=i, col=1)
@@ -742,12 +692,12 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     y_min = gene_rank_df['mean_score'].min()
     y_max = gene_rank_df['mean_score'].max()
     y_range = y_max - y_min
-    
+
     all_highlight = set(g.upper() for g in background_genes + highlight_genes)
     all_highlight.add(essential_gene.upper())
     all_highlight.add(nonessential_gene.upper())
     bg_all_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(all_highlight)]
-    
+
     fig.add_trace(go.Scatter(
         x=bg_all_df['rank'], y=bg_all_df['mean_score'], mode='markers',
         marker=dict(size=2.5, color=th['plot_scatter_bg']),
@@ -757,14 +707,14 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     ))
     fig.add_hline(y=-1, line=dict(dash="dash", color=th['text_muted'], width=1))
     fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
-    
+
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
         fig.add_trace(go.Scatter(
             x=ess_df['rank'], y=ess_df['mean_score'], mode='markers+text',
             marker=dict(size=9, color=PLOT_COLORS['essential'], symbol='diamond'),
             text=[essential_gene], textposition='bottom center',
-            textfont=dict(size=10, color=PLOT_COLORS['essential']),
+            textfont=dict(size=11, color=PLOT_COLORS['essential']),
             name=f'Essential ({essential_gene})'
         ))
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
@@ -773,10 +723,10 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             x=noness_df['rank'], y=noness_df['mean_score'], mode='markers+text',
             marker=dict(size=9, color=PLOT_COLORS['nonessential'], symbol='diamond'),
             text=[nonessential_gene], textposition='top center',
-            textfont=dict(size=10, color=PLOT_COLORS['nonessential']),
+            textfont=dict(size=11, color=PLOT_COLORS['nonessential']),
             name=f'Non-essential ({nonessential_gene})'
         ))
-    
+
     bg_only = [g for g in background_genes if g not in highlight_genes]
     bg_df = gene_rank_df[gene_rank_df['gene'].isin(bg_only)]
     if len(bg_df) > 0:
@@ -787,42 +737,50 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             text=bg_df['gene'],
             hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>'
         ))
-    hl_df = gene_rank_df[gene_rank_df['gene'].isin(highlight_genes)]
+
+    hl_df = gene_rank_df[gene_rank_df['gene'].isin(highlight_genes)].copy()
+    hl_df = hl_df.sort_values('rank').reset_index(drop=True)
     if len(hl_df) > 0:
+        text_positions = ['top center' if i % 2 == 0 else 'bottom center'
+                          for i in range(len(hl_df))]
         fig.add_trace(go.Scatter(
             x=hl_df['rank'], y=hl_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
             marker=dict(size=11, color=hl_color, line=dict(width=1.5, color=th['plot_bg'])),
-            text=hl_df['gene'] if show_labels else None, textposition='top center',
-            textfont=dict(size=10, color=th['plot_text'], family=FONT_FAMILY),
+            text=hl_df['gene'] if show_labels else None,
+            textposition=text_positions,
+            textfont=dict(size=11, color=th['plot_text'], family=FONT_FAMILY),
             name=f'Highlight (n={len(hl_df)})',
             hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
             customdata=hl_df['percentile']
         ))
-    
-    y_label = f"Mean CRISPR Score<br><span style='font-size:11px'>({n_cell_lines} cell lines)</span>" if n_cell_lines > 0 else "Mean CRISPR Score"
-    y_tickvals = np.arange(np.floor(y_min/0.5)*0.5, np.ceil(y_max/0.5)*0.5 + 0.5, 0.5)
-    
+
+    y_label = (f"Mean CRISPR Score<br><span style='font-size:11px'>"
+               f"({n_cell_lines} cell lines)</span>" if n_cell_lines > 0
+               else "Mean CRISPR Score")
+    y_tickvals = np.arange(np.floor(y_min / 0.5) * 0.5,
+                           np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
+
     fig.update_layout(
-        title=dict(text='<b>Multi-layer Gene Annotation</b>', font=dict(size=16, family=FONT_FAMILY), x=0.5),
+        title=dict(text='<b>Multi-layer Gene Annotation</b>',
+                   font=dict(size=16, family=FONT_FAMILY), x=0.5),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5),
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
                    tickvals=y_tickvals, ticks='outside', ticklen=5,
-                   range=[y_min-0.1*y_range, y_max+0.15*y_range]),
-        legend=dict(orientation='v', yanchor='bottom', y=0.02, xanchor='right', x=0.98,
-                    font=dict(size=11), bgcolor=th['plot_bg'], borderwidth=1, bordercolor=th['border']),
+                   range=[y_min - 0.1 * y_range, y_max + 0.15 * y_range]),
+        legend=dict(yanchor='bottom', y=0.02, xanchor='right', x=0.98,
+                    font=dict(size=11), bgcolor=th['plot_bg'],
+                    bordercolor=th['border']),
         height=600
     )
     return apply_theme_to_fig(fig)
 
 
 # =============================================================================
-# 图片导出（使用 kaleido 0.2.1，输出时始终用白底，方便论文使用）
+# 图片导出（始终白底，方便论文用）
 # =============================================================================
 def fig_for_export(fig):
-    """导出时无论 UI 主题如何，强制使用白底黑字（便于论文使用）"""
-    import copy
     export_fig = copy.deepcopy(fig)
     export_fig.update_layout(
         plot_bgcolor='white', paper_bgcolor='white',
@@ -836,7 +794,6 @@ def fig_for_export(fig):
         linecolor='black', tickcolor='black',
         tickfont=dict(color='black'), title_font=dict(color='black'),
     )
-    # 背景散点改为灰色
     for trace in export_fig.data:
         if hasattr(trace, 'name') and trace.name == 'All genes':
             trace.marker.color = 'rgba(180,180,180,0.4)'
@@ -846,9 +803,8 @@ def fig_for_export(fig):
 def render_download_buttons(fig, filename_base: str, key_prefix: str, height: int = 600):
     width = 1000
     export_fig = fig_for_export(fig)
-    
     col1, col2, col3 = st.columns(3)
-    
+
     try:
         pdf_bytes = export_fig.to_image(format='pdf', width=width, height=height, engine='kaleido')
         with col1:
@@ -860,9 +816,10 @@ def render_download_buttons(fig, filename_base: str, key_prefix: str, height: in
     except Exception as e:
         with col1:
             st.warning(f"PDF: {str(e)[:60]}")
-    
+
     try:
-        png_bytes = export_fig.to_image(format='png', width=width, height=height, scale=3, engine='kaleido')
+        png_bytes = export_fig.to_image(format='png', width=width, height=height,
+                                        scale=3, engine='kaleido')
         with col2:
             st.download_button(
                 label=t('download_png'), data=png_bytes,
@@ -872,7 +829,7 @@ def render_download_buttons(fig, filename_base: str, key_prefix: str, height: in
     except Exception as e:
         with col2:
             st.warning(f"PNG: {str(e)[:60]}")
-    
+
     try:
         svg_bytes = export_fig.to_image(format='svg', width=width, height=height, engine='kaleido')
         with col3:
@@ -884,22 +841,83 @@ def render_download_buttons(fig, filename_base: str, key_prefix: str, height: in
     except Exception as e:
         with col3:
             st.warning(f"SVG: {str(e)[:60]}")
-    
+
     st.caption(t('download_hint'))
 
 
 # =============================================================================
-# CSS 注入（基于当前主题）
+# Citation 渲染
+# =============================================================================
+def build_citations():
+    """生成 APA + BibTeX 两种格式"""
+    has_doi = bool(ZENODO_DOI.strip())
+
+    if has_doi:
+        apa = (f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}) "
+               f"[Software]. Zenodo. https://doi.org/{ZENODO_DOI}")
+        bibtex = f"""@software{{crispr_score_analyzer_{TOOL_YEAR},
+  author  = {{{TOOL_AUTHORS}}},
+  title   = {{CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality}},
+  year    = {{{TOOL_YEAR}}},
+  version = {{{TOOL_VERSION}}},
+  doi     = {{{ZENODO_DOI}}},
+  url     = {{https://doi.org/{ZENODO_DOI}}}
+}}"""
+    else:
+        apa = (f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}) "
+               f"[Software]. {GITHUB_URL}")
+        bibtex = f"""@software{{crispr_score_analyzer_{TOOL_YEAR},
+  author  = {{{TOOL_AUTHORS}}},
+  title   = {{CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality}},
+  year    = {{{TOOL_YEAR}}},
+  version = {{{TOOL_VERSION}}},
+  url     = {{{GITHUB_URL}}}
+}}"""
+
+    return apa, bibtex, has_doi
+
+
+def render_citation_section():
+    apa, bibtex, has_doi = build_citations()
+
+    st.markdown(f"### {t('citation')}")
+
+    if has_doi:
+        st.markdown(
+            f'<a href="https://doi.org/{ZENODO_DOI}" target="_blank" class="doi-badge">'
+            f'DOI: {ZENODO_DOI}</a>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.caption(f"⏳ {t('doi_pending')}")
+
+    st.markdown(f"**{t('cite_this_tool')} (APA):**")
+    st.markdown(f'<div class="cite-box">{apa}</div>', unsafe_allow_html=True)
+
+    st.markdown("**BibTeX:**")
+    st.code(bibtex, language="bibtex")
+
+    st.markdown("**DepMap data citation:**")
+    st.markdown(
+        '<div class="cite-box">Tsherniak, A., et al. (2017). '
+        'Defining a Cancer Dependency Map. <i>Cell</i> 170, 564–576. '
+        'https://depmap.org/portal/</div>',
+        unsafe_allow_html=True
+    )
+
+
+# =============================================================================
+# CSS 注入
 # =============================================================================
 inject_css()
+
 
 # =============================================================================
 # 侧边栏
 # =============================================================================
 with st.sidebar:
     st.markdown(f"## ⚙️ {t('sidebar_settings')}")
-    
-    # 语言切换
+
     lang_options = {'English': 'en', '中文': 'zh'}
     current_lang_label = 'English' if st.session_state.lang == 'en' else '中文'
     selected_lang = st.selectbox(
@@ -910,10 +928,10 @@ with st.sidebar:
     if lang_options[selected_lang] != st.session_state.lang:
         st.session_state.lang = lang_options[selected_lang]
         st.rerun()
-    
-    # 主题切换
+
     theme_options = {f"☀️ {t('light')}": 'light', f"🌙 {t('dark')}": 'dark'}
-    current_theme_label = f"☀️ {t('light')}" if st.session_state.theme == 'light' else f"🌙 {t('dark')}"
+    current_theme_label = (f"☀️ {t('light')}" if st.session_state.theme == 'light'
+                           else f"🌙 {t('dark')}")
     selected_theme = st.selectbox(
         f"🎨 {t('theme')}",
         options=list(theme_options.keys()),
@@ -922,18 +940,15 @@ with st.sidebar:
     if theme_options[selected_theme] != st.session_state.theme:
         st.session_state.theme = theme_options[selected_theme]
         st.rerun()
-    
+
     st.markdown("---")
     st.markdown(f"### 📁 {t('data_source')}")
-    
     if USE_HUGGINGFACE:
         st.info(f"🤗 HuggingFace\n`{HF_REPO_ID}`")
-    elif GOOGLE_DRIVE_FILE_ID:
-        st.info("☁️ Google Drive")
-    
+
     with st.expander(f"📤 {t('upload_custom')}"):
         uploaded_file = st.file_uploader(t('upload_csv'), type=['csv'])
-    
+
     st.markdown("---")
     st.markdown(f"### 🧬 {t('reference_genes')}")
     col1, col2 = st.columns(2)
@@ -941,12 +956,12 @@ with st.sidebar:
         essential_gene = st.text_input(t('essential'), value="MYC")
     with col2:
         nonessential_gene = st.text_input(t('nonessential'), value="PTEN")
-    
+
     st.markdown("---")
     st.markdown(f"### 🎨 {t('display_settings')}")
     show_labels = st.checkbox(t('show_labels'), value=True)
     point_size = st.slider(t('point_size'), 2, 8, 4)
-    
+
     st.markdown("---")
     st.markdown(f"### 📐 {t('export_size')}")
     export_height = st.slider(t('export_height'), 400, 1000, 600, step=50)
@@ -1009,6 +1024,7 @@ with col4:
 
 st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
+
 # =============================================================================
 # Tabs
 # =============================================================================
@@ -1018,16 +1034,18 @@ tab1, tab2, tab3 = st.tabs([t('tab1'), t('tab2'), t('tab3')])
 with tab1:
     st.markdown(f"### {t('gene_ranking_title')}")
     st.markdown(t('gene_ranking_desc'))
-    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>', unsafe_allow_html=True)
-    
+    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>',
+                unsafe_allow_html=True)
+
     input_method = st.radio(t('input_method'), [t('input_direct'), t('input_file')],
                             horizontal=True, label_visibility="collapsed", key="tab1_radio")
-    
+
     genes_of_interest = []
     if input_method == t('input_direct'):
-        gene_input = st.text_area(t('gene_list'),
-                                  value="E2F1\nE2F2\nE2F3\nE2F4\nE2F5\nE2F6\nE2F7\nE2F8",
-                                  height=150, help=t('gene_list_help'))
+        gene_input = st.text_area(
+            t('gene_list'),
+            value="E2F1\nE2F2\nE2F3\nE2F4\nE2F5\nE2F6\nE2F7\nE2F8",
+            height=150, help=t('gene_list_help'))
         genes_of_interest = [g.strip() for g in gene_input.replace(',', '\n').replace(' ', '\n').split('\n') if g.strip()]
     else:
         uploaded_genelist = st.file_uploader(t('input_file'), type=['csv', 'txt'], key="genelist1")
@@ -1037,28 +1055,29 @@ with tab1:
                 genes_of_interest = pd.read_csv(io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
             else:
                 genes_of_interest = [g.strip() for g in content.split('\n') if g.strip()]
-    
+
     if genes_of_interest:
         matched_genes, not_found = filter_genes_by_list(gene_rankings, genes_of_interest)
-        col1, col2 = st.columns([3, 1])
-        with col1:
+        col_a, col_b = st.columns([3, 1])
+        with col_a:
             if matched_genes:
                 st.markdown(f"**✓ {t('matched')}:**")
                 st.markdown(' '.join([f'<span class="gene-tag">{g}</span>' for g in matched_genes]),
                             unsafe_allow_html=True)
-        with col2:
+        with col_b:
             if not_found:
                 with st.expander(f"⚠️ {t('not_found')} ({len(not_found)})"):
                     st.write(", ".join(not_found))
-        
+
         if matched_genes:
-            fig = create_rank_plot(gene_rankings, matched_genes, essential_gene, nonessential_gene,
+            fig = create_rank_plot(gene_rankings, matched_genes,
+                                    essential_gene, nonessential_gene,
                                     n_cell_lines, show_labels, point_size)
-            centered_plot(fig, config=PLOT_CONFIG)
-            
+            centered_plot(fig)
+
             with st.expander(f"📥 {t('export_title')}", expanded=True):
                 render_download_buttons(fig, "gene_ranking", "rank_plot", height=export_height)
-            
+
             with st.expander(f"📋 {t('gene_details')}", expanded=False):
                 detail = gene_rankings[gene_rankings['gene'].isin(matched_genes)].sort_values('mean_score').copy()
                 detail['Essential'] = detail['mean_score'].apply(lambda x: '🔴 Yes' if x < -0.5 else '⚪ No')
@@ -1071,13 +1090,15 @@ with tab1:
 # ---- Tab 2 ----
 with tab2:
     st.markdown(f"### {t('boxplot_title')}")
-    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>', unsafe_allow_html=True)
-    
+    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>',
+                unsafe_allow_html=True)
+
     input_method2 = st.radio(t('input_method'), [t('input_direct'), t('input_file')],
                               horizontal=True, label_visibility="collapsed", key="tab2_radio")
     genes_for_box = []
     if input_method2 == t('input_direct'):
-        gene_input2 = st.text_area(t('gene_list'), value="E2F1\nE2F2", height=120, key="box_text")
+        gene_input2 = st.text_area(t('gene_list'), value="E2F1\nE2F2",
+                                    height=120, key="box_text")
         genes_for_box = [g.strip() for g in gene_input2.replace(',', '\n').split('\n') if g.strip()]
     else:
         uploaded2 = st.file_uploader(t('input_file'), type=['csv', 'txt'], key="box_file")
@@ -1087,7 +1108,7 @@ with tab2:
                 genes_for_box = pd.read_csv(io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
             else:
                 genes_for_box = [g.strip() for g in content.split('\n') if g.strip()]
-    
+
     if genes_for_box:
         matched, not_found = filter_genes_by_list(gene_rankings, genes_for_box)
         if not_found:
@@ -1099,7 +1120,8 @@ with tab2:
             lineage_data = get_lineage_data(df, matched)
             if lineage_data is not None:
                 fig = create_lineage_boxplot(lineage_data, matched)
-                st.plotly_chart(fig, use_container_width=True, config={'displaylogo': False})
+                # boxplot 是多子图纵向堆叠，保留全宽
+                st.plotly_chart(fig, use_container_width=True, config=PLOT_CONFIG)
                 with st.expander(f"📥 {t('export_title')}", expanded=True):
                     box_height = max(220 * len(matched) + 80, 400)
                     render_download_buttons(fig, "lineage_boxplot", "boxplot", height=box_height)
@@ -1120,26 +1142,28 @@ with tab3:
         hl_input = st.text_area("HL", value="PLK1\nAURKA", height=150, key="hl",
                                  label_visibility="collapsed")
         hl_color = st.color_picker(t('hl_color'), "#E74C3C", key="hl_color")
-    
+
     bg_genes = [g.strip() for g in bg_input.replace(',', '\n').split('\n') if g.strip()]
     hl_genes = [g.strip() for g in hl_input.replace(',', '\n').split('\n') if g.strip()]
-    
+
     if bg_genes or hl_genes:
         bg_matched, _ = filter_genes_by_list(gene_rankings, bg_genes)
         hl_matched, _ = filter_genes_by_list(gene_rankings, hl_genes)
         st.markdown(f"{t('bg_gene_set')}: {len(bg_matched)} | {t('hl_gene_set')}: {len(hl_matched)}")
-        
+
         if bg_matched or hl_matched:
             fig = create_multilayer_rank_plot(gene_rankings, bg_matched, hl_matched,
-                                                bg_color, hl_color, essential_gene, nonessential_gene,
+                                                bg_color, hl_color,
+                                                essential_gene, nonessential_gene,
                                                 n_cell_lines, show_labels)
-            centered_plot(fig, config=PLOT_CONFIG)
+            centered_plot(fig)
             with st.expander(f"📥 {t('export_title')}", expanded=True):
-                render_download_buttons(fig, "multilayer_annotation", "multilayer", height=export_height)
+                render_download_buttons(fig, "multilayer_annotation", "multilayer",
+                                         height=export_height)
 
 
 # =============================================================================
-# 页脚
+# 页脚：致谢 + 引用
 # =============================================================================
 st.markdown("---")
 st.markdown(f"""
@@ -1164,12 +1188,13 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-with st.expander(t('citation')):
-    st.markdown("""
-    **DepMap:** Tsherniak, A., et al. Defining a Cancer Dependency Map. *Cell* 170, 564–576 (2017).
-    
-    **Portal:** https://depmap.org/portal/
-    """)
+render_citation_section()
 
-st.markdown(f'<div style="text-align:center; color:{get_theme()["text_muted"]}; font-size:0.8rem; padding:1rem;">CRISPR Score Analyzer v4.0 | Deng Lab</div>',
-            unsafe_allow_html=True)
+st.markdown(
+    f'<div style="text-align:center; color:{get_theme()["text_muted"]}; '
+    f'font-size:0.8rem; padding:1rem;">'
+    f'CRISPR Score Analyzer {TOOL_VERSION} | Deng Lab | '
+    f'<a href="{GITHUB_URL}" target="_blank" style="color:{get_theme()["accent"]};">GitHub</a>'
+    f'</div>',
+    unsafe_allow_html=True
+)
