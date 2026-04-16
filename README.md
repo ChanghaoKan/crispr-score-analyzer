@@ -181,7 +181,7 @@ DepMap data is released under the terms of its own license; please consult the [
 **Changhao Kan**  
 Research Assistant, Deng Lab  
 Shenzhen Bay Laboratory (SZBL)  
-📧 [your-email@example.com] *(add your preferred contact)*  
+📧 [kch_ynu@163.com] *(add your preferred contact)*  
 🌐 [GitHub](https://github.com/ChanghaoKan)
 
 ---
