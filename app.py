@@ -652,8 +652,9 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
 def create_lineage_boxplot(lineage_data, genes):
     th = get_theme()
     n_genes = len(genes)
+    v_spacing = min(0.15, 0.6 / n_genes)
     fig = make_subplots(rows=n_genes, cols=1, shared_xaxes=True,
-                        vertical_spacing=0.08,
+                        vertical_spacing=v_spacing,
                         subplot_titles=[f'<i>{g}</i>' for g in genes])
     lineages = sorted(lineage_data['lineage'].unique())
 
@@ -672,7 +673,7 @@ def create_lineage_boxplot(lineage_data, genes):
         title=dict(text='<b>CRISPR Score by Cancer Type</b>',
                    font=dict(size=16, family=FONT_FAMILY),
                    x=0.5, xanchor='center', xref='paper'),
-        height=220 * n_genes + 80, showlegend=False,
+        height=280 * n_genes + 100, showlegend=False,
         margin=dict(l=80, r=80, t=80, b=80)
     )
     fig.update_xaxes(tickangle=-45, categoryarray=lineages,
@@ -1136,7 +1137,7 @@ with tab2:
                 st.plotly_chart(fig, use_container_width=True, config=PLOT_CONFIG)
                 # ✅ CHANGED: expanded=False
                 with st.expander(f"📥 {t('export_title')}", expanded=False):
-                    box_height = max(220 * len(matched) + 80, 400)
+                    box_height = max(280 * len(matched) + 100, 400)
                     render_download_buttons(fig, "lineage_boxplot", "boxplot", height=box_height)
             else:
                 st.error("No 'lineage' column found in data")
