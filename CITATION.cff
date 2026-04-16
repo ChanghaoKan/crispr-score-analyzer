@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality"
+authors:
+  - family-names: Kan
+    given-names: Changhao
+    affiliation: "Shenzhen Bay Laboratory"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.19607602
+    description: "Concept DOI (always resolves to the latest version)"
+repository-code: "https://github.com/ChanghaoKan/crispr-score-analyzer"
+url: "https://crispr-score-analyzer.streamlit.app"
+version: "1.0.0"
+date-released: "2026-04-16"
+license: MIT
+keywords:
+  - CRISPR
+  - DepMap
+  - gene essentiality
+  - cancer genomics
+  - bioinformatics
+references:
+  - type: article
+    authors:
+      - family-names: Tsherniak
+        given-names: Aviad
+    title: "Defining a Cancer Dependency Map"
+    journal: "Cell"
+    year: 2017
+    volume: 170
+    start: 564
+    end: 576
+    doi: "10.1016/j.cell.2017.06.010"
