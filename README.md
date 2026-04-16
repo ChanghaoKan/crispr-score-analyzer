@@ -175,7 +175,7 @@ DepMap data is released under the terms of its own license; please consult the [
 
 - **[DepMap Consortium](https://depmap.org)** — for the open release of Chronos-corrected CRISPR dependency data
 - **[Anthropic Claude](https://www.anthropic.com/claude)** — AI-assisted development
-- **Deng Lab @ Shenzhen Bay Laboratory (SZBL)** — institutional support
+- **[Deng Lab @ Shenzhen Bay Laboratory (SZBL)](https://www.deng-lab.org/resources)** — institutional support
 
 ## 📬 Contact
 
