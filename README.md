@@ -8,9 +8,7 @@
 [![HuggingFace Data](https://img.shields.io/badge/🤗-Dataset-yellow)](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-<!-- Uncomment after Zenodo release:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
--->
+[![DOI](https://zenodo.org/badge/1125701784.svg)](https://doi.org/10.5281/zenodo.19607602)
 
 **[🚀 Launch App](https://crispr-score-analyzer.streamlit.app)** · 
 **[📊 Dataset](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)** · 
@@ -143,16 +141,20 @@ If you use CRISPR Score Analyzer in your research, please cite both the tool and
 
 ### This tool
 
-<!-- Once Zenodo DOI is assigned, replace this block -->
 ```bibtex
 @software{crispr_score_analyzer_2026,
-  author  = {Kan, C. and Deng Lab},
-  title   = {CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality},
-  year    = {2026},
-  version = {v1.0},
-  url     = {https://github.com/ChanghaoKan/crispr-score-analyzer}
+  author    = {Kan, Changhao and Deng Lab},
+  title     = {CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality},
+  year      = {2026},
+  version   = {v1.0.0},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.19607602},
+  url       = {https://doi.org/10.5281/zenodo.19607602}
 }
 ```
+
+**APA format:**
+> Kan, C. (2026). *CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality* (Version v1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.19607602
 
 ### DepMap data
 
