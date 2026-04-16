@@ -167,7 +167,7 @@ For substantial changes, please open an issue first to discuss the scope.
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](License) file for details.
 
 DepMap data is released under the terms of its own license; please consult the [DepMap Portal](https://depmap.org) for details.
 
