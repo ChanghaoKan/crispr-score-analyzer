@@ -143,7 +143,7 @@ If you use CRISPR Score Analyzer in your research, please cite both the tool and
 
 ```bibtex
 @software{crispr_score_analyzer_2026,
-  author    = {Kan, Changhao and Deng Lab},
+  author    = {Kan, Changhao},
   title     = {CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality},
   year      = {2026},
   version   = {v1.0.0},
