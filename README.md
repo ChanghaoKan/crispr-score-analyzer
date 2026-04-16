@@ -41,7 +41,8 @@ The tool is built for wet-lab biologists, early-stage computational researchers,
 
 | Gene Ranking | Lineage Boxplot |
 |:---:|:---:|
-| *(add screenshot here)* | *(add screenshot here)* |
+| *<img width="365" height="273" alt="image" src="https://github.com/user-attachments/assets/91fe4f45-a5fd-4f97-87c9-32c70907172e" />
+* | *(add screenshot here)* |
 
 </div>
 
