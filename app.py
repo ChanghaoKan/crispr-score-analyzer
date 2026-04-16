@@ -34,11 +34,11 @@ USE_HUGGINGFACE = True
 # =============================================================================
 # Citation / DOI 配置
 # =============================================================================
-ZENODO_DOI = "10.5281/zenodo.19607603"  
+ZENODO_DOI = "10.5281/zenodo.19607603"
 TOOL_VERSION = "v1.0"
 TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
-GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"  
+GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"
 
 # =============================================================================
 # 国际化
@@ -88,11 +88,11 @@ TRANSLATIONS = {
         'hl_gene_set': 'Highlight genes',
         'bg_color': 'Background color',
         'hl_color': 'Highlight color',
-        'download_pdf': '📄 Download PDF (vector)',
-        'download_png': '🖼️ Download PNG (300 DPI)',
-        'download_svg': '✏️ Download SVG (editable)',
+        'download_pdf': '📄 PDF (vector)',
+        'download_png': '🖼️ PNG (300 DPI)',
+        'download_svg': '✏️ SVG (editable)',
         'download_csv': '📊 Download data (CSV)',
-        'download_hint': '💡 Recommend **PDF** for publications (infinite scalable vector). Use **SVG** if you need to edit in Illustrator/Inkscape.',
+        'download_hint': '💡 Click a button to generate the file. Recommend **PDF** for publications. Use **SVG** for Illustrator/Inkscape editing.',
         'no_data_warn': '⚠️ Please configure a data source or upload data',
         'loading_upload': 'Loading uploaded data...',
         'loading_hf': '🔄 Loading data from Hugging Face...',
@@ -150,11 +150,11 @@ TRANSLATIONS = {
         'hl_gene_set': '高亮基因',
         'bg_color': '背景颜色',
         'hl_color': '高亮颜色',
-        'download_pdf': '📄 下载 PDF (矢量)',
-        'download_png': '🖼️ 下载 PNG (300 DPI)',
-        'download_svg': '✏️ 下载 SVG (可编辑)',
+        'download_pdf': '📄 PDF (矢量)',
+        'download_png': '🖼️ PNG (300 DPI)',
+        'download_svg': '✏️ SVG (可编辑)',
         'download_csv': '📊 下载数据表 (CSV)',
-        'download_hint': '💡 论文投稿推荐使用 **PDF** 格式（矢量图，无限缩放不失真）。需要二次编辑可选 **SVG**（可在 Illustrator/Inkscape 中修改）。',
+        'download_hint': '💡 点击按钮生成文件。论文投稿推荐 **PDF**（矢量图）。需要编辑选 **SVG**（可在 Illustrator/Inkscape 中修改）。',
         'no_data_warn': '⚠️ 请配置数据源或上传数据文件',
         'loading_upload': '正在加载上传的数据...',
         'loading_hf': '🔄 正在从 Hugging Face 加载数据...',
@@ -571,7 +571,8 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
     highlight_set.add(nonessential_gene.upper())
     bg_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(highlight_set)]
 
-    fig.add_trace(go.Scatter(
+    # ✅ CHANGED: go.Scatter → go.Scattergl（WebGL 渲染 18000 点，大幅提升流畅度）
+    fig.add_trace(go.Scattergl(
         x=bg_df['rank'], y=bg_df['mean_score'], mode='markers',
         marker=dict(size=3, color=th['plot_scatter_bg']),
         name='All genes',
@@ -604,7 +605,6 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
 
-    # 目标基因：按 rank 排序，交替 top/bottom 避免标签重叠
     interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)].copy()
     interest_df = interest_df.sort_values('rank').reset_index(drop=True)
     if len(interest_df) > 0:
@@ -630,8 +630,9 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Gene Dependency Ranking</b>',font=dict(size=16, family=FONT_FAMILY),
-                   x=0.5,xanchor='center',xref='paper',),
+        title=dict(text='<b>Gene Dependency Ranking</b>',
+                   font=dict(size=16, family=FONT_FAMILY),
+                   x=0.5, xanchor='center', xref='paper'),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5,
                    range=[0, len(gene_rank_df) * 1.02]),
@@ -668,11 +669,11 @@ def create_lineage_boxplot(lineage_data, genes):
                       row=i, col=1)
 
     fig.update_layout(
-    title=dict(text='<b>CRISPR Score by Cancer Type</b>',
-               font=dict(size=16, family=FONT_FAMILY),
-               x=0.5, xanchor='center', xref='paper'),
-    height=220 * n_genes + 80, showlegend=False,
-    margin=dict(l=80, r=80, t=80, b=80)
+        title=dict(text='<b>CRISPR Score by Cancer Type</b>',
+                   font=dict(size=16, family=FONT_FAMILY),
+                   x=0.5, xanchor='center', xref='paper'),
+        height=220 * n_genes + 80, showlegend=False,
+        margin=dict(l=80, r=80, t=80, b=80)
     )
     fig.update_xaxes(tickangle=-45, categoryarray=lineages,
                      showline=True, linewidth=1.5, ticks='outside', ticklen=5)
@@ -699,7 +700,8 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     all_highlight.add(nonessential_gene.upper())
     bg_all_df = gene_rank_df[~gene_rank_df['gene_upper'].isin(all_highlight)]
 
-    fig.add_trace(go.Scatter(
+    # ✅ CHANGED: go.Scatter → go.Scattergl（WebGL 渲染背景散点）
+    fig.add_trace(go.Scattergl(
         x=bg_all_df['rank'], y=bg_all_df['mean_score'], mode='markers',
         marker=dict(size=2.5, color=th['plot_scatter_bg']),
         name='All genes',
@@ -763,7 +765,8 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Multi-layer Gene Annotation</b>', font=dict(size=16, family=FONT_FAMILY),
+        title=dict(text='<b>Multi-layer Gene Annotation</b>',
+                   font=dict(size=16, family=FONT_FAMILY),
                    x=0.5, xanchor='center', xref='paper'),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5),
@@ -801,56 +804,56 @@ def fig_for_export(fig):
     return export_fig
 
 
+# ✅ CHANGED: 导出改为按需生成，缓存到 session_state，不在页面加载时渲染
 def render_download_buttons(fig, filename_base: str, key_prefix: str, height: int = 600):
+    """按需生成导出文件，点击按钮后才调用 kaleido，生成后缓存避免重复渲染"""
     width = 1000
-    export_fig = fig_for_export(fig)
-    col1, col2, col3 = st.columns(3)
-
-    try:
-        pdf_bytes = export_fig.to_image(format='pdf', width=width, height=height, engine='kaleido')
-        with col1:
-            st.download_button(
-                label=t('download_pdf'), data=pdf_bytes,
-                file_name=f"{filename_base}.pdf", mime="application/pdf",
-                key=f"{key_prefix}_pdf", use_container_width=True
-            )
-    except Exception as e:
-        with col1:
-            st.warning(f"PDF: {str(e)[:60]}")
-
-    try:
-        png_bytes = export_fig.to_image(format='png', width=width, height=height,
-                                        scale=3, engine='kaleido')
-        with col2:
-            st.download_button(
-                label=t('download_png'), data=png_bytes,
-                file_name=f"{filename_base}.png", mime="image/png",
-                key=f"{key_prefix}_png", use_container_width=True
-            )
-    except Exception as e:
-        with col2:
-            st.warning(f"PNG: {str(e)[:60]}")
-
-    try:
-        svg_bytes = export_fig.to_image(format='svg', width=width, height=height, engine='kaleido')
-        with col3:
-            st.download_button(
-                label=t('download_svg'), data=svg_bytes,
-                file_name=f"{filename_base}.svg", mime="image/svg+xml",
-                key=f"{key_prefix}_svg", use_container_width=True
-            )
-    except Exception as e:
-        with col3:
-            st.warning(f"SVG: {str(e)[:60]}")
 
     st.caption(t('download_hint'))
+
+    formats = [
+        ('pdf', t('download_pdf'), 'application/pdf', {}),
+        ('png', t('download_png'), 'image/png', {'scale': 3}),
+        ('svg', t('download_svg'), 'image/svg+xml', {}),
+    ]
+
+    cols = st.columns(len(formats))
+
+    for col, (fmt, label, mime, extra_kwargs) in zip(cols, formats):
+        cache_key = f"_export_{key_prefix}_{fmt}"
+
+        with col:
+            # 如果缓存里已有，直接显示下载按钮
+            if cache_key in st.session_state and st.session_state[cache_key] is not None:
+                st.download_button(
+                    label=f"⬇️ {label}",
+                    data=st.session_state[cache_key],
+                    file_name=f"{filename_base}.{fmt}",
+                    mime=mime,
+                    key=f"{key_prefix}_{fmt}_dl",
+                    use_container_width=True
+                )
+            else:
+                # 首次：点击按钮才生成
+                if st.button(label, key=f"{key_prefix}_{fmt}_btn",
+                             use_container_width=True):
+                    with st.spinner(f"Generating {fmt.upper()}..."):
+                        try:
+                            export_fig = fig_for_export(fig)
+                            img_bytes = export_fig.to_image(
+                                format=fmt, width=width, height=height,
+                                engine='kaleido', **extra_kwargs
+                            )
+                            st.session_state[cache_key] = img_bytes
+                            st.rerun()
+                        except Exception as e:
+                            st.warning(f"{fmt.upper()}: {str(e)[:60]}")
 
 
 # =============================================================================
 # Citation 渲染
 # =============================================================================
 def build_citations():
-    """生成 APA + BibTeX 两种格式"""
     has_doi = bool(ZENODO_DOI.strip())
 
     if has_doi:
@@ -928,6 +931,10 @@ with st.sidebar:
     )
     if lang_options[selected_lang] != st.session_state.lang:
         st.session_state.lang = lang_options[selected_lang]
+        # 清除导出缓存（语言切换后 label 变了）
+        for k in list(st.session_state.keys()):
+            if k.startswith('_export_'):
+                del st.session_state[k]
         st.rerun()
 
     theme_options = {f"☀️ {t('light')}": 'light', f"🌙 {t('dark')}": 'dark'}
@@ -940,6 +947,10 @@ with st.sidebar:
     )
     if theme_options[selected_theme] != st.session_state.theme:
         st.session_state.theme = theme_options[selected_theme]
+        # 清除导出缓存（主题切换后导出图需要重新生成）
+        for k in list(st.session_state.keys()):
+            if k.startswith('_export_'):
+                del st.session_state[k]
         st.rerun()
 
     st.markdown("---")
@@ -1076,7 +1087,8 @@ with tab1:
                                     n_cell_lines, show_labels, point_size)
             centered_plot(fig)
 
-            with st.expander(f"📥 {t('export_title')}", expanded=True):
+            # ✅ CHANGED: expanded=False，不在加载时展开导出区
+            with st.expander(f"📥 {t('export_title')}", expanded=False):
                 render_download_buttons(fig, "gene_ranking", "rank_plot", height=export_height)
 
             with st.expander(f"📋 {t('gene_details')}", expanded=False):
@@ -1121,9 +1133,9 @@ with tab2:
             lineage_data = get_lineage_data(df, matched)
             if lineage_data is not None:
                 fig = create_lineage_boxplot(lineage_data, matched)
-                # boxplot 是多子图纵向堆叠，保留全宽
                 st.plotly_chart(fig, use_container_width=True, config=PLOT_CONFIG)
-                with st.expander(f"📥 {t('export_title')}", expanded=True):
+                # ✅ CHANGED: expanded=False
+                with st.expander(f"📥 {t('export_title')}", expanded=False):
                     box_height = max(220 * len(matched) + 80, 400)
                     render_download_buttons(fig, "lineage_boxplot", "boxplot", height=box_height)
             else:
@@ -1158,7 +1170,8 @@ with tab3:
                                                 essential_gene, nonessential_gene,
                                                 n_cell_lines, show_labels)
             centered_plot(fig)
-            with st.expander(f"📥 {t('export_title')}", expanded=True):
+            # ✅ CHANGED: expanded=False
+            with st.expander(f"📥 {t('export_title')}", expanded=False):
                 render_download_buttons(fig, "multilayer_annotation", "multilayer",
                                          height=export_height)
 
