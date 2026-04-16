@@ -22,15 +22,20 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+def centered_plot(fig, config=None, ratio=(1, 8, 1)):
+    """把图表居中显示，两侧留白，改善宽高比观感"""
+    _, center, _ = st.columns(ratio)
+    with center:
+        st.plotly_chart(fig, use_container_width=True, config=config or {})
 # =============================================================================
 # 数据源配置
 # =============================================================================
-HF_REPO_ID = "your-username/crispr-depmap"
-HF_FILENAME = "crispr_scores.csv"
-USE_HUGGINGFACE = False
+HF_REPO_ID = "ChanghaoKan/crispr-depmap"
+HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
+USE_HUGGINGFACE = True
 
-GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"
+# Google Drive fallback removed - using HuggingFace as primary source
+#GOOGLE_DRIVE_FILE_ID = "1NMi9mbF51yJ-DAAskDJY7j6kQqhJsQhV"
 
 # =============================================================================
 # 国际化（i18n）
@@ -581,6 +586,18 @@ PLOT_COLORS = {
 }
 FONT_FAMILY = "Inter, Helvetica Neue, Arial, sans-serif"
 
+PLOT_CONFIG = {
+    'displaylogo': False,
+    'modeBarButtonsToRemove': [
+        'zoom2d', 'pan2d', 'select2d', 'lasso2d',
+        'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
+        'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines'
+    ],
+    'toImageButtonOptions': {
+        'format': 'png', 'filename': 'crispr_plot',
+        'height': 600, 'width': 1000, 'scale': 3
+    }
+}
 
 def apply_theme_to_fig(fig, n_subplots=1):
     """把当前主题应用到 plotly 图上"""
@@ -649,20 +666,24 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
     
-    interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)]
-    if len(interest_df) > 0:
-        fig.add_trace(go.Scatter(
-            x=interest_df['rank'], y=interest_df['mean_score'],
-            mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=point_size*2.5, color=PLOT_COLORS['interest'],
-                        line=dict(width=1.5, color=th['plot_bg'])),
-            text=interest_df['gene'] if show_labels else None,
-            textposition='top center',
-            textfont=dict(size=10, color=PLOT_COLORS['interest'], family=FONT_FAMILY),
-            name='Genes of interest',
-            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
-            customdata=interest_df['percentile']
-        ))
+interest_df = gene_rank_df[gene_rank_df['gene'].isin(genes_of_interest)].copy()
+interest_df = interest_df.sort_values('rank').reset_index(drop=True)
+if len(interest_df) > 0:
+    # 交替标签位置避免重叠
+    text_positions = ['top center' if i % 2 == 0 else 'bottom center' 
+                      for i in range(len(interest_df))]
+    fig.add_trace(go.Scatter(
+        x=interest_df['rank'], y=interest_df['mean_score'],
+        mode='markers+text' if show_labels else 'markers',
+        marker=dict(size=point_size*2.5, color=PLOT_COLORS['interest'],
+                    line=dict(width=1.5, color=th['plot_bg'])),
+        text=interest_df['gene'] if show_labels else None,
+        textposition=text_positions,
+        textfont=dict(size=11, color=PLOT_COLORS['interest'], family=FONT_FAMILY),
+        name='Genes of interest',
+        hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
+        customdata=interest_df['percentile']
+    ))
     
     y_label = f"Mean CRISPR Score<br><span style='font-size:11px'>({n_cell_lines} cell lines)</span>" if n_cell_lines > 0 else "Mean CRISPR Score"
     y_tickvals = np.arange(np.floor(y_min/0.5)*0.5, np.ceil(y_max/0.5)*0.5 + 0.5, 0.5)
@@ -789,9 +810,9 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
                    tickvals=y_tickvals, ticks='outside', ticklen=5,
                    range=[y_min-0.1*y_range, y_max+0.15*y_range]),
-        legend=dict(yanchor='bottom', y=0.02, xanchor='right', x=0.98,
-                    font=dict(size=9), bgcolor=th['plot_bg'], bordercolor=th['border']),
-        height=550
+        legend=dict(orientation='v', yanchor='bottom', y=0.02, xanchor='right', x=0.98,
+                    font=dict(size=11), bgcolor=th['plot_bg'], borderwidth=1, bordercolor=th['border']),
+        height=600
     )
     return apply_theme_to_fig(fig)
 
@@ -950,14 +971,6 @@ elif USE_HUGGINGFACE:
             data_loaded = True
         else:
             st.error(f"❌ {err}")
-elif GOOGLE_DRIVE_FILE_ID:
-    with st.spinner(t('loading_gdrive')):
-        df_result, success, err = download_from_gdrive(GOOGLE_DRIVE_FILE_ID)
-        if success:
-            crispr_data = df_result
-            data_loaded = True
-        else:
-            st.error(f"❌ {err}")
 
 
 # =============================================================================
@@ -1041,7 +1054,7 @@ with tab1:
         if matched_genes:
             fig = create_rank_plot(gene_rankings, matched_genes, essential_gene, nonessential_gene,
                                     n_cell_lines, show_labels, point_size)
-            st.plotly_chart(fig, use_container_width=True, config={'displaylogo': False})
+            centered_plot(fig, config=PLOT_CONFIG)
             
             with st.expander(f"📥 {t('export_title')}", expanded=True):
                 render_download_buttons(fig, "gene_ranking", "rank_plot", height=export_height)
@@ -1120,7 +1133,7 @@ with tab3:
             fig = create_multilayer_rank_plot(gene_rankings, bg_matched, hl_matched,
                                                 bg_color, hl_color, essential_gene, nonessential_gene,
                                                 n_cell_lines, show_labels)
-            st.plotly_chart(fig, use_container_width=True, config={'displaylogo': False})
+            centered_plot(fig, config=PLOT_CONFIG)
             with st.expander(f"📥 {t('export_title')}", expanded=True):
                 render_download_buttons(fig, "multilayer_annotation", "multilayer", height=export_height)
 
