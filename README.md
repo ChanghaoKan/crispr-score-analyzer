@@ -186,11 +186,3 @@ Shenzhen Bay Laboratory (SZBL)
 🌐 [GitHub](https://github.com/ChanghaoKan)
 
 ---
-
-<div align="center">
-
-**⭐ If you find this tool useful, please consider starring the repository.**
-
-*Made with Streamlit, Plotly, and ☕ in Shenzhen.*
-
-</div>
