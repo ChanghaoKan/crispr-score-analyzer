@@ -127,6 +127,8 @@ TRANSLATIONS = {
         'corr_drug_search': 'Search drug (name or target)',
         'corr_drug_search_help': 'e.g. PARP (matches all PARP inhibitors via target), or comma-separated names: olaparib, talazoparib, niraparib.',
         'corr_drug_select': 'Select compound',
+        'corr_gdsc2_only': 'Only compounds with GDSC2 data',
+        'corr_gdsc2_only_help': 'PortalCompounds lists many compounds from various sources; only some have GDSC2 AUC values. Keep this on to show only analyzable drugs.',
         'corr_no_drug': 'No compound matches your search.',
         'corr_run': 'Run correlation',
         'corr_loading': 'Loading correlation datasets (GDSC2 + CRISPR 26Q1 + Compounds)...',
@@ -213,6 +215,8 @@ TRANSLATIONS = {
         'corr_drug_search': '搜索药物（名称或靶点）',
         'corr_drug_search_help': '如 PARP（按靶点匹配所有 PARP 抑制剂），或逗号分隔多个药名：olaparib, talazoparib, niraparib。',
         'corr_drug_select': '选择化合物',
+        'corr_gdsc2_only': '仅显示 GDSC2 有数据的化合物',
+        'corr_gdsc2_only_help': 'PortalCompounds 收录了多来源的化合物，但只有部分在 GDSC2 里有 AUC 数据。保持勾选可只显示能分析的药物。',
         'corr_no_drug': '没有匹配的化合物。',
         'corr_run': '运行相关分析',
         'corr_loading': '加载相关分析数据集（GDSC2 + CRISPR 26Q1 + 化合物表）...',
@@ -597,27 +601,43 @@ def find_crispr_gene_column(crispr_df, gene_name):
     return None
 
 
-def search_compounds(compounds_df, query):
-    """按 CompoundName / CompoundID / GeneSymbolOfTargets / TargetOrMechanism 模糊匹配。
+# 药名别名：搜常用名也能命中 GDSC2 里的旧代号
+COMPOUND_ALIASES = {
+    'rucaparib': ['ag-014699', 'ag014699', 'pf-01367338'],
+    'veliparib': ['abt 888', 'abt-888', 'abt888'],
+}
+
+
+def search_compounds(compounds_df, query, gdsc2_only=False, gdsc_drug_ids=None):
+    """按 CompoundName / CompoundID / GeneSymbolOfTargets / TargetOrMechanism / Synonyms 模糊匹配。
     支持逗号或空格分隔的多关键词（任一命中即收录）。
+    gdsc2_only=True 时，仅保留在 GDSC2 矩阵中真有列的化合物（需传 gdsc_drug_ids）。
     返回按药名排序、按 CompoundID 去重的 [(CompoundID, label)]。"""
     raw = query.strip().lower()
     if not raw:
         return []
-    # 逗号优先，其次空格；过滤空词
     if ',' in raw:
         terms = [s.strip() for s in raw.split(',') if s.strip()]
     else:
         terms = [s for s in raw.split() if s]
     if not terms:
         return []
+    # 展开别名：搜 rucaparib 也匹配 ag-014699 等
+    expanded = set(terms)
+    for term in terms:
+        for canon, aliases in COMPOUND_ALIASES.items():
+            if term == canon or term in aliases:
+                expanded.add(canon)
+                expanded.update(aliases)
+    terms = list(expanded)
 
     id_col = 'CompoundID' if 'CompoundID' in compounds_df.columns else None
     if id_col is None:
         return []
     name_col = 'CompoundName' if 'CompoundName' in compounds_df.columns else None
-    tgt_cols = [c for c in ['GeneSymbolOfTargets', 'TargetOrMechanism']
+    tgt_cols = [c for c in ['GeneSymbolOfTargets', 'TargetOrMechanism', 'Synonyms']
                 if c in compounds_df.columns]
+    has_sid = 'SampleIDs' in compounds_df.columns
 
     seen = set()
     results = []
@@ -625,6 +645,13 @@ def search_compounds(compounds_df, query):
         cid = str(row[id_col])
         if not cid.startswith('DPC') or cid in seen:
             continue
+        # GDSC2-only 过滤：优先用矩阵真实列，否则退回 SampleIDs 标注
+        if gdsc2_only:
+            if gdsc_drug_ids is not None:
+                if cid not in gdsc_drug_ids:
+                    continue
+            elif has_sid and 'GDSC2' not in str(row['SampleIDs']):
+                continue
         hay = cid.lower()
         if name_col:
             hay += " " + str(row[name_col]).lower()
@@ -637,7 +664,6 @@ def search_compounds(compounds_df, query):
             label = f"{nm} ({cid})" + (f" · {tgt}" if tgt and tgt != 'nan' else "")
             results.append((cid, label, nm))
             seen.add(cid)
-    # 按药名排序，返回 (cid, label)
     results.sort(key=lambda x: x[2].lower())
     return [(cid, label) for cid, label, _ in results]
 
@@ -1457,7 +1483,13 @@ with tab4:
                                        help=t('corr_drug_search_help'),
                                        key="corr_drug_query")
 
-        matches = search_compounds(compounds_df, drug_query)
+        gdsc2_only = st.checkbox(t('corr_gdsc2_only'), value=True,
+                                 help=t('corr_gdsc2_only_help'),
+                                 key="corr_gdsc2_only")
+
+        gdsc_ids = set(gdsc_df.columns)
+        matches = search_compounds(compounds_df, drug_query,
+                                   gdsc2_only=gdsc2_only, gdsc_drug_ids=gdsc_ids)
         selected_cid = None
         if matches:
             labels = [lbl for _, lbl in matches]
