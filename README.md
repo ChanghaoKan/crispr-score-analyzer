@@ -20,15 +20,18 @@
 
 ## 📖 Overview
 
-**CRISPR Score Analyzer** is a lightweight, interactive web application for exploring gene essentiality from the [DepMap Cancer Dependency Map](https://depmap.org) (Chronos-corrected CRISPR screens across 1,000+ cancer cell lines). It lets researchers quickly locate genes of interest within a genome-wide dependency ranking, visualize lineage-specific dependencies, and export publication-quality figures — all without writing a line of code.
+**CRISPR Score Analyzer** is a lightweight, interactive web application for exploring gene essentiality from the [DepMap Cancer Dependency Map](https://depmap.org) (Chronos-corrected CRISPR screens across 1,000+ cancer cell lines). It lets researchers quickly locate genes of interest within a genome-wide dependency ranking, visualize lineage-specific dependencies, correlate gene dependency with drug sensitivity, and export publication-quality figures — all without writing a line of code.
 
-The tool is built for wet-lab biologists, early-stage computational researchers, and anyone preparing figures for manuscripts involving CRISPR dependency data.
+Beyond browsing essentiality, the tool now links **CRISPR gene dependency** to **drug sensitivity** (GDSC2 AUC): for any gene and any compound, it aligns cell lines by DepMap `ModelID` and tests whether more gene-dependent lines are also more drug-sensitive. This supports cautious "shared-vulnerability" hypotheses (e.g. *DUSP6* dependency vs. PARP-inhibitor response) directly from public data.
+
+The tool is built for wet-lab biologists, early-stage computational researchers, and anyone preparing figures for manuscripts involving CRISPR dependency or drug-response data.
 
 ## ✨ Features
 
 - **🔍 Gene dependency ranking** — locate any gene(s) on a genome-wide essentiality curve with reference anchors (MYC, PTEN customizable)
 - **📦 Lineage-specific boxplots** — compare CRISPR scores across cancer types for selected genes
 - **🎯 Multi-layer annotation** — overlay gene sets and highlight candidates with custom colors
+- **🔗 Gene × Drug correlation** — correlate CRISPR gene dependency with GDSC2 drug sensitivity (Spearman ρ), searchable by drug name *or* target; built-in direction guide and confounding caveat
 - **📄 Publication-ready export** — download figures as **PDF (vector)**, **PNG (300 DPI)**, or **SVG (editable)**
 - **🌐 Bilingual interface** — English / 中文 one-click switch
 - **🎨 Light / Dark theme** — theme-aware UI and charts
@@ -44,6 +47,8 @@ The tool is built for wet-lab biologists, early-stage computational researchers,
 |<img width="935" height="634" alt="image" src="https://github.com/user-attachments/assets/89a2b476-d0bf-430a-b6f3-a2c3f84540a6" />|<img width="1375" height="625" alt="image" src="https://github.com/user-attachments/assets/18ff825e-bb35-4597-b145-47f059641242" />
 
 </div>
+
+> 📸 *Tab 4 (Gene × Drug correlation) screenshot — to be added after first deployment.*
 
 ## 🚀 Quick Start
 
@@ -66,22 +71,34 @@ streamlit run app.py
 ```
 
 
-## 📊 Data Source
+## 📊 Data Sources
 
-This tool uses the **DepMap Public 25Q3 Chronos CRISPR** dependency scores, subsetted for efficient cloud delivery. The full dataset is hosted on Hugging Face:
+All datasets are hosted on Hugging Face: 🔗 **[huggingface.co/datasets/ChanghaoKan/crispr-depmap](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)**
 
-🔗 **[huggingface.co/datasets/ChanghaoKan/crispr-depmap](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)**
+**Gene essentiality (Tabs 1–3)** uses the **DepMap Public 25Q3 Chronos CRISPR** dependency scores, subsetted for efficient cloud delivery.
+
+**Gene × Drug correlation (Tab 4)** additionally uses **DepMap Public 26Q1 CRISPR**, the **GDSC2 AUC** drug-response matrix, and the DepMap compound annotation table. All files are aligned by DepMap `ModelID` (`ACH-xxxxxx`).
+
+| File (HF) | Role | Index / Key |
+|---|---|---|
+| `CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv` | Essentiality browser (Tabs 1–3) | `ModelID` × `GENE (entrez)` |
+| `CRISPRGeneEffect_26Q1.csv` | Gene dependency for correlation | `ModelID` × `GENE (entrez)` |
+| `GDSC2_AUC_Matrix.csv` | Drug sensitivity (AUC) | `ModelID` × `CompoundID (DPC-xxxxxx)` |
+| `PortalCompounds.csv` | Compound → name / target lookup | `CompoundID` |
 
 | Property | Value |
 |---|---|
-| Source | [DepMap Portal](https://depmap.org/portal/) (Broad Institute) |
-| Release | 25Q3 |
+| Source | [DepMap Portal](https://depmap.org/portal/) (Broad Institute) · GDSC2 (Sanger) |
+| CRISPR release | 25Q3 (browser) · 26Q1 (correlation) |
 | Score type | Chronos (corrected CRISPR dependency) |
-| Cell lines | ~1,100 |
-| Genes | ~18,000 |
-| Score interpretation | Lower = more essential; ≈0 = neutral; >0 = enriched |
+| CRISPR interpretation | Lower = more essential; ≈0 = neutral; >0 = enriched |
+| GDSC2 AUC interpretation | Lower = more sensitive; higher = more resistant |
 
-## 📋 Expected CSV Format
+> **Score-direction note (important).** Both CRISPR Gene Effect and GDSC2 AUC are "lower = more extreme." A **positive** Spearman ρ therefore means *more gene-dependent lines are also more drug-sensitive* — the shared-vulnerability direction. The app states this explicitly with every result so the sign is never ambiguous.
+
+## 📋 Expected CSV Formats
+
+### Essentiality browser (Tabs 1–3)
 
 If uploading your own data, use this schema:
 
@@ -93,6 +110,30 @@ If uploading your own data, use this schema:
 - **First columns**: metadata (cell line ID, lineage, etc.)
 - **Gene columns**: numeric CRISPR scores, headers in `GENE_SYMBOL (ENTREZ_ID)` format
 - At least one column containing the word `lineage` is needed for boxplot analysis
+
+### Gene × Drug correlation (Tab 4)
+
+These three files are read from the Hugging Face dataset repo (filenames are configurable at the top of `app.py`). The **first column** of both matrices must be the DepMap `ModelID`.
+
+**`CRISPRGeneEffect_26Q1.csv`** — `ModelID` × gene
+
+| ModelID | `DUSP6 (1848)` | `A1BG (1)` | ... |
+|---|---|---|---|
+| ACH-000001 | -0.42 | -0.05 | ... |
+
+**`GDSC2_AUC_Matrix.csv`** — `ModelID` × compound
+
+| ModelID | `DPC-000001` | `DPC-000002` | ... |
+|---|---|---|---|
+| ACH-000001 | 0.95 | 0.83 | ... |
+
+**`PortalCompounds.csv`** — compound annotation (used for the searchable drug picker)
+
+| CompoundID | CompoundName | GeneSymbolOfTargets | TargetOrMechanism | ... |
+|---|---|---|---|---|
+| DPC-000001 | (+)-CAMPTOTHECIN | TOP1 | TOPOISOMERASE INHIBITOR | ... |
+
+> The drug picker matches your query against compound **name, ID, and target** — so searching `PARP` returns all PARP inhibitors even if you don't know their names.
 
 ## 🧭 Usage Guide
 
@@ -113,6 +154,20 @@ Visualize how a gene's dependency varies across cancer types. Useful for:
 Plot a background gene set (e.g., a pathway) with specific highlights (e.g., candidate drivers). Useful for:
 - Showing how a few hits compare against their pathway context
 - Creating layered figures for reviews and presentations
+
+### Tab 4 — Gene × Drug Correlation
+
+Pick a gene (CRISPR dependency) and a compound (GDSC2 sensitivity); the app aligns cell lines by `ModelID`, computes a **Spearman ρ**, and plots a scatter with a fitted line. Useful for:
+- Testing shared-vulnerability hypotheses (e.g. *DUSP6* dependency vs. PARP-inhibitor response)
+- Screening whether a dependency tracks with sensitivity to a drug class
+
+**How to read it:**
+- Both axes are "lower = more extreme" (more dependent / more sensitive).
+- **ρ > 0** → more gene-dependent lines tend to be *more* drug-sensitive (hypothesis-consistent).
+- **ρ < 0** → the opposite.
+- The result text states the direction and significance for you.
+
+> ⚠️ **Caveat (shown in-app).** Tab 4 reports **pan-cancer correlation only**. Lineage and mutation background — e.g. *BRCA1/2* / HR status for PARP inhibitors — are **not** controlled. A significant ρ may reflect confounding, so interpret results as *association, not mechanism*. Lineage-stratified and mutation-aware analysis is on the roadmap.
 
 ## 📥 Figure Export
 
@@ -155,9 +210,11 @@ If you use CRISPR Score Analyzer in your research, please cite both the tool and
 **APA format:**
 > Kan, C. (2026). *CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality* (Version v1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.19607602
 
-### DepMap data
+### DepMap & GDSC data
 
 > Tsherniak, A., Vazquez, F., Montgomery, P. G., *et al.* (2017). Defining a Cancer Dependency Map. *Cell* 170, 564–576. https://doi.org/10.1016/j.cell.2017.06.010
+
+> Yang, W., Soares, J., Greninger, P., *et al.* (2013). Genomics of Drug Sensitivity in Cancer (GDSC). *Nucleic Acids Research* 41, D955–D961. https://doi.org/10.1093/nar/gks1111
 
 ## 🤝 Contributing
 
@@ -174,6 +231,7 @@ DepMap data is released under the terms of its own license; please consult the [
 ## 🙏 Acknowledgements
 
 - **[DepMap Consortium](https://depmap.org)** — for the open release of Chronos-corrected CRISPR dependency data
+- **[GDSC / Sanger Institute](https://www.cancerrxgene.org)** — for the GDSC2 drug-response (AUC) dataset
 - **[Anthropic Claude](https://www.anthropic.com/claude)** — AI-assisted development
 - **[Deng Lab @ Shenzhen Bay Laboratory (SZBL)](https://www.deng-lab.org/resources)** — institutional support
 
