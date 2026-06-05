@@ -42,7 +42,7 @@ HF_COMPOUNDS_FILENAME = "PortalCompounds.csv"
 
 # 默认演示用的基因 / 药物关键词（用户可改）
 DEFAULT_CORR_GENE = "DUSP6"
-DEFAULT_CORR_DRUG_KEYWORDS = ["olaparib", "talazoparib", "niraparib", "rucaparib"]
+DEFAULT_CORR_DRUG_QUERY = "PARP"
 
 # =============================================================================
 # Citation / DOI 配置
@@ -125,7 +125,7 @@ TRANSLATIONS = {
         'corr_gene_label': 'Gene of interest (CRISPR dependency)',
         'corr_gene_help': 'e.g. DUSP6 — matched against the 26Q1 CRISPR gene-effect matrix.',
         'corr_drug_search': 'Search drug (name or target)',
-        'corr_drug_search_help': 'e.g. olaparib, or PARP. Filters PortalCompounds.',
+        'corr_drug_search_help': 'e.g. PARP (matches all PARP inhibitors via target), or comma-separated names: olaparib, talazoparib, niraparib.',
         'corr_drug_select': 'Select compound',
         'corr_no_drug': 'No compound matches your search.',
         'corr_run': 'Run correlation',
@@ -211,7 +211,7 @@ TRANSLATIONS = {
         'corr_gene_label': '目标基因（CRISPR 依赖性）',
         'corr_gene_help': '如 DUSP6，在 26Q1 CRISPR 基因效应矩阵中匹配。',
         'corr_drug_search': '搜索药物（名称或靶点）',
-        'corr_drug_search_help': '如 olaparib 或 PARP，从 PortalCompounds 过滤。',
+        'corr_drug_search_help': '如 PARP（按靶点匹配所有 PARP 抑制剂），或逗号分隔多个药名：olaparib, talazoparib, niraparib。',
         'corr_drug_select': '选择化合物',
         'corr_no_drug': '没有匹配的化合物。',
         'corr_run': '运行相关分析',
@@ -598,33 +598,102 @@ def find_crispr_gene_column(crispr_df, gene_name):
 
 
 def search_compounds(compounds_df, query):
-    """按 CompoundName 或 GeneSymbolOfTargets/TargetOrMechanism 模糊匹配。
-    返回 [(CompoundID, label)]，仅保留 CompoundID 以 DPC 开头的行。"""
-    q = query.strip().lower()
-    if not q:
+    """按 CompoundName / CompoundID / GeneSymbolOfTargets / TargetOrMechanism 模糊匹配。
+    支持逗号或空格分隔的多关键词（任一命中即收录）。
+    返回按药名排序、按 CompoundID 去重的 [(CompoundID, label)]。"""
+    raw = query.strip().lower()
+    if not raw:
         return []
-    name_col = 'CompoundName' if 'CompoundName' in compounds_df.columns else None
+    # 逗号优先，其次空格；过滤空词
+    if ',' in raw:
+        terms = [s.strip() for s in raw.split(',') if s.strip()]
+    else:
+        terms = [s for s in raw.split() if s]
+    if not terms:
+        return []
+
     id_col = 'CompoundID' if 'CompoundID' in compounds_df.columns else None
     if id_col is None:
         return []
+    name_col = 'CompoundName' if 'CompoundName' in compounds_df.columns else None
     tgt_cols = [c for c in ['GeneSymbolOfTargets', 'TargetOrMechanism']
                 if c in compounds_df.columns]
+
+    seen = set()
     results = []
     for _, row in compounds_df.iterrows():
         cid = str(row[id_col])
-        if not cid.startswith('DPC'):
+        if not cid.startswith('DPC') or cid in seen:
             continue
         hay = cid.lower()
         if name_col:
             hay += " " + str(row[name_col]).lower()
         for tc in tgt_cols:
             hay += " " + str(row[tc]).lower()
-        if q in hay:
+        if any(term in hay for term in terms):
             nm = str(row[name_col]) if name_col else cid
-            tgt = str(row['GeneSymbolOfTargets']) if 'GeneSymbolOfTargets' in compounds_df.columns else ''
+            tgt = (str(row['GeneSymbolOfTargets'])
+                   if 'GeneSymbolOfTargets' in compounds_df.columns else '')
             label = f"{nm} ({cid})" + (f" · {tgt}" if tgt and tgt != 'nan' else "")
-            results.append((cid, label))
-    return results
+            results.append((cid, label, nm))
+            seen.add(cid)
+    # 按药名排序，返回 (cid, label)
+    results.sort(key=lambda x: x[2].lower())
+    return [(cid, label) for cid, label, _ in results]
+
+
+def _spearman_with_p(x, y):
+    """不依赖 scipy 的 Spearman ρ 与近似 p 值（t 分布双尾）。"""
+    x = pd.Series(x); y = pd.Series(y)
+    n = len(x)
+    rho = x.corr(y, method='spearman')
+    if rho is None or pd.isna(rho) or n < 3:
+        return (float(rho) if rho is not None and not pd.isna(rho) else float('nan')), float('nan')
+    # 完全相关时 p->0
+    if abs(rho) >= 1.0:
+        return float(rho), 0.0
+    # t = rho * sqrt((n-2)/(1-rho^2)) ~ t(n-2)
+    t = rho * np.sqrt((n - 2) / (1 - rho ** 2))
+    # 用 numpy 的不完全 beta 近似双尾 p：借助 math.erf 的正态近似不够准，
+    # 这里用学生 t 的生存函数，通过数值积分的稳定近似（n 通常较大）。
+    from math import lgamma, log, sqrt, pi
+    df = n - 2
+    # 学生 t 双尾 p 值：用与正态的关系，df 大时近似良好；df 小时用级数。
+    # 采用稳定的不完全 beta：I_x(df/2, 1/2)，x = df/(df+t^2)
+    def betacf(a, b, xx):
+        MAXIT, EPS, FPMIN = 200, 3e-12, 1e-300
+        qab, qap, qam = a + b, a + 1.0, a - 1.0
+        c = 1.0; d = 1.0 - qab * xx / qap
+        if abs(d) < FPMIN: d = FPMIN
+        d = 1.0 / d; h = d
+        for m in range(1, MAXIT + 1):
+            m2 = 2 * m
+            aa = m * (b - m) * xx / ((qam + m2) * (a + m2))
+            d = 1.0 + aa * d
+            if abs(d) < FPMIN: d = FPMIN
+            c = 1.0 + aa / c
+            if abs(c) < FPMIN: c = FPMIN
+            d = 1.0 / d; h *= d * c
+            aa = -(a + m) * (qab + m) * xx / ((a + m2) * (qap + m2))
+            d = 1.0 + aa * d
+            if abs(d) < FPMIN: d = FPMIN
+            c = 1.0 + aa / c
+            if abs(c) < FPMIN: c = FPMIN
+            d = 1.0 / d; delta = d * c; h *= delta
+            if abs(delta - 1.0) < EPS: break
+        return h
+    def betai(a, b, xx):
+        if xx <= 0.0: return 0.0
+        if xx >= 1.0: return 1.0
+        lbeta = lgamma(a + b) - lgamma(a) - lgamma(b)
+        bt = np.exp(lbeta + a * log(xx) + b * log(1.0 - xx))
+        if xx < (a + 1.0) / (a + b + 2.0):
+            return bt * betacf(a, b, xx) / a
+        else:
+            return 1.0 - bt * betacf(b, a, 1.0 - xx) / b
+    x_beta = df / (df + t * t)
+    p = betai(df / 2.0, 0.5, x_beta)
+    return float(rho), float(min(max(p, 0.0), 1.0))
 
 
 def compute_gene_drug_correlation(crispr_df, gdsc_df, gene_col, compound_id):
@@ -632,14 +701,13 @@ def compute_gene_drug_correlation(crispr_df, gdsc_df, gene_col, compound_id):
     merged_df 列: dep (Gene Effect), auc (GDSC2 AUC)。"""
     if compound_id not in gdsc_df.columns:
         return None, None, None, 0, 'drug_not_found'
-    from scipy.stats import spearmanr
     dep = crispr_df[gene_col].rename('dep')
     auc = gdsc_df[compound_id].rename('auc')
     merged = pd.concat([dep, auc], axis=1).dropna()
     n = len(merged)
     if n < 10:
         return merged, None, None, n, 'too_few'
-    rho, p = spearmanr(merged['dep'], merged['auc'])
+    rho, p = _spearman_with_p(merged['dep'].values, merged['auc'].values)
     return merged, float(rho), float(p), n, None
 
 
@@ -1385,7 +1453,7 @@ with tab4:
                                       key="corr_gene")
         with c_right:
             drug_query = st.text_input(t('corr_drug_search'),
-                                       value=DEFAULT_CORR_DRUG_KEYWORDS[0],
+                                       value=DEFAULT_CORR_DRUG_QUERY,
                                        help=t('corr_drug_search_help'),
                                        key="corr_drug_query")
 
@@ -1393,7 +1461,9 @@ with tab4:
         selected_cid = None
         if matches:
             labels = [lbl for _, lbl in matches]
-            sel_label = st.selectbox(t('corr_drug_select'), labels, key="corr_drug_sel")
+            sel_label = st.selectbox(
+                f"{t('corr_drug_select')}  ({len(labels)})",
+                labels, key="corr_drug_sel")
             selected_cid = matches[labels.index(sel_label)][0]
         elif drug_query.strip():
             st.warning(t('corr_no_drug'))
