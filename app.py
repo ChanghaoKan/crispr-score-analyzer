@@ -31,6 +31,19 @@ HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
 USE_HUGGINGFACE = True
 
+# ---- Gene × Drug correlation module (DepMap 26Q1 + GDSC2) ----
+# 同一个 HF 数据集仓库内放置以下三个文件即可（行/列键已对齐到 DepMap ModelID）：
+#   GDSC2: index=ModelID(ACH-xxxxxx), columns=CompoundID(DPC-xxxxxx), values=AUC
+#   CRISPR(26Q1): index=ModelID, columns="GENE (entrez)", values=Gene Effect(Chronos)
+#   Compounds: 列含 CompoundID/CompoundName/GeneSymbolOfTargets/TargetOrMechanism
+HF_GDSC_FILENAME = "GDSC2_AUC_Matrix.csv"
+HF_CRISPR26Q1_FILENAME = "CRISPRGeneEffect_26Q1.csv"
+HF_COMPOUNDS_FILENAME = "PortalCompounds.csv"
+
+# 默认演示用的基因 / 药物关键词（用户可改）
+DEFAULT_CORR_GENE = "DUSP6"
+DEFAULT_CORR_DRUG_KEYWORDS = ["olaparib", "talazoparib", "niraparib", "rucaparib"]
+
 # =============================================================================
 # Citation / DOI 配置
 # =============================================================================
@@ -70,6 +83,7 @@ TRANSLATIONS = {
         'tab1': '📊 Gene Ranking',
         'tab2': '📦 Lineage Boxplot',
         'tab3': '🎯 Multi-layer',
+        'tab4': '🔗 Gene × Drug',
         'gene_ranking_title': 'Gene Essentiality Ranking',
         'gene_ranking_desc': 'Locate your genes of interest in genome-wide CRISPR screens.',
         'input_target_genes': 'Input target genes',
@@ -105,6 +119,29 @@ TRANSLATIONS = {
         'cite_this_tool': 'Cite this tool',
         'copy_bibtex': 'Copy BibTeX',
         'doi_pending': 'DOI pending — please cite by URL until release',
+        # ---- Tab4: Gene x Drug correlation ----
+        'corr_title': 'Gene Dependency × Drug Sensitivity Correlation',
+        'corr_desc': 'Test whether cell lines more dependent on a gene (CRISPR) are also more sensitive to a drug (GDSC2 AUC), aligned by DepMap ModelID.',
+        'corr_gene_label': 'Gene of interest (CRISPR dependency)',
+        'corr_gene_help': 'e.g. DUSP6 — matched against the 26Q1 CRISPR gene-effect matrix.',
+        'corr_drug_search': 'Search drug (name or target)',
+        'corr_drug_search_help': 'e.g. olaparib, or PARP. Filters PortalCompounds.',
+        'corr_drug_select': 'Select compound',
+        'corr_no_drug': 'No compound matches your search.',
+        'corr_run': 'Run correlation',
+        'corr_loading': 'Loading correlation datasets (GDSC2 + CRISPR 26Q1 + Compounds)...',
+        'corr_gene_not_found': 'Gene not found in CRISPR matrix.',
+        'corr_drug_not_found': 'Compound not found in GDSC2 matrix.',
+        'corr_too_few': 'Too few overlapping cell lines for a reliable estimate (n < 10).',
+        'corr_result_dir_pos': 'Positive ρ: cell lines more dependent on this gene (lower Gene Effect) tend to be MORE sensitive to the drug (lower AUC) — consistent with a shared-vulnerability hypothesis.',
+        'corr_result_dir_neg': 'Negative ρ: cell lines more dependent on this gene tend to be LESS sensitive to the drug — opposite to the shared-vulnerability hypothesis.',
+        'corr_result_dir_ns': 'Correlation is not statistically significant (p ≥ 0.05); no clear association in this pan-cancer set.',
+        'corr_axis_x': 'CRISPR Gene Effect (lower = more dependent)',
+        'corr_axis_y': 'GDSC2 AUC (lower = more sensitive)',
+        'corr_stat_n': 'Overlapping cell lines',
+        'corr_stat_rho': "Spearman ρ",
+        'corr_stat_p': 'p-value',
+        'corr_caveat': '⚠️ Pan-cancer correlation only. Lineage and mutation background (e.g. BRCA/HR status for PARP inhibitors) are NOT controlled here — a significant ρ may reflect confounding. Interpret as association, not mechanism.',
     },
     'zh': {
         'app_title': 'CRISPR 基因必需性分析器',
@@ -132,6 +169,7 @@ TRANSLATIONS = {
         'tab1': '📊 基因排名图',
         'tab2': '📦 Lineage 箱线图',
         'tab3': '🎯 多层标注',
+        'tab4': '🔗 基因×药物',
         'gene_ranking_title': '基因必需性排名',
         'gene_ranking_desc': '在全基因组 CRISPR 筛选数据中定位您关注的基因。',
         'input_target_genes': '输入目标基因',
@@ -167,6 +205,29 @@ TRANSLATIONS = {
         'cite_this_tool': '引用本工具',
         'copy_bibtex': '复制 BibTeX',
         'doi_pending': 'DOI 申请中 — 正式发布前请用网址引用',
+        # ---- Tab4: 基因×药物相关 ----
+        'corr_title': '基因依赖性 × 药物敏感性相关分析',
+        'corr_desc': '检验：对某基因依赖性越强（CRISPR）的细胞系，是否也越敏感于某药物（GDSC2 AUC）。按 DepMap ModelID 对齐。',
+        'corr_gene_label': '目标基因（CRISPR 依赖性）',
+        'corr_gene_help': '如 DUSP6，在 26Q1 CRISPR 基因效应矩阵中匹配。',
+        'corr_drug_search': '搜索药物（名称或靶点）',
+        'corr_drug_search_help': '如 olaparib 或 PARP，从 PortalCompounds 过滤。',
+        'corr_drug_select': '选择化合物',
+        'corr_no_drug': '没有匹配的化合物。',
+        'corr_run': '运行相关分析',
+        'corr_loading': '加载相关分析数据集（GDSC2 + CRISPR 26Q1 + 化合物表）...',
+        'corr_gene_not_found': '在 CRISPR 矩阵中未找到该基因。',
+        'corr_drug_not_found': '在 GDSC2 矩阵中未找到该化合物。',
+        'corr_too_few': '重叠细胞系太少，结果不可靠（n < 10）。',
+        'corr_result_dir_pos': 'ρ 为正：对该基因依赖越强（Gene Effect 越低）的细胞系，往往对该药更敏感（AUC 越低）——与「共享脆弱性」假设方向一致。',
+        'corr_result_dir_neg': 'ρ 为负：对该基因依赖越强的细胞系，往往对该药更不敏感——与「共享脆弱性」假设方向相反。',
+        'corr_result_dir_ns': '相关不显著（p ≥ 0.05）；在该泛癌集合中无明确关联。',
+        'corr_axis_x': 'CRISPR Gene Effect（越低=依赖越强）',
+        'corr_axis_y': 'GDSC2 AUC（越低=越敏感）',
+        'corr_stat_n': '重叠细胞系数',
+        'corr_stat_rho': "Spearman ρ",
+        'corr_stat_p': 'p 值',
+        'corr_caveat': '⚠️ 仅为泛癌相关。此处未控制谱系与突变背景（如 PARP 抑制剂的 BRCA/HR 状态）——显著的 ρ 可能来自混杂。结论应表述为关联，而非机制。',
     }
 }
 
@@ -500,6 +561,129 @@ def get_lineage_data(df, genes):
     if result:
         return pd.concat(result, ignore_index=True)
     return None
+
+
+# =============================================================================
+# 基因 × 药物 相关分析模块
+# =============================================================================
+@st.cache_resource(show_spinner=False)
+def load_corr_datasets(repo_id, gdsc_file, crispr_file, compounds_file):
+    """加载并缓存三个相关分析数据集。返回 (gdsc, crispr, compounds, err)。
+    gdsc/crispr 的第一列是 ModelID，设为 index。"""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        return None, None, None, "huggingface_hub not installed"
+    try:
+        gdsc = pd.read_csv(
+            hf_hub_download(repo_id=repo_id, filename=gdsc_file, repo_type="dataset"),
+            index_col=0)
+        crispr = pd.read_csv(
+            hf_hub_download(repo_id=repo_id, filename=crispr_file, repo_type="dataset"),
+            index_col=0)
+        compounds = pd.read_csv(
+            hf_hub_download(repo_id=repo_id, filename=compounds_file, repo_type="dataset"))
+        return gdsc, crispr, compounds, None
+    except Exception as e:
+        return None, None, None, f"HF error: {str(e)}"
+
+
+def find_crispr_gene_column(crispr_df, gene_name):
+    """在 'GENE (entrez)' 形式的列里按基因名(忽略大小写)定位列。"""
+    target = gene_name.strip().upper()
+    for col in crispr_df.columns:
+        if extract_gene_name(col).upper() == target:
+            return col
+    return None
+
+
+def search_compounds(compounds_df, query):
+    """按 CompoundName 或 GeneSymbolOfTargets/TargetOrMechanism 模糊匹配。
+    返回 [(CompoundID, label)]，仅保留 CompoundID 以 DPC 开头的行。"""
+    q = query.strip().lower()
+    if not q:
+        return []
+    name_col = 'CompoundName' if 'CompoundName' in compounds_df.columns else None
+    id_col = 'CompoundID' if 'CompoundID' in compounds_df.columns else None
+    if id_col is None:
+        return []
+    tgt_cols = [c for c in ['GeneSymbolOfTargets', 'TargetOrMechanism']
+                if c in compounds_df.columns]
+    results = []
+    for _, row in compounds_df.iterrows():
+        cid = str(row[id_col])
+        if not cid.startswith('DPC'):
+            continue
+        hay = cid.lower()
+        if name_col:
+            hay += " " + str(row[name_col]).lower()
+        for tc in tgt_cols:
+            hay += " " + str(row[tc]).lower()
+        if q in hay:
+            nm = str(row[name_col]) if name_col else cid
+            tgt = str(row['GeneSymbolOfTargets']) if 'GeneSymbolOfTargets' in compounds_df.columns else ''
+            label = f"{nm} ({cid})" + (f" · {tgt}" if tgt and tgt != 'nan' else "")
+            results.append((cid, label))
+    return results
+
+
+def compute_gene_drug_correlation(crispr_df, gdsc_df, gene_col, compound_id):
+    """按 ModelID 对齐，返回 (merged_df, rho, p, n, err)。
+    merged_df 列: dep (Gene Effect), auc (GDSC2 AUC)。"""
+    if compound_id not in gdsc_df.columns:
+        return None, None, None, 0, 'drug_not_found'
+    from scipy.stats import spearmanr
+    dep = crispr_df[gene_col].rename('dep')
+    auc = gdsc_df[compound_id].rename('auc')
+    merged = pd.concat([dep, auc], axis=1).dropna()
+    n = len(merged)
+    if n < 10:
+        return merged, None, None, n, 'too_few'
+    rho, p = spearmanr(merged['dep'], merged['auc'])
+    return merged, float(rho), float(p), n, None
+
+
+def create_correlation_scatter(merged, gene_name, drug_label, rho, p, point_size=4):
+    """散点 + 线性拟合线，沿用 Morandi/theme_classic 风格，p 值斜体。"""
+    th = get_theme()
+    x = merged['dep'].values
+    y = merged['auc'].values
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x, y=y, mode='markers',
+        marker=dict(size=point_size * 2.0, color=PLOT_COLORS['interest'],
+                    opacity=0.55, line=dict(width=0.35, color=th['plot_axis'])),
+        hovertemplate='Gene Effect: %{x:.3f}<br>AUC: %{y:.3f}<extra></extra>',
+        showlegend=False,
+    ))
+    # 线性拟合线
+    if len(x) >= 2:
+        coef = np.polyfit(x, y, 1)
+        xs = np.array([x.min(), x.max()])
+        ys = coef[0] * xs + coef[1]
+        fig.add_trace(go.Scatter(
+            x=xs, y=ys, mode='lines',
+            line=dict(color=PLOT_COLORS['essential'], width=1.2, dash='solid'),
+            showlegend=False, hoverinfo='skip',
+        ))
+
+    p_txt = f"<i>p</i> = {p:.2g}" if p is not None else ""
+    rho_txt = f"Spearman ρ = {rho:.2f}" if rho is not None else ""
+    subtitle = f"{rho_txt}　{p_txt}　n = {len(merged)}"
+
+    fig.update_layout(
+        title=dict(text=f"{gene_name}  ×  {drug_label}<br><sub>{subtitle}</sub>",
+                   font=dict(size=16, family=FONT_FAMILY), x=0.5, xanchor='center'),
+        xaxis_title=t('corr_axis_x'),
+        yaxis_title=t('corr_axis_y'),
+        height=520,
+        margin=dict(l=70, r=40, t=80, b=60),
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    fig.update_yaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    apply_theme_to_fig(fig)
+    return fig
 
 
 # =============================================================================
@@ -1041,7 +1225,7 @@ st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 # =============================================================================
 # Tabs
 # =============================================================================
-tab1, tab2, tab3 = st.tabs([t('tab1'), t('tab2'), t('tab3')])
+tab1, tab2, tab3, tab4 = st.tabs([t('tab1'), t('tab2'), t('tab3'), t('tab4')])
 
 # ---- Tab 1 ----
 with tab1:
@@ -1175,6 +1359,91 @@ with tab3:
             with st.expander(f"📥 {t('export_title')}", expanded=False):
                 render_download_buttons(fig, "multilayer_annotation", "multilayer",
                                          height=export_height)
+
+
+# ---- Tab 4: Gene × Drug correlation ----
+with tab4:
+    st.markdown(f"### {t('corr_title')}")
+    st.markdown(t('corr_desc'))
+
+    with st.spinner(t('corr_loading')):
+        gdsc_df, crispr26_df, compounds_df, corr_err = load_corr_datasets(
+            HF_REPO_ID, HF_GDSC_FILENAME, HF_CRISPR26Q1_FILENAME, HF_COMPOUNDS_FILENAME)
+
+    if corr_err is not None:
+        st.error(f"❌ {corr_err}")
+        st.caption(
+            "请确认 HF 数据集仓库内包含："
+            f"`{HF_GDSC_FILENAME}` / `{HF_CRISPR26Q1_FILENAME}` / `{HF_COMPOUNDS_FILENAME}`"
+        )
+    else:
+        c_left, c_right = st.columns(2)
+        with c_left:
+            corr_gene = st.text_input(t('corr_gene_label'),
+                                      value=DEFAULT_CORR_GENE,
+                                      help=t('corr_gene_help'),
+                                      key="corr_gene")
+        with c_right:
+            drug_query = st.text_input(t('corr_drug_search'),
+                                       value=DEFAULT_CORR_DRUG_KEYWORDS[0],
+                                       help=t('corr_drug_search_help'),
+                                       key="corr_drug_query")
+
+        matches = search_compounds(compounds_df, drug_query)
+        selected_cid = None
+        if matches:
+            labels = [lbl for _, lbl in matches]
+            sel_label = st.selectbox(t('corr_drug_select'), labels, key="corr_drug_sel")
+            selected_cid = matches[labels.index(sel_label)][0]
+        elif drug_query.strip():
+            st.warning(t('corr_no_drug'))
+
+        run = st.button(f"▶️ {t('corr_run')}", key="corr_run_btn",
+                        use_container_width=False)
+
+        if run and selected_cid:
+            gene_col = find_crispr_gene_column(crispr26_df, corr_gene)
+            if gene_col is None:
+                st.error(f"❌ {t('corr_gene_not_found')} ({corr_gene})")
+            else:
+                merged, rho, p, n, err = compute_gene_drug_correlation(
+                    crispr26_df, gdsc_df, gene_col, selected_cid)
+                if err == 'drug_not_found':
+                    st.error(f"❌ {t('corr_drug_not_found')}")
+                elif err == 'too_few':
+                    st.warning(f"⚠️ {t('corr_too_few')} (n = {n})")
+                else:
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric(t('corr_stat_n'), f"{n:,}")
+                    m2.metric(t('corr_stat_rho'), f"{rho:.3f}")
+                    m3.metric(t('corr_stat_p'), f"{p:.2g}")
+
+                    drug_label = next((lbl for cid, lbl in matches
+                                       if cid == selected_cid), selected_cid)
+                    fig = create_correlation_scatter(
+                        merged, corr_gene.upper(), drug_label.split(' (')[0],
+                        rho, p, point_size=point_size)
+                    centered_plot(fig)
+
+                    if p is not None and p < 0.05 and rho > 0:
+                        st.success(t('corr_result_dir_pos'))
+                    elif p is not None and p < 0.05 and rho < 0:
+                        st.info(t('corr_result_dir_neg'))
+                    else:
+                        st.info(t('corr_result_dir_ns'))
+
+                    st.warning(t('corr_caveat'))
+
+                    with st.expander(f"📥 {t('export_title')}", expanded=False):
+                        render_download_buttons(fig, "gene_drug_correlation",
+                                                 "corr", height=export_height)
+                    with st.expander(f"📊 {t('download_csv')}", expanded=False):
+                        csv_out = merged.reset_index().rename(
+                            columns={'index': 'ModelID'}).to_csv(index=False)
+                        st.download_button(
+                            t('download_csv'), data=csv_out,
+                            file_name=f"{corr_gene}_{selected_cid}_correlation.csv",
+                            mime='text/csv', key="corr_csv_dl")
 
 
 # =============================================================================
