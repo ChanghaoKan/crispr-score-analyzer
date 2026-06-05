@@ -668,24 +668,44 @@ def search_compounds(compounds_df, query, gdsc2_only=False, gdsc_drug_ids=None):
     return [(cid, label) for cid, label, _ in results]
 
 
+def _rankdata(a):
+    """平均秩（处理并列），纯 numpy，等价于 scipy.stats.rankdata 默认行为。"""
+    a = np.asarray(a, dtype=float)
+    order = a.argsort()
+    ranks = np.empty(len(a), dtype=float)
+    ranks[order] = np.arange(1, len(a) + 1)
+    # 处理并列：同值取平均秩
+    _, inv, counts = np.unique(a, return_inverse=True, return_counts=True)
+    # 累计起始秩
+    csum = np.cumsum(counts)
+    start = csum - counts
+    avg = (start + csum + 1) / 2.0  # 每组的平均秩 (1-indexed)
+    return avg[inv]
+
+
 def _spearman_with_p(x, y):
-    """不依赖 scipy 的 Spearman ρ 与近似 p 值（t 分布双尾）。"""
-    x = pd.Series(x); y = pd.Series(y)
+    """不依赖 scipy 的 Spearman ρ 与近似 p 值（t 分布双尾）。
+    ρ = 秩变换后的 Pearson 相关；p 用学生 t 近似。"""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
     n = len(x)
-    rho = x.corr(y, method='spearman')
-    if rho is None or pd.isna(rho) or n < 3:
-        return (float(rho) if rho is not None and not pd.isna(rho) else float('nan')), float('nan')
+    if n < 3:
+        return float('nan'), float('nan')
+    rx = _rankdata(x)
+    ry = _rankdata(y)
+    # 秩的 Pearson 相关
+    sx = rx.std()
+    sy = ry.std()
+    if sx == 0 or sy == 0:
+        return float('nan'), float('nan')
+    rho = float(np.corrcoef(rx, ry)[0, 1])
     # 完全相关时 p->0
     if abs(rho) >= 1.0:
         return float(rho), 0.0
     # t = rho * sqrt((n-2)/(1-rho^2)) ~ t(n-2)
     t = rho * np.sqrt((n - 2) / (1 - rho ** 2))
-    # 用 numpy 的不完全 beta 近似双尾 p：借助 math.erf 的正态近似不够准，
-    # 这里用学生 t 的生存函数，通过数值积分的稳定近似（n 通常较大）。
-    from math import lgamma, log, sqrt, pi
+    from math import lgamma, log
     df = n - 2
-    # 学生 t 双尾 p 值：用与正态的关系，df 大时近似良好；df 小时用级数。
-    # 采用稳定的不完全 beta：I_x(df/2, 1/2)，x = df/(df+t^2)
     def betacf(a, b, xx):
         MAXIT, EPS, FPMIN = 200, 3e-12, 1e-300
         qab, qap, qam = a + b, a + 1.0, a - 1.0
