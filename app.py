@@ -39,6 +39,12 @@ USE_HUGGINGFACE = True
 HF_GDSC_FILENAME = "GDSC2_AUC_Matrix.csv"
 HF_CRISPR26Q1_FILENAME = "CRISPRGeneEffect_26Q1.csv"
 HF_COMPOUNDS_FILENAME = "PortalCompounds.csv"
+HF_MODEL_FILENAME = "Model.csv"  # 提供 ModelID -> OncotreeLineage/PrimaryDisease
+
+# 肿瘤类型分层：粗(lineage) / 细(primary disease)
+LINEAGE_COL_COARSE = "OncotreeLineage"
+LINEAGE_COL_FINE = "OncotreePrimaryDisease"
+MIN_N_PER_GROUP = 10  # 分层相关每组最少细胞系数
 
 # 默认演示用的基因 / 药物关键词（用户可改）
 DEFAULT_CORR_GENE = "DUSP6"
@@ -144,6 +150,17 @@ TRANSLATIONS = {
         'corr_stat_rho': "Spearman ρ",
         'corr_stat_p': 'p-value',
         'corr_caveat': '⚠️ Pan-cancer correlation only. Lineage and mutation background (e.g. BRCA/HR status for PARP inhibitors) are NOT controlled here — a significant ρ may reflect confounding. Interpret as association, not mechanism.',
+        'corr_lineage_gran': 'Cancer-type granularity',
+        'corr_gran_coarse': 'Lineage (broad)',
+        'corr_gran_fine': 'Primary disease (fine)',
+        'corr_restrict_lineage': 'Restrict to one cancer type',
+        'corr_all_lineages': 'All cancer types',
+        'corr_no_model': 'Model.csv not found in the dataset repo — lineage stratification is disabled. Upload Model.csv to enable per-cancer-type analysis.',
+        'corr_strat_title': 'Per-lineage correlation (confounding check)',
+        'corr_strat_desc': 'Spearman ρ computed within each cancer type (n ≥ 10). If the overall correlation holds within lineages, it is less likely to be driven purely by cancer-type composition. Red points: BH-FDR < 0.05.',
+        'corr_strat_insufficient': 'Not enough cancer types with ≥10 cell lines for stratified analysis.',
+        'corr_forest_sub': 'Point size ∝ n; red = BH-FDR < 0.05',
+        'corr_tbl_lineage': 'Cancer type',
     },
     'zh': {
         'app_title': 'CRISPR 基因必需性分析器',
@@ -232,6 +249,17 @@ TRANSLATIONS = {
         'corr_stat_rho': "Spearman ρ",
         'corr_stat_p': 'p 值',
         'corr_caveat': '⚠️ 仅为泛癌相关。此处未控制谱系与突变背景（如 PARP 抑制剂的 BRCA/HR 状态）——显著的 ρ 可能来自混杂。结论应表述为关联，而非机制。',
+        'corr_lineage_gran': '肿瘤类型粒度',
+        'corr_gran_coarse': '谱系（粗）',
+        'corr_gran_fine': '原发病种（细）',
+        'corr_restrict_lineage': '仅分析某一肿瘤类型',
+        'corr_all_lineages': '全部肿瘤类型',
+        'corr_no_model': '数据集仓库中未找到 Model.csv —— 肿瘤分层功能已禁用。上传 Model.csv 即可启用按癌种分析。',
+        'corr_strat_title': '分层相关（混杂检查）',
+        'corr_strat_desc': '在每个肿瘤类型内部分别计算 Spearman ρ（n ≥ 10）。若整体相关在各谱系内部依然成立，则更不可能纯粹由癌种构成驱动。红点：BH-FDR < 0.05。',
+        'corr_strat_insufficient': '细胞系数 ≥10 的肿瘤类型不足，无法做分层分析。',
+        'corr_forest_sub': '点大小 ∝ n；红色 = BH-FDR < 0.05',
+        'corr_tbl_lineage': '肿瘤类型',
     }
 }
 
@@ -571,13 +599,14 @@ def get_lineage_data(df, genes):
 # 基因 × 药物 相关分析模块
 # =============================================================================
 @st.cache_resource(show_spinner=False)
-def load_corr_datasets(repo_id, gdsc_file, crispr_file, compounds_file):
-    """加载并缓存三个相关分析数据集。返回 (gdsc, crispr, compounds, err)。
-    gdsc/crispr 的第一列是 ModelID，设为 index。"""
+def load_corr_datasets(repo_id, gdsc_file, crispr_file, compounds_file, model_file=None):
+    """加载并缓存相关分析数据集。返回 (gdsc, crispr, compounds, model, err)。
+    gdsc/crispr 的第一列是 ModelID，设为 index。
+    model 为 ModelID->lineage 的精简表；若文件缺失则为 None（不报错，仅禁用分层）。"""
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:
-        return None, None, None, "huggingface_hub not installed"
+        return None, None, None, None, "huggingface_hub not installed"
     try:
         gdsc = pd.read_csv(
             hf_hub_download(repo_id=repo_id, filename=gdsc_file, repo_type="dataset"),
@@ -587,9 +616,21 @@ def load_corr_datasets(repo_id, gdsc_file, crispr_file, compounds_file):
             index_col=0)
         compounds = pd.read_csv(
             hf_hub_download(repo_id=repo_id, filename=compounds_file, repo_type="dataset"))
-        return gdsc, crispr, compounds, None
+        model = None
+        if model_file:
+            try:
+                m = pd.read_csv(
+                    hf_hub_download(repo_id=repo_id, filename=model_file,
+                                    repo_type="dataset"))
+                keep = ['ModelID'] + [c for c in [LINEAGE_COL_COARSE, LINEAGE_COL_FINE]
+                                      if c in m.columns]
+                if 'ModelID' in m.columns and len(keep) > 1:
+                    model = m[keep].set_index('ModelID')
+            except Exception:
+                model = None  # Model.csv 缺失或格式不符：分层功能禁用，主分析照常
+        return gdsc, crispr, compounds, model, None
     except Exception as e:
-        return None, None, None, f"HF error: {str(e)}"
+        return None, None, None, None, f"HF error: {str(e)}"
 
 
 def find_crispr_gene_column(crispr_df, gene_name):
@@ -796,6 +837,122 @@ def create_correlation_scatter(merged, gene_name, drug_label, rho, p, point_size
     )
     fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
     fig.update_yaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    apply_theme_to_fig(fig)
+    return fig
+
+
+# ---- 肿瘤类型分层 ----
+# Morandi 风格分类配色（低饱和度）
+MORANDI_PALETTE = [
+    '#A7B5A0', '#C5A9A0', '#9FA8B0', '#C7B79B', '#B0A1B5',
+    '#8FA8A3', '#C2A38F', '#A2A9B8', '#BFAFA0', '#A8B0A0',
+    '#B5A0A8', '#9DAEB0', '#C8B5A0', '#A0A5B0', '#B8A8A0',
+    '#A5B0A8', '#B0A0A5', '#A0B0B5', '#C0B0A0', '#ABA5B0',
+]
+
+
+def attach_lineage(merged, model_df, lineage_col):
+    """给 merged(index=ModelID) 加一列 lineage；缺失或无 model_df 时返回原表+None。"""
+    if model_df is None or lineage_col not in (model_df.columns if model_df is not None else []):
+        return merged, None
+    out = merged.copy()
+    out['lineage'] = model_df[lineage_col].reindex(out.index)
+    out['lineage'] = out['lineage'].fillna('Unknown')
+    return out, 'lineage'
+
+
+def stratified_correlation(merged_with_lin, min_n=MIN_N_PER_GROUP):
+    """对每个 lineage 分别算 Spearman ρ/p；返回按 |ρ| 排序的 DataFrame，含 BH-FDR。
+    需要 merged_with_lin 含列 dep/auc/lineage。"""
+    rows = []
+    for lin, g in merged_with_lin.groupby('lineage'):
+        gg = g[['dep', 'auc']].dropna()
+        if len(gg) < min_n:
+            continue
+        rho, p = _spearman_with_p(gg['dep'].values, gg['auc'].values)
+        if np.isnan(rho):
+            continue
+        rows.append({'lineage': lin, 'n': len(gg), 'rho': rho, 'p': p})
+    if not rows:
+        return pd.DataFrame(columns=['lineage', 'n', 'rho', 'p', 'fdr'])
+    df = pd.DataFrame(rows)
+    # Benjamini-Hochberg
+    df = df.sort_values('p').reset_index(drop=True)
+    m = len(df)
+    df['fdr'] = (df['p'] * m / (df.index + 1)).clip(upper=1.0)
+    df['fdr'] = df['fdr'][::-1].cummin()[::-1]  # 单调化
+    df = df.sort_values('rho', ascending=False).reset_index(drop=True)
+    return df
+
+
+def create_lineage_scatter(merged_lin, gene_name, drug_label, rho, p, point_size=4):
+    """按 lineage 着色的总体散点（Morandi 调色），保留总体拟合线与总体 ρ。"""
+    th = get_theme()
+    fig = go.Figure()
+    lineages = sorted(merged_lin['lineage'].dropna().unique().tolist())
+    for i, lin in enumerate(lineages):
+        sub = merged_lin[merged_lin['lineage'] == lin]
+        fig.add_trace(go.Scatter(
+            x=sub['dep'].values, y=sub['auc'].values, mode='markers', name=str(lin),
+            marker=dict(size=point_size * 2.0,
+                        color=MORANDI_PALETTE[i % len(MORANDI_PALETTE)],
+                        opacity=0.7, line=dict(width=0.35, color=th['plot_axis'])),
+            hovertemplate=f'{lin}<br>Gene Effect: %{{x:.3f}}<br>AUC: %{{y:.3f}}<extra></extra>',
+        ))
+    # 总体拟合线
+    x = merged_lin['dep'].values
+    y = merged_lin['auc'].values
+    if len(x) >= 2:
+        coef = np.polyfit(x, y, 1)
+        xs = np.array([x.min(), x.max()])
+        fig.add_trace(go.Scatter(
+            x=xs, y=coef[0] * xs + coef[1], mode='lines', name='Overall fit',
+            line=dict(color=th['plot_axis'], width=1.2),
+            hoverinfo='skip', showlegend=False,
+        ))
+    p_txt = f"<i>p</i> = {p:.2g}" if p is not None else ""
+    subtitle = f"Overall Spearman ρ = {rho:.2f}　{p_txt}　n = {len(merged_lin)}"
+    fig.update_layout(
+        title=dict(text=f"{gene_name}  ×  {drug_label}<br><sub>{subtitle}</sub>",
+                   font=dict(size=16, family=FONT_FAMILY), x=0.5, xanchor='center'),
+        xaxis_title=t('corr_axis_x'), yaxis_title=t('corr_axis_y'),
+        height=560, margin=dict(l=70, r=40, t=80, b=60),
+        legend=dict(font=dict(size=10, family=FONT_FAMILY)),
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    fig.update_yaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    apply_theme_to_fig(fig)
+    return fig
+
+
+def create_forest_plot(strat_df, gene_name, drug_label):
+    """分层相关森林图：每个 lineage 一行，点=ρ，按显著性着色。"""
+    th = get_theme()
+    d = strat_df.iloc[::-1].reset_index(drop=True)  # 从下往上画
+    colors = [PLOT_COLORS['essential'] if r < 0.05 else th['plot_axis']
+              for r in d['fdr']]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=d['rho'], y=d['lineage'], mode='markers',
+        marker=dict(size=[8 + min(np.sqrt(n), 12) for n in d['n']],
+                    color=colors, opacity=0.85,
+                    line=dict(width=0.35, color=th['plot_axis'])),
+        customdata=np.stack([d['n'], d['p'], d['fdr']], axis=-1),
+        hovertemplate=('%{y}<br>ρ = %{x:.2f}<br>n = %{customdata[0]}'
+                       '<br>p = %{customdata[1]:.2g}<br>FDR = %{customdata[2]:.2g}<extra></extra>'),
+        showlegend=False,
+    ))
+    fig.add_vline(x=0, line=dict(color=th['plot_axis'], width=0.5, dash='dot'))
+    fig.update_layout(
+        title=dict(text=f"Per-lineage Spearman ρ: {gene_name} × {drug_label}"
+                        f"<br><sub>{t('corr_forest_sub')}</sub>",
+                   font=dict(size=15, family=FONT_FAMILY), x=0.5, xanchor='center'),
+        xaxis_title="Spearman ρ", yaxis_title="",
+        height=max(320, 40 * len(d) + 120), margin=dict(l=160, r=40, t=80, b=50),
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
+    fig.update_yaxes(showgrid=False, linewidth=0.35,
+                     tickfont=dict(size=10, family=FONT_FAMILY))
     apply_theme_to_fig(fig)
     return fig
 
@@ -1481,8 +1638,9 @@ with tab4:
     st.markdown(t('corr_desc'))
 
     with st.spinner(t('corr_loading')):
-        gdsc_df, crispr26_df, compounds_df, corr_err = load_corr_datasets(
-            HF_REPO_ID, HF_GDSC_FILENAME, HF_CRISPR26Q1_FILENAME, HF_COMPOUNDS_FILENAME)
+        gdsc_df, crispr26_df, compounds_df, model_df, corr_err = load_corr_datasets(
+            HF_REPO_ID, HF_GDSC_FILENAME, HF_CRISPR26Q1_FILENAME,
+            HF_COMPOUNDS_FILENAME, HF_MODEL_FILENAME)
 
     if corr_err is not None:
         st.error(f"❌ {corr_err}")
@@ -1520,6 +1678,30 @@ with tab4:
         elif drug_query.strip():
             st.warning(t('corr_no_drug'))
 
+        # ---- 肿瘤类型分层控件（仅当 Model.csv 加载成功时显示）----
+        lineage_available = model_df is not None
+        lin_gran_col = LINEAGE_COL_COARSE
+        restrict_lineage = None
+        if lineage_available:
+            lc1, lc2 = st.columns(2)
+            with lc1:
+                gran_label = st.radio(
+                    t('corr_lineage_gran'),
+                    [t('corr_gran_coarse'), t('corr_gran_fine')],
+                    horizontal=True, key="corr_gran")
+                lin_gran_col = (LINEAGE_COL_COARSE
+                                if gran_label == t('corr_gran_coarse')
+                                else LINEAGE_COL_FINE)
+            with lc2:
+                if lin_gran_col in model_df.columns:
+                    opts = [t('corr_all_lineages')] + sorted(
+                        model_df[lin_gran_col].dropna().unique().tolist())
+                    pick = st.selectbox(t('corr_restrict_lineage'), opts,
+                                        key="corr_restrict")
+                    restrict_lineage = None if pick == t('corr_all_lineages') else pick
+        else:
+            st.caption(f"ℹ️ {t('corr_no_model')}")
+
         run = st.button(f"▶️ {t('corr_run')}", key="corr_run_btn",
                         use_container_width=False)
 
@@ -1530,6 +1712,24 @@ with tab4:
             else:
                 merged, rho, p, n, err = compute_gene_drug_correlation(
                     crispr26_df, gdsc_df, gene_col, selected_cid)
+                drug_label = next((lbl for cid, lbl in matches
+                                   if cid == selected_cid), selected_cid)
+                drug_short = drug_label.split(' (')[0]
+
+                # 附加 lineage
+                lin_key = None
+                if lineage_available and err != 'drug_not_found':
+                    merged, lin_key = attach_lineage(merged, model_df, lin_gran_col)
+                    if restrict_lineage is not None and lin_key:
+                        merged = merged[merged['lineage'] == restrict_lineage]
+                        if len(merged) >= 10:
+                            rho, p = _spearman_with_p(
+                                merged['dep'].values, merged['auc'].values)
+                            n = len(merged)
+                        else:
+                            err = 'too_few'
+                            n = len(merged)
+
                 if err == 'drug_not_found':
                     st.error(f"❌ {t('corr_drug_not_found')}")
                 elif err == 'too_few':
@@ -1540,11 +1740,16 @@ with tab4:
                     m2.metric(t('corr_stat_rho'), f"{rho:.3f}")
                     m3.metric(t('corr_stat_p'), f"{p:.2g}")
 
-                    drug_label = next((lbl for cid, lbl in matches
-                                       if cid == selected_cid), selected_cid)
-                    fig = create_correlation_scatter(
-                        merged, corr_gene.upper(), drug_label.split(' (')[0],
-                        rho, p, point_size=point_size)
+                    title_suffix = f" · {restrict_lineage}" if restrict_lineage else ""
+                    # A：散点（有 lineage 且未限定单一癌种时按癌种着色）
+                    if lin_key and restrict_lineage is None:
+                        fig = create_lineage_scatter(
+                            merged, corr_gene.upper(), drug_short + title_suffix,
+                            rho, p, point_size=point_size)
+                    else:
+                        fig = create_correlation_scatter(
+                            merged, corr_gene.upper(), drug_short + title_suffix,
+                            rho, p, point_size=point_size)
                     centered_plot(fig)
 
                     if p is not None and p < 0.05 and rho > 0:
@@ -1554,13 +1759,34 @@ with tab4:
                     else:
                         st.info(t('corr_result_dir_ns'))
 
+                    # B：分层相关（仅在有 lineage 且看全部癌种时）
+                    if lin_key and restrict_lineage is None:
+                        strat = stratified_correlation(merged, min_n=MIN_N_PER_GROUP)
+                        if len(strat) >= 2:
+                            st.markdown(f"#### {t('corr_strat_title')}")
+                            st.caption(t('corr_strat_desc'))
+                            forest = create_forest_plot(
+                                strat, corr_gene.upper(), drug_short)
+                            centered_plot(forest)
+                            show_tbl = strat.copy()
+                            show_tbl['rho'] = show_tbl['rho'].round(3)
+                            show_tbl['p'] = show_tbl['p'].map(lambda v: f"{v:.2g}")
+                            show_tbl['fdr'] = show_tbl['fdr'].map(lambda v: f"{v:.2g}")
+                            show_tbl.columns = [t('corr_tbl_lineage'), 'n',
+                                                'Spearman ρ', 'p', 'BH-FDR']
+                            st.dataframe(show_tbl, use_container_width=True,
+                                         hide_index=True)
+                        else:
+                            st.caption(f"ℹ️ {t('corr_strat_insufficient')}")
+
                     st.warning(t('corr_caveat'))
 
                     with st.expander(f"📥 {t('export_title')}", expanded=False):
                         render_download_buttons(fig, "gene_drug_correlation",
                                                  "corr", height=export_height)
                     with st.expander(f"📊 {t('download_csv')}", expanded=False):
-                        csv_out = merged.reset_index().rename(
+                        cols_out = ['dep', 'auc'] + (['lineage'] if lin_key else [])
+                        csv_out = merged[cols_out].reset_index().rename(
                             columns={'index': 'ModelID'}).to_csv(index=False)
                         st.download_button(
                             t('download_csv'), data=csv_out,
