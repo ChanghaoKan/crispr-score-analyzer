@@ -10,7 +10,7 @@ identifiers:
     value: 10.5281/zenodo.19607602
     description: "Concept DOI (always resolves to the latest version)"
 repository-code: "https://github.com/ChanghaoKan/crispr-score-analyzer"
-url: "https://crispr-score-analyzer.streamlit.app"
+url: "https://crispr-score-analyzer-szbl-denglab.streamlit.app/"
 version: "1.0.0"
 date-released: "2026-04-16"
 license: MIT

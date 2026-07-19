@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import io
 import re
 import copy
+import hashlib
 
 # =============================================================================
 # 页面配置
@@ -21,7 +22,7 @@ st.set_page_config(
     page_title="CRISPR Score Analyzer",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # =============================================================================
@@ -30,6 +31,9 @@ st.set_page_config(
 HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
 USE_HUGGINGFACE = True
+DATA_VERSION = "DepMap Public 25Q3"
+SCORE_TYPE = "Chronos Gene Effect"
+ESSENTIALITY_THRESHOLD = -0.5
 
 # 暂时不在公开网页中展示基因 × 药物分析。底层分析代码仍保留，便于后续恢复。
 ENABLE_GENE_DRUG_UI = False
@@ -87,10 +91,18 @@ TRANSLATIONS = {
         'export_height': 'Image height (px)',
         'cell_lines': 'Cell lines',
         'gene_count': 'Genes',
-        'essential_genes': 'Essential genes',
+        'essential_genes': 'Mean score < {threshold}',
         'score_range': 'Score range',
-        'tab1': '📊 Gene Ranking',
-        'tab2': '📦 Lineage Boxplot',
+        'custom_dataset': 'Custom uploaded dataset',
+        'score_guide': "Lower scores indicate stronger gene dependency. The count uses each gene's mean across all cell lines; {threshold} is a screening aid, not a universal biological cutoff.",
+        'threshold_label': 'Screening cutoff {threshold}',
+        'essential_status': 'Mean-score screen',
+        'essential_yes': 'Mean below cutoff',
+        'essential_no': 'Mean not below cutoff',
+        'first_eight_only': 'Showing the first 8 genes to keep the figure readable.',
+        'lineage_missing': 'No lineage column was found in this dataset.',
+        'tab1': '📊 Ranking',
+        'tab2': '📦 Lineage',
         'tab3': '🎯 Multi-layer',
         'tab4': '🔗 Gene × Drug',
         'gene_ranking_title': 'Gene Essentiality Ranking',
@@ -186,10 +198,18 @@ TRANSLATIONS = {
         'export_height': '图片高度 (px)',
         'cell_lines': '细胞系',
         'gene_count': '基因数',
-        'essential_genes': '必需基因数',
+        'essential_genes': '平均分 < {threshold}',
         'score_range': 'Score 范围',
-        'tab1': '📊 基因排名图',
-        'tab2': '📦 Lineage 箱线图',
+        'custom_dataset': '自定义上传数据',
+        'score_guide': '分数越低表示基因依赖越强；此处按各基因在全部细胞系中的平均分计数，{threshold} 仅是筛选参考，并非通用的生物学阈值。',
+        'threshold_label': '筛选参考线 {threshold}',
+        'essential_status': '平均分筛选',
+        'essential_yes': '平均分低于阈值',
+        'essential_no': '平均分未低于阈值',
+        'first_eight_only': '为保证图表清晰，仅展示前 8 个基因。',
+        'lineage_missing': '该数据中未找到 lineage 列。',
+        'tab1': '📊 基因排名',
+        'tab2': '📦 癌种箱线图',
         'tab3': '🎯 多层标注',
         'tab4': '🔗 基因×药物',
         'gene_ranking_title': '基因必需性排名',
@@ -407,15 +427,38 @@ def inject_css():
             color: {th['text']} !important; font-weight: 700 !important;
         }}
 
+        .data-context {{
+            display: flex; align-items: center; gap: 0.9rem;
+            background: {th['bg_secondary']};
+            border: 1px solid {th['border']};
+            border-left: 4px solid {th['accent']};
+            border-radius: 10px; padding: 0.8rem 1rem;
+            margin: 1rem 0 0.25rem 0;
+            color: {th['text_muted']}; font-size: 0.88rem;
+            line-height: 1.45;
+        }}
+        .data-context .data-chip {{
+            flex: 0 0 auto; color: {th['accent']} !important;
+            background: {th['accent']}14; border: 1px solid {th['accent']}33;
+            border-radius: 999px; padding: 0.25rem 0.7rem;
+            font-size: 0.78rem; font-weight: 700;
+        }}
+        .data-context > span:not(.data-chip) {{
+            color: {th['text_muted']} !important;
+        }}
+
         .stTabs [data-baseweb="tab-list"] {{
             gap: 6px; background: {th['bg_secondary']};
             padding: 6px; border-radius: 12px;
             border: 1px solid {th['border']};
+            overflow-x: auto; scrollbar-width: none;
         }}
+        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{ display: none; }}
         .stTabs [data-baseweb="tab"] {{
             border-radius: 8px; padding: 10px 20px;
             background: transparent; color: {th['text_muted']};
             font-weight: 600; transition: all 0.2s ease;
+            flex: 1 0 auto; justify-content: center;
         }}
         .stTabs [data-baseweb="tab"]:hover {{
             background: {th['bg_card']}; color: {th['text']};
@@ -505,6 +548,45 @@ def inject_css():
         .doi-badge:hover {{
             background: {th['accent_hover']}; color: white !important;
         }}
+
+        button:focus-visible, input:focus-visible, textarea:focus-visible,
+        [role="tab"]:focus-visible {{
+            outline: 3px solid {th['accent']}66 !important;
+            outline-offset: 2px !important;
+        }}
+
+        @media (max-width: 768px) {{
+            .block-container {{
+                padding: 1.25rem 0.9rem 2rem 0.9rem !important;
+            }}
+            .main-header {{
+                font-size: 1.9rem; letter-spacing: -0.5px;
+            }}
+            .sub-header {{
+                font-size: 0.95rem; margin-bottom: 1.2rem;
+            }}
+            .data-context {{
+                align-items: flex-start; flex-direction: column;
+                gap: 0.55rem; padding: 0.8rem 0.9rem;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"]) {{
+                flex-wrap: wrap; gap: 0.7rem;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"])
+            > div[data-testid="stColumn"] {{
+                flex: 1 1 calc(50% - 0.7rem); min-width: 140px;
+            }}
+            div[data-testid="stMetric"] {{
+                padding: 0.9rem 1rem;
+            }}
+            div[data-testid="stMetricValue"] {{
+                font-size: 1.75rem !important;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                padding: 8px 12px; font-size: 0.84rem;
+            }}
+            .footer-card {{ padding: 1.2rem; }}
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -520,14 +602,18 @@ def download_from_huggingface(repo_id: str, filename: str):
         return None, False, "huggingface_hub not installed"
     try:
         path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type="dataset")
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, low_memory=False, memory_map=True)
         return df, True, None
     except Exception as e:
         return None, False, f"HF error: {str(e)}"
 
 
-def load_uploaded_data(file_content):
-    return pd.read_csv(io.StringIO(file_content.decode('utf-8')))
+@st.cache_resource(show_spinner=False, max_entries=3)
+def load_uploaded_data(file_hash: str, _file_content: bytes):
+    """按内容摘要缓存上传数据；返回的数据框在应用中只读使用。"""
+    if not file_hash:
+        raise ValueError("Missing upload content hash")
+    return pd.read_csv(io.BytesIO(_file_content), low_memory=False)
 
 
 def extract_gene_name(col_name: str) -> str:
@@ -537,23 +623,30 @@ def extract_gene_name(col_name: str) -> str:
     return str(col_name)
 
 
-@st.cache_data(show_spinner=False)
-def compute_gene_rankings(df_hash: str, df: pd.DataFrame):
-    gene_cols = []
-    for col in df.columns:
-        try:
-            if pd.api.types.is_numeric_dtype(df[col]):
-                sample_vals = df[col].dropna()
-                if len(sample_vals) > 10:
-                    mean_val = sample_vals.mean()
-                    std_val = sample_vals.std()
-                    if -5 < mean_val < 2 and std_val > 0.01:
-                        gene_cols.append(col)
-        except Exception:
-            pass
+@st.cache_data(show_spinner=False, max_entries=4)
+def compute_gene_rankings(df_hash: str, _df: pd.DataFrame):
+    """向量化识别并汇总基因列；_df 不参与 Streamlit 的重复哈希。"""
+    if not df_hash:
+        return None, 0, "Missing dataset cache key"
+
+    numeric_df = _df.select_dtypes(include=[np.number])
+    if numeric_df.empty:
+        return None, 0, "No numeric CRISPR score columns detected"
+
+    stats = pd.DataFrame({
+        'count': numeric_df.count(),
+        'mean': numeric_df.mean(),
+        'std': numeric_df.std(),
+    })
+    valid_mask = (
+        (stats['count'] > 10)
+        & stats['mean'].between(-5, 2, inclusive='neither')
+        & (stats['std'] > 0.01)
+    )
+    gene_cols = stats.index[valid_mask].tolist()
     if not gene_cols:
         return None, 0, "No CRISPR score columns detected"
-    mean_scores = df[gene_cols].mean().sort_values()
+    mean_scores = stats.loc[gene_cols, 'mean'].sort_values()
     rankings = pd.DataFrame({
         'gene_raw': mean_scores.index,
         'gene': [extract_gene_name(col) for col in mean_scores.index],
@@ -562,7 +655,7 @@ def compute_gene_rankings(df_hash: str, df: pd.DataFrame):
         'percentile': [(i / len(mean_scores)) * 100 for i in range(1, len(mean_scores) + 1)]
     })
     rankings['gene_upper'] = rankings['gene'].str.upper()
-    return rankings, len(df), None
+    return rankings, len(_df), None
 
 
 def filter_genes_by_list(gene_rank_df, gene_list):
@@ -964,10 +1057,12 @@ def create_forest_plot(strat_df, gene_name, drug_label):
 # 绘图配置
 # =============================================================================
 PLOT_COLORS = {
-    'essential': '#b30035',
-    'nonessential': '#35b300',
-    'interest': '#0062b3',
-    'boxplot_fill': '#D4A5A5',
+    # Okabe–Ito 色盲友好配色
+    'essential': '#D55E00',
+    'nonessential': '#009E73',
+    'interest': '#0072B2',
+    'threshold': '#E69F00',
+    'boxplot_fill': '#56B4E9',
 }
 FONT_FAMILY = "Inter, Helvetica Neue, Arial, sans-serif"
 
@@ -985,11 +1080,9 @@ PLOT_CONFIG = {
 }
 
 
-def centered_plot(fig, config=None, ratio=(1, 4, 1)):
-    """将图表居中显示，两侧留白，改善宽高比"""
-    _, center, _ = st.columns(ratio)
-    with center:
-        st.plotly_chart(fig, use_container_width=True, config=config or PLOT_CONFIG)
+def centered_plot(fig, config=None):
+    """使用容器宽度渲染，避免窄屏三列布局造成图表压缩。"""
+    st.plotly_chart(fig, config=config or PLOT_CONFIG)
 
 
 def apply_theme_to_fig(fig):
@@ -1038,7 +1131,12 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
         text=bg_df['gene']
     ))
 
-    fig.add_hline(y=-1, line=dict(dash="dash", color=th['text_muted'], width=1))
+    fig.add_hline(
+        y=ESSENTIALITY_THRESHOLD,
+        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.5),
+        annotation_text=t('threshold_label').format(threshold=ESSENTIALITY_THRESHOLD),
+        annotation_position="top left",
+    )
     fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
 
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
@@ -1126,6 +1224,18 @@ def create_lineage_boxplot(lineage_data, genes):
         ), row=i, col=1)
         fig.add_hline(y=0, line=dict(dash="dot", color=th['plot_axis'], width=1),
                       row=i, col=1)
+        threshold_kwargs = {}
+        if i == 1:
+            threshold_kwargs = {
+                'annotation_text': t('threshold_label').format(
+                    threshold=ESSENTIALITY_THRESHOLD),
+                'annotation_position': 'top left',
+            }
+        fig.add_hline(
+            y=ESSENTIALITY_THRESHOLD,
+            line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.2),
+            row=i, col=1, **threshold_kwargs,
+        )
 
     fig.update_layout(
         title=dict(text='<b>CRISPR Score by Cancer Type</b>',
@@ -1167,7 +1277,12 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
         text=bg_all_df['gene']
     ))
-    fig.add_hline(y=-1, line=dict(dash="dash", color=th['text_muted'], width=1))
+    fig.add_hline(
+        y=ESSENTIALITY_THRESHOLD,
+        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.5),
+        annotation_text=t('threshold_label').format(threshold=ESSENTIALITY_THRESHOLD),
+        annotation_position="top left",
+    )
     fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
 
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
@@ -1290,12 +1405,12 @@ def render_download_buttons(fig, filename_base: str, key_prefix: str, height: in
                     file_name=f"{filename_base}.{fmt}",
                     mime=mime,
                     key=f"{key_prefix}_{fmt}_dl",
-                    use_container_width=True
+                    width="stretch"
                 )
             else:
                 # 首次：点击按钮才生成
                 if st.button(label, key=f"{key_prefix}_{fmt}_btn",
-                             use_container_width=True):
+                             width="stretch"):
                     with st.spinner(f"Generating {fmt.upper()}..."):
                         try:
                             export_fig = fig_for_export(fig)
@@ -1443,10 +1558,14 @@ with st.sidebar:
 # =============================================================================
 data_loaded = False
 crispr_data = None
+data_cache_key = None
 
 if uploaded_file is not None:
     with st.spinner(t('loading_upload')):
-        crispr_data = load_uploaded_data(uploaded_file.getvalue())
+        uploaded_bytes = uploaded_file.getvalue()
+        upload_digest = hashlib.sha256(uploaded_bytes).hexdigest()
+        crispr_data = load_uploaded_data(upload_digest, uploaded_bytes)
+        data_cache_key = f"upload:{upload_digest}"
         st.success(f"{t('loaded')}: {uploaded_file.name}")
         data_loaded = True
 elif USE_HUGGINGFACE:
@@ -1454,6 +1573,7 @@ elif USE_HUGGINGFACE:
         df_result, success, err = download_from_huggingface(HF_REPO_ID, HF_FILENAME)
         if success:
             crispr_data = df_result
+            data_cache_key = f"hf:{HF_REPO_ID}:{HF_FILENAME}"
             data_loaded = True
         else:
             st.error(f"❌ {err}")
@@ -1470,7 +1590,7 @@ if not data_loaded:
     st.stop()
 
 df = crispr_data
-df_hash = f"{df.shape}_{hash(tuple(df.columns[:5]))}"
+df_hash = f"{data_cache_key}:{df.shape}"
 gene_rankings, n_cell_lines, error_msg = compute_gene_rankings(df_hash, df)
 
 if gene_rankings is None:
@@ -1487,11 +1607,23 @@ with col1:
 with col2:
     st.metric(t('gene_count'), f"{len(gene_rankings):,}")
 with col3:
-    essential_count = (gene_rankings['mean_score'] < -0.5).sum()
-    st.metric(t('essential_genes'), f"{essential_count:,}")
+    essential_count = (gene_rankings['mean_score'] < ESSENTIALITY_THRESHOLD).sum()
+    st.metric(
+        t('essential_genes').format(threshold=ESSENTIALITY_THRESHOLD),
+        f"{essential_count:,}",
+    )
 with col4:
     st.metric(t('score_range'),
-              f"{gene_rankings['mean_score'].min():.2f} ~ {gene_rankings['mean_score'].max():.2f}")
+              f"{gene_rankings['mean_score'].min():.2f}–{gene_rankings['mean_score'].max():.2f}")
+
+dataset_label = (t('custom_dataset') if uploaded_file is not None
+                 else f"{DATA_VERSION} · {SCORE_TYPE}")
+score_guide = t('score_guide').format(threshold=ESSENTIALITY_THRESHOLD)
+st.markdown(
+    f'<div class="data-context"><span class="data-chip">{dataset_label}</span>'
+    f'<span>{score_guide}</span></div>',
+    unsafe_allow_html=True,
+)
 
 st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
@@ -1552,9 +1684,13 @@ with tab1:
 
             with st.expander(f"📋 {t('gene_details')}", expanded=False):
                 detail = gene_rankings[gene_rankings['gene'].isin(matched_genes)].sort_values('mean_score').copy()
-                detail['Essential'] = detail['mean_score'].apply(lambda x: '🔴 Yes' if x < -0.5 else '⚪ No')
-                st.dataframe(detail[['gene', 'rank', 'percentile', 'mean_score', 'Essential']].round(4),
-                             use_container_width=True, hide_index=True)
+                status_col = t('essential_status')
+                detail[status_col] = detail['mean_score'].apply(
+                    lambda x: (f"◆ {t('essential_yes')}" if x < ESSENTIALITY_THRESHOLD
+                               else f"◇ {t('essential_no')}")
+                )
+                st.dataframe(detail[['gene', 'rank', 'percentile', 'mean_score', status_col]].round(4),
+                             width="stretch", hide_index=True)
                 csv_data = detail[['gene', 'rank', 'percentile', 'mean_score']].to_csv(index=False)
                 st.download_button(t('download_csv'), data=csv_data,
                                    file_name="gene_ranking_data.csv", mime="text/csv", key="rank_csv")
@@ -1587,18 +1723,18 @@ with tab2:
             st.warning(f"{t('not_found')}: {', '.join(not_found)}")
         if matched:
             if len(matched) > 8:
-                st.info("Only displaying first 8 genes for readability")
+                st.info(t('first_eight_only'))
                 matched = matched[:8]
             lineage_data = get_lineage_data(df, matched)
             if lineage_data is not None:
                 fig = create_lineage_boxplot(lineage_data, matched)
-                st.plotly_chart(fig, use_container_width=True, config=PLOT_CONFIG)
+                st.plotly_chart(fig, config=PLOT_CONFIG)
                 # ✅ CHANGED: expanded=False
                 with st.expander(f"📥 {t('export_title')}", expanded=False):
                     box_height = max(280 * len(matched) + 100, 400)
                     render_download_buttons(fig, "lineage_boxplot", "boxplot", height=box_height)
             else:
-                st.error("No 'lineage' column found in data")
+                st.error(t('lineage_missing'))
 
 # ---- Tab 3 ----
 with tab3:
@@ -1706,7 +1842,7 @@ if ENABLE_GENE_DRUG_UI:
             st.caption(f"ℹ️ {t('corr_no_model')}")
 
         run = st.button(f"▶️ {t('corr_run')}", key="corr_run_btn",
-                        use_container_width=False)
+                        width="content")
 
         if run and selected_cid:
             gene_col = find_crispr_gene_column(crispr26_df, corr_gene)
@@ -1777,7 +1913,7 @@ if ENABLE_GENE_DRUG_UI:
                             show_tbl['fdr'] = show_tbl['fdr'].map(lambda v: f"{v:.2g}")
                             show_tbl.columns = [t('corr_tbl_lineage'), 'n',
                                                 'Spearman ρ', 'p', 'BH-FDR']
-                            st.dataframe(show_tbl, use_container_width=True,
+                            st.dataframe(show_tbl, width="stretch",
                                          hide_index=True)
                         else:
                             st.caption(f"ℹ️ {t('corr_strat_insufficient')}")

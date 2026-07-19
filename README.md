@@ -4,13 +4,13 @@
 
 ### An interactive platform for gene essentiality analysis using DepMap CRISPR screens
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-Live%20Demo-FF4B4B?logo=streamlit&logoColor=white)](https://crispr-score-analyzer.streamlit.app)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-Live%20Demo-FF4B4B?logo=streamlit&logoColor=white)](https://crispr-score-analyzer-szbl-denglab.streamlit.app/)
 [![HuggingFace Data](https://img.shields.io/badge/🤗-Dataset-yellow)](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![DOI](https://zenodo.org/badge/1125701784.svg)](https://doi.org/10.5281/zenodo.19607602)
 
-**[🚀 Launch App](https://crispr-score-analyzer.streamlit.app)** · 
+**[🚀 Launch App](https://crispr-score-analyzer-szbl-denglab.streamlit.app/)** ·
 **[📊 Dataset](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap)** · 
 **[🐛 Report Issue](https://github.com/ChanghaoKan/crispr-score-analyzer/issues)**
 
@@ -20,9 +20,9 @@
 
 ## 📖 Overview
 
-**CRISPR Score Analyzer** is a lightweight, interactive web application for exploring gene essentiality from the [DepMap Cancer Dependency Map](https://depmap.org) (Chronos-corrected CRISPR screens across 1,000+ cancer cell lines). It lets researchers quickly locate genes of interest within a genome-wide dependency ranking, visualize lineage-specific dependencies, correlate gene dependency with drug sensitivity, and export publication-quality figures — all without writing a line of code.
+**CRISPR Score Analyzer** is a lightweight, interactive web application for exploring gene essentiality from the [DepMap Cancer Dependency Map](https://depmap.org) (Chronos-corrected CRISPR screens across 1,000+ cancer cell lines). It lets researchers quickly locate genes of interest within a genome-wide dependency ranking, visualize lineage-specific dependencies, and export publication-quality figures — all without writing a line of code.
 
-Beyond browsing essentiality, the tool now links **CRISPR gene dependency** to **drug sensitivity** (GDSC2 AUC): for any gene and any compound, it aligns cell lines by DepMap `ModelID` and tests whether more gene-dependent lines are also more drug-sensitive. This supports cautious "shared-vulnerability" hypotheses (e.g. *DUSP6* dependency vs. PARP-inhibitor response) directly from public data.
+An experimental **CRISPR gene dependency × drug sensitivity** module remains in the source code for continued validation, but it is currently disabled in the public interface.
 
 The tool is built for wet-lab biologists, early-stage computational researchers, and anyone preparing figures for manuscripts involving CRISPR dependency or drug-response data.
 
@@ -31,7 +31,6 @@ The tool is built for wet-lab biologists, early-stage computational researchers,
 - **🔍 Gene dependency ranking** — locate any gene(s) on a genome-wide essentiality curve with reference anchors (MYC, PTEN customizable)
 - **📦 Lineage-specific boxplots** — compare CRISPR scores across cancer types for selected genes
 - **🎯 Multi-layer annotation** — overlay gene sets and highlight candidates with custom colors
-- **🔗 Gene × Drug correlation** — correlate CRISPR gene dependency with GDSC2 drug sensitivity (Spearman ρ), searchable by drug name *or* target; built-in direction guide and confounding caveat
 - **📄 Publication-ready export** — download figures as **PDF (vector)**, **PNG (300 DPI)**, or **SVG (editable)**
 - **🌐 Bilingual interface** — English / 中文 one-click switch
 - **🎨 Light / Dark theme** — theme-aware UI and charts
@@ -48,13 +47,13 @@ The tool is built for wet-lab biologists, early-stage computational researchers,
 
 </div>
 
-> 📸 *Tab 4 (Gene × Drug correlation) screenshot — to be added after first deployment.*
+> The public application exposes three validated gene-essentiality analysis tabs; the screenshots above show the ranking and lineage views.
 
 ## 🚀 Quick Start
 
 ### Option 1: Use the live app (recommended)
 
-Simply visit **[crispr-score-analyzer.streamlit.app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/)** — no installation, no login.
+Simply visit **[crispr-score-analyzer-szbl-denglab.streamlit.app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/)** — no installation, no login.
 
 ### Option 2: Run locally
 
@@ -77,7 +76,7 @@ All datasets are hosted on Hugging Face: 🔗 **[huggingface.co/datasets/Changha
 
 **Gene essentiality (Tabs 1–3)** uses the **DepMap Public 25Q3 Chronos CRISPR** dependency scores, subsetted for efficient cloud delivery.
 
-**Gene × Drug correlation (Tab 4)** additionally uses **DepMap Public 26Q1 CRISPR**, the **GDSC2 AUC** drug-response matrix, and the DepMap compound annotation table. All files are aligned by DepMap `ModelID` (`ACH-xxxxxx`).
+The disabled experimental **Gene × Drug correlation** module additionally uses **DepMap Public 26Q1 CRISPR**, the **GDSC2 AUC** drug-response matrix, and the DepMap compound annotation table. All files are aligned by DepMap `ModelID` (`ACH-xxxxxx`).
 
 | File (HF) | Role | Index / Key |
 |---|---|---|
@@ -111,7 +110,7 @@ If uploading your own data, use this schema:
 - **Gene columns**: numeric CRISPR scores, headers in `GENE_SYMBOL (ENTREZ_ID)` format
 - At least one column containing the word `lineage` is needed for boxplot analysis
 
-### Gene × Drug correlation (Tab 4)
+### Experimental Gene × Drug correlation (currently hidden)
 
 These three files are read from the Hugging Face dataset repo (filenames are configurable at the top of `app.py`). The **first column** of both matrices must be the DepMap `ModelID`.
 
@@ -155,7 +154,7 @@ Plot a background gene set (e.g., a pathway) with specific highlights (e.g., can
 - Showing how a few hits compare against their pathway context
 - Creating layered figures for reviews and presentations
 
-### Tab 4 — Gene × Drug Correlation
+### Experimental Gene × Drug Correlation (currently hidden)
 
 Pick a gene (CRISPR dependency) and a compound (GDSC2 sensitivity); the app aligns cell lines by `ModelID`, computes a **Spearman ρ**, and plots a scatter with a fitted line. Useful for:
 - Testing shared-vulnerability hypotheses (e.g. *DUSP6* dependency vs. PARP-inhibitor response)
@@ -167,7 +166,7 @@ Pick a gene (CRISPR dependency) and a compound (GDSC2 sensitivity); the app alig
 - **ρ < 0** → the opposite.
 - The result text states the direction and significance for you.
 
-> ⚠️ **Caveat (shown in-app).** Tab 4 reports **pan-cancer correlation only**. Lineage and mutation background — e.g. *BRCA1/2* / HR status for PARP inhibitors — are **not** controlled. A significant ρ may reflect confounding, so interpret results as *association, not mechanism*. Lineage-stratified and mutation-aware analysis is on the roadmap.
+> ⚠️ **Caveat (retained with the experimental module).** The analysis reports association rather than mechanism. Lineage and mutation background — e.g. *BRCA1/2* / HR status for PARP inhibitors — require explicit control when interpreting results.
 
 ## 📥 Figure Export
 
