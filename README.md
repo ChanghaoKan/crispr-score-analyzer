@@ -54,7 +54,7 @@ The tool is built for wet-lab biologists, early-stage computational researchers,
 
 ### Option 1: Use the live app (recommended)
 
-Simply visit **[crispr-score-analyzer.streamlit.app](https://crispr-score-analyzer.streamlit.app)** — no installation, no login.
+Simply visit **[crispr-score-analyzer.streamlit.app]([https://crispr-score-analyzer.streamlit.app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/))** — no installation, no login.
 
 ### Option 2: Run locally
 
