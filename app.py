@@ -31,6 +31,9 @@ HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
 USE_HUGGINGFACE = True
 
+# 暂时不在公开网页中展示基因 × 药物分析。底层分析代码仍保留，便于后续恢复。
+ENABLE_GENE_DRUG_UI = False
+
 # ---- Gene × Drug correlation module (DepMap 26Q1 + GDSC2) ----
 # 同一个 HF 数据集仓库内放置以下三个文件即可（行/列键已对齐到 DepMap ModelID）：
 #   GDSC2: index=ModelID(ACH-xxxxxx), columns=CompoundID(DPC-xxxxxx), values=AUC
@@ -1496,7 +1499,7 @@ st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 # =============================================================================
 # Tabs
 # =============================================================================
-tab1, tab2, tab3, tab4 = st.tabs([t('tab1'), t('tab2'), t('tab3'), t('tab4')])
+tab1, tab2, tab3 = st.tabs([t('tab1'), t('tab2'), t('tab3')])
 
 # ---- Tab 1 ----
 with tab1:
@@ -1632,8 +1635,8 @@ with tab3:
                                          height=export_height)
 
 
-# ---- Tab 4: Gene × Drug correlation ----
-with tab4:
+# ---- Gene × Drug correlation (temporarily hidden from the public UI) ----
+if ENABLE_GENE_DRUG_UI:
     st.markdown(f"### {t('corr_title')}")
     st.markdown(t('corr_desc'))
 
