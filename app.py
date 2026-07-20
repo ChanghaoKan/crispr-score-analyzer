@@ -14,6 +14,7 @@ import io
 import re
 import copy
 import hashlib
+from html import escape
 
 # =============================================================================
 # 页面配置
@@ -73,6 +74,7 @@ TRANSLATIONS = {
     'en': {
         'app_title': 'CRISPR Score Analyzer',
         'app_subtitle': 'Gene essentiality analysis platform powered by DepMap',
+        'hero_kicker': 'DEPMAP · CRISPR SCREENING',
         'sidebar_settings': 'Settings',
         'language': 'Language',
         'theme': 'Theme',
@@ -82,8 +84,8 @@ TRANSLATIONS = {
         'upload_custom': 'Upload custom data (optional)',
         'upload_csv': 'Upload CRISPR Score CSV',
         'reference_genes': 'Reference Genes',
-        'essential': 'Essential',
-        'nonessential': 'Non-essential',
+        'essential': 'Reference A',
+        'nonessential': 'Reference B',
         'display_settings': 'Display',
         'show_labels': 'Show gene labels',
         'point_size': 'Point size',
@@ -93,9 +95,9 @@ TRANSLATIONS = {
         'gene_count': 'Genes',
         'essential_genes': 'Mean score < {threshold}',
         'score_range': 'Score range',
+        'resources': 'Citation & data source',
         'custom_dataset': 'Custom uploaded dataset',
-        'score_guide': "Lower scores indicate stronger gene dependency. The count uses each gene's mean across all cell lines; {threshold} is a screening aid, not a universal biological cutoff.",
-        'threshold_label': 'Screening cutoff {threshold}',
+        'score_guide': 'Lower score = stronger gene dependency',
         'essential_status': 'Mean-score screen',
         'essential_yes': 'Mean below cutoff',
         'essential_no': 'Mean not below cutoff',
@@ -180,6 +182,7 @@ TRANSLATIONS = {
     'zh': {
         'app_title': 'CRISPR 基因必需性分析器',
         'app_subtitle': '基于 DepMap 数据的基因必需性分析平台',
+        'hero_kicker': 'DEPMAP · CRISPR 筛选',
         'sidebar_settings': '设置',
         'language': '语言',
         'theme': '主题',
@@ -189,8 +192,8 @@ TRANSLATIONS = {
         'upload_custom': '上传自定义数据（可选）',
         'upload_csv': '上传 CRISPR Score CSV',
         'reference_genes': '参考基因',
-        'essential': '必需基因',
-        'nonessential': '非必需基因',
+        'essential': '参考基因 A',
+        'nonessential': '参考基因 B',
         'display_settings': '显示设置',
         'show_labels': '显示基因名标签',
         'point_size': '点大小',
@@ -199,10 +202,10 @@ TRANSLATIONS = {
         'cell_lines': '细胞系',
         'gene_count': '基因数',
         'essential_genes': '平均分 < {threshold}',
-        'score_range': 'Score 范围',
+        'score_range': '分数范围',
+        'resources': '引用与数据来源',
         'custom_dataset': '自定义上传数据',
-        'score_guide': '分数越低表示基因依赖越强；此处按各基因在全部细胞系中的平均分计数，{threshold} 仅是筛选参考，并非通用的生物学阈值。',
-        'threshold_label': '筛选参考线 {threshold}',
+        'score_guide': '分数越低，基因依赖越强',
         'essential_status': '平均分筛选',
         'essential_yes': '平均分低于阈值',
         'essential_no': '平均分未低于阈值',
@@ -306,42 +309,44 @@ if 'theme' not in st.session_state:
 # =============================================================================
 THEMES = {
     'light': {
-        'bg': '#ffffff',
-        'bg_secondary': '#f5f7fa',
+        'bg': '#f6f8fb',
+        'bg_secondary': '#eef3f8',
         'bg_card': '#ffffff',
-        'text': '#1a1a1a',
-        'text_muted': '#666',
-        'border': '#e0e4e8',
-        'accent': '#0062b3',
-        'accent_hover': '#004a8a',
-        'success': '#35b300',
-        'danger': '#b30035',
-        'shadow': '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
-        'shadow_hover': '0 4px 12px rgba(0,0,0,0.10)',
+        'text': '#172231',
+        'text_muted': '#607080',
+        'border': '#dce4ec',
+        'accent': '#2868a8',
+        'accent_hover': '#1f568d',
+        'success': '#1f8a67',
+        'danger': '#b54552',
+        'shadow': '0 8px 24px rgba(31, 54, 78, 0.06)',
+        'shadow_hover': '0 12px 30px rgba(31, 54, 78, 0.10)',
         'plot_bg': '#ffffff',
-        'plot_text': '#1a1a1a',
-        'plot_axis': '#1a1a1a',
-        'plot_grid': 'rgba(0,0,0,0.05)',
-        'plot_scatter_bg': 'rgba(140,140,140,0.4)',
+        'plot_text': '#172231',
+        'plot_axis': '#2f3d4b',
+        'plot_reference': 'rgba(47,61,75,0.32)',
+        'plot_grid': 'rgba(47,61,75,0.06)',
+        'plot_scatter_bg': 'rgba(126,139,151,0.23)',
     },
     'dark': {
-        'bg': '#0e1117',
-        'bg_secondary': '#1a1f2e',
-        'bg_card': '#1a1f2e',
-        'text': '#e8eaed',
-        'text_muted': '#9aa0a6',
-        'border': '#2d333d',
-        'accent': '#4a9eff',
-        'accent_hover': '#6fb4ff',
-        'success': '#4ade80',
-        'danger': '#f87171',
-        'shadow': '0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
-        'shadow_hover': '0 4px 12px rgba(0,0,0,0.4)',
-        'plot_bg': '#1a1f2e',
-        'plot_text': '#e8eaed',
-        'plot_axis': '#e8eaed',
+        'bg': '#0f1720',
+        'bg_secondary': '#131e29',
+        'bg_card': '#182430',
+        'text': '#edf3f8',
+        'text_muted': '#9eafbf',
+        'border': '#2a3a49',
+        'accent': '#76a9da',
+        'accent_hover': '#95bee5',
+        'success': '#55c39a',
+        'danger': '#ee8490',
+        'shadow': '0 10px 28px rgba(0,0,0,0.22)',
+        'shadow_hover': '0 14px 34px rgba(0,0,0,0.30)',
+        'plot_bg': '#182430',
+        'plot_text': '#edf3f8',
+        'plot_axis': '#b6c3cf',
+        'plot_reference': 'rgba(182,195,207,0.32)',
         'plot_grid': 'rgba(255,255,255,0.08)',
-        'plot_scatter_bg': 'rgba(160,160,160,0.35)',
+        'plot_scatter_bg': 'rgba(170,183,195,0.22)',
     }
 }
 
@@ -354,156 +359,209 @@ def inject_css():
     th = get_theme()
     st.markdown(f"""
     <style>
-        .stApp {{ background-color: {th['bg']}; color: {th['text']}; }}
+        html, body, [class*="css"] {{
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         "PingFang SC", "Microsoft YaHei", sans-serif;
+        }}
+        .stApp {{ background: {th['bg']}; color: {th['text']}; }}
+        [data-testid="stMainBlockContainer"] {{
+            max-width: 1240px; padding-top: 2rem; padding-bottom: 3rem;
+        }}
         section[data-testid="stSidebar"] {{
             background-color: {th['bg_secondary']};
             border-right: 1px solid {th['border']};
         }}
-        section[data-testid="stSidebar"] * {{ color: {th['text']}; }}
-        .stApp p, .stApp label, .stApp span, .stApp div {{ color: {th['text']}; }}
+        section[data-testid="stSidebar"] > div {{ padding-top: 1rem; }}
+        section[data-testid="stSidebar"] h2,
+        section[data-testid="stSidebar"] h3,
+        section[data-testid="stSidebar"] label {{ color: {th['text']} !important; }}
 
+        .hero-shell {{
+            position: relative; overflow: hidden;
+            display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center; gap: 1.15rem;
+            background: {th['bg_card']}; border: 1px solid {th['border']};
+            border-radius: 18px; padding: 1.45rem 1.6rem;
+            box-shadow: {th['shadow']}; margin-bottom: 1rem;
+        }}
+        .hero-shell::after {{
+            content: ""; position: absolute; width: 16rem; height: 16rem;
+            right: -7rem; top: -10rem; border-radius: 50%;
+            background: {th['accent']}10; pointer-events: none;
+        }}
+        .hero-mark {{
+            position: relative; z-index: 1; display: grid; place-items: center;
+            width: 3.2rem; height: 3.2rem; border-radius: 13px;
+            background: {th['accent']}; color: white !important;
+            font-size: 1.55rem; box-shadow: 0 8px 18px {th['accent']}2b;
+        }}
+        .hero-copy {{ position: relative; z-index: 1; min-width: 0; }}
+        .hero-kicker {{
+            color: {th['accent']} !important; font-size: 0.7rem;
+            font-weight: 750; letter-spacing: 0.13em; margin-bottom: 0.22rem;
+        }}
         .main-header {{
-            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 2.5rem; font-weight: 700;
-            background: linear-gradient(135deg, {th['accent']} 0%, {th['accent_hover']} 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.3rem; letter-spacing: -1px; line-height: 1.1;
+            color: {th['text']} !important; font-size: 2.25rem; font-weight: 760;
+            margin: 0; letter-spacing: -0.045em; line-height: 1.08;
         }}
         .sub-header {{
-            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 1.05rem; color: {th['text_muted']};
-            margin-bottom: 1.8rem; font-weight: 400;
+            color: {th['text_muted']} !important; font-size: 0.98rem;
+            margin: 0.42rem 0 0; font-weight: 400;
+        }}
+        .hero-version {{
+            position: relative; z-index: 1; white-space: nowrap;
+            color: {th['accent']} !important; background: {th['accent']}10;
+            border: 1px solid {th['accent']}2d; border-radius: 999px;
+            padding: 0.42rem 0.75rem; font-size: 0.74rem; font-weight: 700;
         }}
         h1, h2, h3, h4, h5 {{
             color: {th['text']} !important;
-            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         "PingFang SC", "Microsoft YaHei", sans-serif;
         }}
+        h3 {{ font-size: 1.32rem !important; letter-spacing: -0.02em; }}
 
         .gene-tag {{
             display: inline-block;
-            background: linear-gradient(135deg, {th['accent']}22 0%, {th['accent']}11 100%);
+            background: {th['accent']}0e;
             color: {th['accent']}; padding: 0.3rem 0.75rem;
-            border-radius: 6px; margin: 0.2rem;
+            border-radius: 999px; margin: 0.18rem;
             font-size: 0.82rem; font-weight: 600;
             font-family: 'JetBrains Mono', 'Monaco', 'Consolas', monospace;
-            border: 1px solid {th['accent']}33;
-            transition: all 0.2s ease;
-        }}
-        .gene-tag:hover {{
-            transform: translateY(-1px);
-            box-shadow: {th['shadow_hover']};
+            border: 1px solid {th['accent']}25;
         }}
 
         .custom-divider {{
             height: 1px;
-            background: linear-gradient(90deg, transparent, {th['border']}, transparent);
-            border: none; margin: 2rem 0;
+            background: {th['border']}; border: none; margin: 1.35rem 0;
         }}
 
         .input-section-title {{
             font-size: 0.8rem; font-weight: 700; color: {th['text_muted']};
-            margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em;
         }}
 
-        div[data-testid="stMetric"] {{
+        .metrics-grid {{
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.85rem; margin: 0 0 0.7rem;
+        }}
+        .metric-card {{
+            position: relative; overflow: hidden;
             background: {th['bg_card']};
-            padding: 1.2rem 1.4rem; border-radius: 12px;
+            padding: 1rem 1.15rem 1.05rem; border-radius: 13px;
             border: 1px solid {th['border']}; box-shadow: {th['shadow']};
-            transition: all 0.3s ease;
         }}
-        div[data-testid="stMetric"]:hover {{
-            transform: translateY(-2px);
-            box-shadow: {th['shadow_hover']};
-            border-color: {th['accent']}66;
+        .metric-card::before {{
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: {th['accent']}80;
         }}
-        div[data-testid="stMetricLabel"] {{
-            color: {th['text_muted']} !important;
-            font-size: 0.8rem !important; font-weight: 600 !important;
-            text-transform: uppercase; letter-spacing: 0.5px;
+        .metric-label {{
+            color: {th['text_muted']} !important; font-size: 0.76rem;
+            font-weight: 650; letter-spacing: 0.025em; margin-bottom: 0.24rem;
         }}
-        div[data-testid="stMetricValue"] {{
-            color: {th['text']} !important; font-weight: 700 !important;
+        .metric-value {{
+            color: {th['text']} !important; font-size: 1.8rem;
+            line-height: 1.1; font-weight: 750; letter-spacing: -0.035em;
         }}
 
         .data-context {{
-            display: flex; align-items: center; gap: 0.9rem;
-            background: {th['bg_secondary']};
-            border: 1px solid {th['border']};
-            border-left: 4px solid {th['accent']};
-            border-radius: 10px; padding: 0.8rem 1rem;
-            margin: 1rem 0 0.25rem 0;
-            color: {th['text_muted']}; font-size: 0.88rem;
-            line-height: 1.45;
+            display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+            margin: 0.05rem 0 0; color: {th['text_muted']};
         }}
         .data-context .data-chip {{
-            flex: 0 0 auto; color: {th['accent']} !important;
-            background: {th['accent']}14; border: 1px solid {th['accent']}33;
-            border-radius: 999px; padding: 0.25rem 0.7rem;
-            font-size: 0.78rem; font-weight: 700;
+            color: {th['text_muted']} !important; background: {th['bg_secondary']};
+            border: 1px solid {th['border']}; border-radius: 999px;
+            padding: 0.3rem 0.68rem; font-size: 0.74rem; font-weight: 650;
         }}
-        .data-context > span:not(.data-chip) {{
-            color: {th['text_muted']} !important;
+        .data-context .data-note {{
+            color: {th['text_muted']} !important; font-size: 0.76rem;
+            margin-left: auto;
         }}
 
         .stTabs [data-baseweb="tab-list"] {{
-            gap: 6px; background: {th['bg_secondary']};
-            padding: 6px; border-radius: 12px;
-            border: 1px solid {th['border']};
+            gap: 4px; background: {th['bg_card']}; padding: 5px;
+            border-radius: 12px; border: 1px solid {th['border']};
+            box-shadow: {th['shadow']};
             overflow-x: auto; scrollbar-width: none;
         }}
         .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{ display: none; }}
         .stTabs [data-baseweb="tab"] {{
-            border-radius: 8px; padding: 10px 20px;
+            border-radius: 8px; padding: 9px 18px;
             background: transparent; color: {th['text_muted']};
-            font-weight: 600; transition: all 0.2s ease;
+            font-weight: 620; transition: background 0.18s ease, color 0.18s ease;
             flex: 1 0 auto; justify-content: center;
         }}
+        .stTabs [data-baseweb="tab"] p {{ color: inherit !important; }}
         .stTabs [data-baseweb="tab"]:hover {{
-            background: {th['bg_card']}; color: {th['text']};
+            background: {th['bg_secondary']}; color: {th['text']};
         }}
-        .stTabs [aria-selected="true"] {{
-            background: {th['accent']} !important; color: white !important;
-            box-shadow: 0 2px 8px {th['accent']}44;
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {{
+            background: {th['accent']}12 !important;
+            color: {th['accent']} !important; box-shadow: none;
+        }}
+        .stTabs [data-baseweb="tab-panel"] {{ padding-top: 1.25rem; }}
+
+        [data-testid="stVerticalBlockBorderWrapper"] {{
+            background: {th['bg_card']}; border-color: {th['border']} !important;
+            border-radius: 13px !important; box-shadow: {th['shadow']};
+        }}
+        div[data-testid="stPlotlyChart"] {{
+            background: {th['plot_bg']}; border: 1px solid {th['border']};
+            border-radius: 14px; overflow: hidden; box-shadow: {th['shadow']};
         }}
 
         .stDownloadButton button, .stButton button {{
-            background: {th['accent']}; color: white; border: none;
-            border-radius: 8px; padding: 0.5rem 1rem;
-            font-weight: 600; transition: all 0.2s ease;
-            box-shadow: 0 2px 6px {th['accent']}33;
+            border-radius: 8px; font-weight: 620;
+            transition: background 0.18s ease, border-color 0.18s ease;
         }}
         .stDownloadButton button:hover, .stButton button:hover {{
-            background: {th['accent_hover']};
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px {th['accent']}55;
+            border-color: {th['accent']} !important;
         }}
 
         .stTextInput input, .stTextArea textarea {{
             background: {th['bg_card']} !important;
             color: {th['text']} !important;
             border-color: {th['border']} !important;
-            border-radius: 8px !important;
+            border-radius: 9px !important; line-height: 1.5;
         }}
         .stTextInput input:focus, .stTextArea textarea:focus {{
             border-color: {th['accent']} !important;
             box-shadow: 0 0 0 2px {th['accent']}22 !important;
         }}
-
-        .streamlit-expanderHeader {{
+        .stSelectbox div[data-baseweb="select"] > div {{
             background: {th['bg_card']} !important;
-            border-radius: 8px !important;
-            border: 1px solid {th['border']} !important;
+            border-color: {th['border']} !important;
+            color: {th['text']} !important;
+        }}
+        .stSelectbox div[data-baseweb="select"] span {{ color: {th['text']} !important; }}
+        div[data-baseweb="popover"], div[role="listbox"] {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+        }}
+
+        .stRadio [role="radiogroup"] {{ gap: 0.45rem; }}
+        .stRadio [role="radiogroup"] label {{
+            background: {th['bg_secondary']}; border: 1px solid {th['border']};
+            border-radius: 999px; padding: 0.32rem 0.72rem;
+            transition: background 0.18s ease, border-color 0.18s ease;
+        }}
+        .stRadio [role="radiogroup"] label:has(input:checked) {{
+            background: {th['accent']}12; border-color: {th['accent']}55;
+        }}
+
+        [data-testid="stExpander"] summary {{
+            background: {th['bg_card']} !important;
+            border-radius: 9px !important;
             font-weight: 600 !important;
         }}
 
         .stAlert {{
+            background: {th['bg_card']} !important;
             border-radius: 10px !important;
             border: 1px solid {th['border']} !important;
         }}
+        .stAlert p, .stAlert span, .stAlert code {{ color: {th['text']} !important; }}
 
-        .stDataFrame {{
+        [data-testid="stDataFrame"] {{
             border-radius: 10px; overflow: hidden;
             border: 1px solid {th['border']};
         }}
@@ -556,36 +614,36 @@ def inject_css():
         }}
 
         @media (max-width: 768px) {{
-            .block-container {{
-                padding: 1.25rem 0.9rem 2rem 0.9rem !important;
+            [data-testid="stMainBlockContainer"] {{
+                padding: 1rem 0.85rem 2rem !important;
             }}
-            .main-header {{
-                font-size: 1.9rem; letter-spacing: -0.5px;
+            .hero-shell {{
+                display: block; padding: 1.1rem; border-radius: 14px;
             }}
-            .sub-header {{
-                font-size: 0.95rem; margin-bottom: 1.2rem;
+            .hero-mark {{ display: none; }}
+            .main-header {{ font-size: 1.65rem; letter-spacing: -0.035em; }}
+            .sub-header {{ font-size: 0.88rem; }}
+            .hero-version {{
+                display: inline-block; margin-top: 0.85rem;
             }}
-            .data-context {{
-                align-items: flex-start; flex-direction: column;
-                gap: 0.55rem; padding: 0.8rem 0.9rem;
-            }}
-            div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"]) {{
-                flex-wrap: wrap; gap: 0.7rem;
-            }}
-            div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"])
-            > div[data-testid="stColumn"] {{
-                flex: 1 1 calc(50% - 0.7rem); min-width: 140px;
-            }}
-            div[data-testid="stMetric"] {{
-                padding: 0.9rem 1rem;
-            }}
-            div[data-testid="stMetricValue"] {{
-                font-size: 1.75rem !important;
+            .metrics-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }}
+            .metric-card {{ padding: 0.82rem 0.9rem 0.88rem; }}
+            .metric-value {{ font-size: 1.55rem; }}
+            .metric-label {{ font-size: 0.7rem; }}
+            .data-context {{ gap: 0.4rem; }}
+            .data-context .data-note {{
+                flex-basis: 100%; margin-left: 0; padding-left: 0.15rem;
             }}
             .stTabs [data-baseweb="tab"] {{
-                padding: 8px 12px; font-size: 0.84rem;
+                padding: 8px 10px; font-size: 0.8rem;
             }}
             .footer-card {{ padding: 1.2rem; }}
+        }}
+
+        @media (prefers-reduced-motion: reduce) {{
+            *, *::before, *::after {{
+                scroll-behavior: auto !important; transition: none !important;
+            }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -1061,7 +1119,7 @@ PLOT_COLORS = {
     'essential': '#D55E00',
     'nonessential': '#009E73',
     'interest': '#0072B2',
-    'threshold': '#E69F00',
+    'threshold': '#9BA6B0',
     'boxplot_fill': '#56B4E9',
 }
 FONT_FAMILY = "Inter, Helvetica Neue, Arial, sans-serif"
@@ -1125,7 +1183,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
     # ✅ CHANGED: go.Scatter → go.Scattergl（WebGL 渲染 18000 点，大幅提升流畅度）
     fig.add_trace(go.Scattergl(
         x=bg_df['rank'], y=bg_df['mean_score'], mode='markers',
-        marker=dict(size=3, color=th['plot_scatter_bg']),
+        marker=dict(size=2.3, color=th['plot_scatter_bg']),
         name='All genes',
         hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
         text=bg_df['gene']
@@ -1133,11 +1191,9 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
 
     fig.add_hline(
         y=ESSENTIALITY_THRESHOLD,
-        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.5),
-        annotation_text=t('threshold_label').format(threshold=ESSENTIALITY_THRESHOLD),
-        annotation_position="top left",
+        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1),
     )
-    fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
+    fig.add_hline(y=0, line=dict(color=th['plot_reference'], width=0.7))
 
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
@@ -1146,7 +1202,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             marker=dict(size=point_size * 2.2, color=PLOT_COLORS['essential'], symbol='diamond'),
             text=[essential_gene], textposition='bottom center',
             textfont=dict(size=11, color=PLOT_COLORS['essential'], family=FONT_FAMILY),
-            name=f'Essential ({essential_gene})',
+            name=f'Reference: {essential_gene}',
             hovertemplate=f'<b>{essential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
 
@@ -1157,7 +1213,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             marker=dict(size=point_size * 2.2, color=PLOT_COLORS['nonessential'], symbol='diamond'),
             text=[nonessential_gene], textposition='top center',
             textfont=dict(size=11, color=PLOT_COLORS['nonessential'], family=FONT_FAMILY),
-            name=f'Non-essential ({nonessential_gene})',
+            name=f'Reference: {nonessential_gene}',
             hovertemplate=f'<b>{nonessential_gene}</b><br>Rank: %{{x:,}}<br>Score: %{{y:.4f}}<extra></extra>'
         ))
 
@@ -1175,7 +1231,9 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
             textposition=text_positions,
             textfont=dict(size=11, color=PLOT_COLORS['interest'], family=FONT_FAMILY),
             name='Genes of interest',
-            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
+            hovertemplate=('<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}'
+                           '<br>Rank percentile (lower = stronger): '
+                           '%{customdata:.1f}%<extra></extra>'),
             customdata=interest_df['percentile']
         ))
 
@@ -1186,21 +1244,16 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC',
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Gene Dependency Ranking</b>',
-                   font=dict(size=16, family=FONT_FAMILY),
-                   x=0.5, xanchor='center', xref='paper'),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5,
                    range=[0, len(gene_rank_df) * 1.02]),
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
                    tickvals=y_tickvals, ticks='outside', ticklen=5,
                    range=[y_min - 0.1 * y_range, y_max + 0.15 * y_range]),
-        legend=dict(orientation='v', yanchor='bottom', y=0.02,
-                    xanchor='right', x=0.98,
-                    font=dict(size=11),
-                    bgcolor=th['plot_bg'], borderwidth=1,
-                    bordercolor=th['border']),
-        height=650, margin=dict(l=80, r=80, t=60, b=60)
+        legend=dict(orientation='h', yanchor='top', y=-0.13,
+                    xanchor='center', x=0.5, font=dict(size=10.5),
+                    bgcolor='rgba(0,0,0,0)', borderwidth=0),
+        height=620, margin=dict(l=66, r=28, t=28, b=92)
     )
     return apply_theme_to_fig(fig)
 
@@ -1209,6 +1262,9 @@ def create_lineage_boxplot(lineage_data, genes):
     th = get_theme()
     n_genes = len(genes)
     v_spacing = min(0.15, 0.6 / n_genes)
+    score_min = lineage_data['crispr_score'].min()
+    score_max = lineage_data['crispr_score'].max()
+    score_padding = max((score_max - score_min) * 0.06, 0.15)
     fig = make_subplots(rows=n_genes, cols=1, shared_xaxes=True,
                         vertical_spacing=v_spacing,
                         subplot_titles=[f'<i>{g}</i>' for g in genes])
@@ -1218,44 +1274,36 @@ def create_lineage_boxplot(lineage_data, genes):
         gene_data = lineage_data[lineage_data['gene'] == gene]
         fig.add_trace(go.Box(
             x=gene_data['lineage'], y=gene_data['crispr_score'], name=gene,
-            marker=dict(color=PLOT_COLORS['boxplot_fill']),
-            line=dict(color=th['plot_axis'], width=1),
-            fillcolor=PLOT_COLORS['boxplot_fill'], showlegend=False, boxpoints=False
+            marker=dict(color=PLOT_COLORS['boxplot_fill'], size=2.5, opacity=0.35),
+            line=dict(color=th['plot_axis'], width=0.9),
+            fillcolor=PLOT_COLORS['boxplot_fill'], opacity=0.78,
+            showlegend=False, boxpoints='outliers'
         ), row=i, col=1)
-        fig.add_hline(y=0, line=dict(dash="dot", color=th['plot_axis'], width=1),
+        fig.add_hline(y=0, line=dict(dash="dot", color=th['plot_reference'], width=0.7),
                       row=i, col=1)
-        threshold_kwargs = {}
-        if i == 1:
-            threshold_kwargs = {
-                'annotation_text': t('threshold_label').format(
-                    threshold=ESSENTIALITY_THRESHOLD),
-                'annotation_position': 'top left',
-            }
         fig.add_hline(
             y=ESSENTIALITY_THRESHOLD,
-            line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.2),
-            row=i, col=1, **threshold_kwargs,
+            line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1),
+            row=i, col=1,
         )
 
     fig.update_layout(
-        title=dict(text='<b>CRISPR Score by Cancer Type</b>',
-                   font=dict(size=16, family=FONT_FAMILY),
-                   x=0.5, xanchor='center', xref='paper'),
         height=280 * n_genes + 100, showlegend=False,
-        margin=dict(l=80, r=80, t=80, b=80)
+        margin=dict(l=62, r=24, t=42, b=92)
     )
     fig.update_xaxes(tickangle=-45, categoryarray=lineages,
                      showline=True, linewidth=1.5, ticks='outside', ticklen=5)
     fig.update_yaxes(title_text='CRISPR Score', showgrid=False,
                      showline=True, linewidth=1.5,
-                     ticks='outside', ticklen=5, dtick=0.5)
+                     ticks='outside', ticklen=5, dtick=0.5,
+                     range=[score_min - score_padding, score_max + score_padding])
     for i in range(1, n_genes):
         fig.update_xaxes(showticklabels=False, row=i, col=1)
     return apply_theme_to_fig(fig)
 
 
 def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
-                                 bg_color='#7FB3D5', hl_color='#E74C3C',
+                                 bg_color='#56B4E9', hl_color='#D55E00',
                                  essential_gene='MYC', nonessential_gene='PTEN',
                                  n_cell_lines=0, show_labels=True):
     th = get_theme()
@@ -1272,18 +1320,16 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     # ✅ CHANGED: go.Scatter → go.Scattergl（WebGL 渲染背景散点）
     fig.add_trace(go.Scattergl(
         x=bg_all_df['rank'], y=bg_all_df['mean_score'], mode='markers',
-        marker=dict(size=2.5, color=th['plot_scatter_bg']),
+        marker=dict(size=2.3, color=th['plot_scatter_bg']),
         name='All genes',
         hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>',
         text=bg_all_df['gene']
     ))
     fig.add_hline(
         y=ESSENTIALITY_THRESHOLD,
-        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1.5),
-        annotation_text=t('threshold_label').format(threshold=ESSENTIALITY_THRESHOLD),
-        annotation_position="top left",
+        line=dict(dash="dash", color=PLOT_COLORS['threshold'], width=1),
     )
-    fig.add_hline(y=0, line=dict(color=th['plot_axis'], width=0.8))
+    fig.add_hline(y=0, line=dict(color=th['plot_reference'], width=0.7))
 
     ess_df = gene_rank_df[gene_rank_df['gene_upper'] == essential_gene.upper()]
     if len(ess_df) > 0:
@@ -1292,7 +1338,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             marker=dict(size=9, color=PLOT_COLORS['essential'], symbol='diamond'),
             text=[essential_gene], textposition='bottom center',
             textfont=dict(size=11, color=PLOT_COLORS['essential']),
-            name=f'Essential ({essential_gene})'
+            name=f'Reference: {essential_gene}'
         ))
     noness_df = gene_rank_df[gene_rank_df['gene_upper'] == nonessential_gene.upper()]
     if len(noness_df) > 0:
@@ -1301,7 +1347,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
             marker=dict(size=9, color=PLOT_COLORS['nonessential'], symbol='diamond'),
             text=[nonessential_gene], textposition='top center',
             textfont=dict(size=11, color=PLOT_COLORS['nonessential']),
-            name=f'Non-essential ({nonessential_gene})'
+            name=f'Reference: {nonessential_gene}'
         ))
 
     bg_only = [g for g in background_genes if g not in highlight_genes]
@@ -1309,7 +1355,7 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
     if len(bg_df) > 0:
         fig.add_trace(go.Scatter(
             x=bg_df['rank'], y=bg_df['mean_score'], mode='markers',
-            marker=dict(size=7, color=bg_color, opacity=0.65),
+            marker=dict(size=7, color=bg_color, opacity=0.72, symbol='circle'),
             name=f'Gene set (n={len(bg_df)})',
             text=bg_df['gene'],
             hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<extra></extra>'
@@ -1323,12 +1369,15 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         fig.add_trace(go.Scatter(
             x=hl_df['rank'], y=hl_df['mean_score'],
             mode='markers+text' if show_labels else 'markers',
-            marker=dict(size=11, color=hl_color, line=dict(width=1.5, color=th['plot_bg'])),
+            marker=dict(size=10.5, color=hl_color, symbol='diamond',
+                        line=dict(width=1.4, color=th['plot_bg'])),
             text=hl_df['gene'] if show_labels else None,
             textposition=text_positions,
-            textfont=dict(size=11, color=th['plot_text'], family=FONT_FAMILY),
+            textfont=dict(size=11, color=hl_color, family=FONT_FAMILY),
             name=f'Highlight (n={len(hl_df)})',
-            hovertemplate='<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}<br>Percentile: %{customdata:.1f}%<extra></extra>',
+            hovertemplate=('<b>%{text}</b><br>Rank: %{x:,}<br>Score: %{y:.4f}'
+                           '<br>Rank percentile (lower = stronger): '
+                           '%{customdata:.1f}%<extra></extra>'),
             customdata=hl_df['percentile']
         ))
 
@@ -1339,18 +1388,15 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
                            np.ceil(y_max / 0.5) * 0.5 + 0.5, 0.5)
 
     fig.update_layout(
-        title=dict(text='<b>Multi-layer Gene Annotation</b>',
-                   font=dict(size=16, family=FONT_FAMILY),
-                   x=0.5, xanchor='center', xref='paper'),
         xaxis=dict(title='Gene Rank', showgrid=False, showline=True, linewidth=1.5,
                    tickformat=',d', ticks='outside', ticklen=5),
         yaxis=dict(title=y_label, showgrid=False, showline=True, linewidth=1.5,
                    tickvals=y_tickvals, ticks='outside', ticklen=5,
                    range=[y_min - 0.1 * y_range, y_max + 0.15 * y_range]),
-        legend=dict(yanchor='bottom', y=0.02, xanchor='right', x=0.98,
-                    font=dict(size=11), bgcolor=th['plot_bg'],
-                    bordercolor=th['border']),
-        height=650, margin=dict(l=80, r=80, t=60, b=60)
+        legend=dict(orientation='h', yanchor='top', y=-0.13,
+                    xanchor='center', x=0.5, font=dict(size=10.5),
+                    bgcolor='rgba(0,0,0,0)', borderwidth=0),
+        height=620, margin=dict(l=66, r=28, t=28, b=92)
     )
     return apply_theme_to_fig(fig)
 
@@ -1360,9 +1406,11 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
 # =============================================================================
 def fig_for_export(fig):
     export_fig = copy.deepcopy(fig)
+    th = get_theme()
     export_fig.update_layout(
         plot_bgcolor='white', paper_bgcolor='white',
         font=dict(family=FONT_FAMILY, color='#1a1a1a'),
+        legend=dict(font=dict(color='#1a1a1a'), bgcolor='rgba(0,0,0,0)'),
     )
     export_fig.update_xaxes(
         linecolor='black', tickcolor='black',
@@ -1372,9 +1420,23 @@ def fig_for_export(fig):
         linecolor='black', tickcolor='black',
         tickfont=dict(color='black'), title_font=dict(color='black'),
     )
+    export_fig.update_annotations(font=dict(color='#1a1a1a'))
+    for shape in export_fig.layout.shapes:
+        y0 = getattr(shape, 'y0', None)
+        y1 = getattr(shape, 'y1', None)
+        if y0 == ESSENTIALITY_THRESHOLD and y1 == ESSENTIALITY_THRESHOLD:
+            shape.line.color = PLOT_COLORS['threshold']
+            shape.line.width = 1
+        else:
+            shape.line.color = '#596673'
     for trace in export_fig.data:
         if hasattr(trace, 'name') and trace.name == 'All genes':
             trace.marker.color = 'rgba(180,180,180,0.4)'
+        if getattr(trace, 'type', None) == 'box':
+            trace.line.color = '#3f4b55'
+        if (hasattr(trace, 'textfont') and trace.textfont
+                and trace.textfont.color in {th['plot_text'], th['plot_axis']}):
+            trace.textfont.color = '#1a1a1a'
     return export_fig
 
 
@@ -1416,7 +1478,7 @@ def render_download_buttons(fig, filename_base: str, key_prefix: str, height: in
                             export_fig = fig_for_export(fig)
                             img_bytes = export_fig.to_image(
                                 format=fmt, width=width, height=height,
-                                engine='kaleido', **extra_kwargs
+                                **extra_kwargs
                             )
                             st.session_state[cache_key] = img_bytes
                             st.rerun()
@@ -1582,8 +1644,21 @@ elif USE_HUGGINGFACE:
 # =============================================================================
 # 主界面
 # =============================================================================
-st.markdown(f'<h1 class="main-header">🧬 {t("app_title")}</h1>', unsafe_allow_html=True)
-st.markdown(f'<p class="sub-header">{t("app_subtitle")}</p>', unsafe_allow_html=True)
+hero_version = t('custom_dataset') if uploaded_file is not None else DATA_VERSION
+st.markdown(
+    f'''
+    <section class="hero-shell">
+        <div class="hero-mark" aria-hidden="true">🧬</div>
+        <div class="hero-copy">
+            <div class="hero-kicker">{t('hero_kicker')}</div>
+            <h1 class="main-header">{t('app_title')}</h1>
+            <p class="sub-header">{t('app_subtitle')}</p>
+        </div>
+        <div class="hero-version">{hero_version}</div>
+    </section>
+    ''',
+    unsafe_allow_html=True,
+)
 
 if not data_loaded:
     st.warning(t('no_data_warn'))
@@ -1601,27 +1676,26 @@ if gene_rankings is None:
     st.stop()
 
 # 概览指标
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric(t('cell_lines'), f"{n_cell_lines:,}")
-with col2:
-    st.metric(t('gene_count'), f"{len(gene_rankings):,}")
-with col3:
-    essential_count = (gene_rankings['mean_score'] < ESSENTIALITY_THRESHOLD).sum()
-    st.metric(
-        t('essential_genes').format(threshold=ESSENTIALITY_THRESHOLD),
-        f"{essential_count:,}",
-    )
-with col4:
-    st.metric(t('score_range'),
-              f"{gene_rankings['mean_score'].min():.2f}–{gene_rankings['mean_score'].max():.2f}")
+essential_count = (gene_rankings['mean_score'] < ESSENTIALITY_THRESHOLD).sum()
+metric_items = [
+    (t('cell_lines'), f"{n_cell_lines:,}"),
+    (t('gene_count'), f"{len(gene_rankings):,}"),
+    (t('essential_genes').format(threshold=ESSENTIALITY_THRESHOLD),
+     f"{essential_count:,}"),
+    (t('score_range'),
+     f"{gene_rankings['mean_score'].min():.2f}–{gene_rankings['mean_score'].max():.2f}"),
+]
+metric_html = ''.join(
+    f'<div class="metric-card"><div class="metric-label">{escape(label)}</div>'
+    f'<div class="metric-value">{escape(value)}</div></div>'
+    for label, value in metric_items
+)
+st.markdown(f'<div class="metrics-grid">{metric_html}</div>', unsafe_allow_html=True)
 
-dataset_label = (t('custom_dataset') if uploaded_file is not None
-                 else f"{DATA_VERSION} · {SCORE_TYPE}")
-score_guide = t('score_guide').format(threshold=ESSENTIALITY_THRESHOLD)
+dataset_label = t('custom_dataset') if uploaded_file is not None else SCORE_TYPE
 st.markdown(
     f'<div class="data-context"><span class="data-chip">{dataset_label}</span>'
-    f'<span>{score_guide}</span></div>',
+    f'<span class="data-note">{t("score_guide")}</span></div>',
     unsafe_allow_html=True,
 )
 
@@ -1637,27 +1711,35 @@ tab1, tab2, tab3 = st.tabs([t('tab1'), t('tab2'), t('tab3')])
 with tab1:
     st.markdown(f"### {t('gene_ranking_title')}")
     st.markdown(t('gene_ranking_desc'))
-    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>',
-                unsafe_allow_html=True)
+    with st.container(border=True, key="tab1_input_panel"):
+        st.markdown(f'<p class="input-section-title">{t("input_target_genes")}</p>',
+                    unsafe_allow_html=True)
 
-    input_method = st.radio(t('input_method'), [t('input_direct'), t('input_file')],
-                            horizontal=True, label_visibility="collapsed", key="tab1_radio")
+        input_method = st.radio(
+            t('input_method'), [t('input_direct'), t('input_file')],
+            horizontal=True, label_visibility="collapsed", key="tab1_radio",
+        )
 
-    genes_of_interest = []
-    if input_method == t('input_direct'):
-        gene_input = st.text_area(
-            t('gene_list'),
-            value="E2F1\nE2F2\nE2F3\nE2F4\nE2F5\nE2F6\nE2F7\nE2F8",
-            height=150, help=t('gene_list_help'))
-        genes_of_interest = [g.strip() for g in gene_input.replace(',', '\n').replace(' ', '\n').split('\n') if g.strip()]
-    else:
-        uploaded_genelist = st.file_uploader(t('input_file'), type=['csv', 'txt'], key="genelist1")
-        if uploaded_genelist:
-            content = uploaded_genelist.getvalue().decode('utf-8')
-            if uploaded_genelist.name.endswith('.csv'):
-                genes_of_interest = pd.read_csv(io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
-            else:
-                genes_of_interest = [g.strip() for g in content.split('\n') if g.strip()]
+        genes_of_interest = []
+        if input_method == t('input_direct'):
+            gene_input = st.text_area(
+                t('gene_list'),
+                value="E2F1\nE2F2\nE2F3\nE2F4\nE2F5\nE2F6\nE2F7\nE2F8",
+                height=140, help=t('gene_list_help'))
+            genes_of_interest = [
+                g.strip() for g in gene_input.replace(',', '\n').replace(' ', '\n').split('\n')
+                if g.strip()
+            ]
+        else:
+            uploaded_genelist = st.file_uploader(
+                t('input_file'), type=['csv', 'txt'], key="genelist1")
+            if uploaded_genelist:
+                content = uploaded_genelist.getvalue().decode('utf-8')
+                if uploaded_genelist.name.endswith('.csv'):
+                    genes_of_interest = pd.read_csv(
+                        io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
+                else:
+                    genes_of_interest = [g.strip() for g in content.split('\n') if g.strip()]
 
     if genes_of_interest:
         matched_genes, not_found = filter_genes_by_list(gene_rankings, genes_of_interest)
@@ -1698,24 +1780,31 @@ with tab1:
 # ---- Tab 2 ----
 with tab2:
     st.markdown(f"### {t('boxplot_title')}")
-    st.markdown(f'<p class="input-section-title">📝 {t("input_target_genes")}</p>',
-                unsafe_allow_html=True)
+    with st.container(border=True, key="tab2_input_panel"):
+        st.markdown(f'<p class="input-section-title">{t("input_target_genes")}</p>',
+                    unsafe_allow_html=True)
 
-    input_method2 = st.radio(t('input_method'), [t('input_direct'), t('input_file')],
-                              horizontal=True, label_visibility="collapsed", key="tab2_radio")
-    genes_for_box = []
-    if input_method2 == t('input_direct'):
-        gene_input2 = st.text_area(t('gene_list'), value="E2F1\nE2F2",
-                                    height=120, key="box_text")
-        genes_for_box = [g.strip() for g in gene_input2.replace(',', '\n').split('\n') if g.strip()]
-    else:
-        uploaded2 = st.file_uploader(t('input_file'), type=['csv', 'txt'], key="box_file")
-        if uploaded2:
-            content = uploaded2.getvalue().decode('utf-8')
-            if uploaded2.name.endswith('.csv'):
-                genes_for_box = pd.read_csv(io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
-            else:
-                genes_for_box = [g.strip() for g in content.split('\n') if g.strip()]
+        input_method2 = st.radio(
+            t('input_method'), [t('input_direct'), t('input_file')],
+            horizontal=True, label_visibility="collapsed", key="tab2_radio",
+        )
+        genes_for_box = []
+        if input_method2 == t('input_direct'):
+            gene_input2 = st.text_area(
+                t('gene_list'), value="E2F1\nE2F2", height=110, key="box_text")
+            genes_for_box = [
+                g.strip() for g in gene_input2.replace(',', '\n').split('\n') if g.strip()
+            ]
+        else:
+            uploaded2 = st.file_uploader(
+                t('input_file'), type=['csv', 'txt'], key="box_file")
+            if uploaded2:
+                content = uploaded2.getvalue().decode('utf-8')
+                if uploaded2.name.endswith('.csv'):
+                    genes_for_box = pd.read_csv(
+                        io.StringIO(content)).iloc[:, 0].dropna().astype(str).tolist()
+                else:
+                    genes_for_box = [g.strip() for g in content.split('\n') if g.strip()]
 
     if genes_for_box:
         matched, not_found = filter_genes_by_list(gene_rankings, genes_for_box)
@@ -1739,17 +1828,22 @@ with tab2:
 # ---- Tab 3 ----
 with tab3:
     st.markdown(f"### {t('multilayer_title')}")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"**{t('bg_gene_set')}**")
-        bg_input = st.text_area("BG", value="CDK1\nCDK2\nCCNB1\nCCND1\nCCNE1",
-                                 height=150, key="bg", label_visibility="collapsed")
-        bg_color = st.color_picker(t('bg_color'), "#7FB3D5", key="bg_color")
-    with col2:
-        st.markdown(f"**{t('hl_gene_set')}**")
-        hl_input = st.text_area("HL", value="PLK1\nAURKA", height=150, key="hl",
-                                 label_visibility="collapsed")
-        hl_color = st.color_picker(t('hl_color'), "#E74C3C", key="hl_color")
+    with st.container(border=True, key="tab3_input_panel"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**{t('bg_gene_set')}**")
+            bg_input = st.text_area(
+                "BG", value="CDK1\nCDK2\nCCNB1\nCCND1\nCCNE1",
+                height=140, key="bg", label_visibility="collapsed",
+            )
+            bg_color = st.color_picker(t('bg_color'), "#56B4E9", key="bg_color")
+        with col2:
+            st.markdown(f"**{t('hl_gene_set')}**")
+            hl_input = st.text_area(
+                "HL", value="PLK1\nAURKA", height=140, key="hl",
+                label_visibility="collapsed",
+            )
+            hl_color = st.color_picker(t('hl_color'), "#D55E00", key="hl_color")
 
     bg_genes = [g.strip() for g in bg_input.replace(',', '\n').split('\n') if g.strip()]
     hl_genes = [g.strip() for g in hl_input.replace(',', '\n').split('\n') if g.strip()]
@@ -1937,29 +2031,30 @@ if ENABLE_GENE_DRUG_UI:
 # 页脚：致谢 + 引用
 # =============================================================================
 st.markdown("---")
-st.markdown(f"""
-<div class="footer-card">
-    <h4>🙏 {t('acknowledgements')}</h4>
-    <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
-        <div style="flex: 1; min-width: 250px;">
-            <p>
-                <strong>{t('data_from')}</strong><br>
-                <a href="https://depmap.org" target="_blank">DepMap Portal (Broad Institute)</a><br>
-                <span style="font-size: 0.8rem;">CRISPR Chronos dependency scores</span>
-            </p>
-        </div>
-        <div style="flex: 1; min-width: 250px;">
-            <p>
-                <strong>{t('dev_with')}</strong><br>
-                <a href="https://www.anthropic.com/claude" target="_blank">Claude (Anthropic)</a><br>
-                <span style="font-size: 0.8rem;">{t('ai_dev')}</span>
-            </p>
+with st.expander(f"📚 {t('resources')}", expanded=False):
+    st.markdown(f"""
+    <div class="footer-card">
+        <h4>🙏 {t('acknowledgements')}</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+            <div style="flex: 1; min-width: 250px;">
+                <p>
+                    <strong>{t('data_from')}</strong><br>
+                    <a href="https://depmap.org" target="_blank">DepMap Portal (Broad Institute)</a><br>
+                    <span style="font-size: 0.8rem;">CRISPR Chronos dependency scores</span>
+                </p>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+                <p>
+                    <strong>{t('dev_with')}</strong><br>
+                    <a href="https://www.anthropic.com/claude" target="_blank">Claude (Anthropic)</a><br>
+                    <span style="font-size: 0.8rem;">{t('ai_dev')}</span>
+                </p>
+            </div>
         </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-render_citation_section()
+    render_citation_section()
 
 st.markdown(
     f'<div style="text-align:center; color:{get_theme()["text_muted"]}; '
