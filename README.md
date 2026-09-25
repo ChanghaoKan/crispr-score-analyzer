@@ -36,7 +36,7 @@ python -m streamlit run app.py
 
 On Windows, create the environment with `python -m venv .venv` and activate it using `.venv\Scripts\Activate.ps1` in PowerShell. Open the local URL printed by Streamlit, normally `http://localhost:8501`.
 
-The initial built-in dataset download requires an internet connection. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
+The initial built-in dataset download requires an internet connection. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for the on-demand diagnostics panel and CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
 
 ## Usage
 
@@ -94,6 +94,14 @@ ACH-000002,Example B,Lung,-2.13,0.08
 - Include `lineage`, `OncotreeLineage`, or another recognized lineage column for cohort filtering and boxplots. Missing labels become `Unknown`; ranking remains available when lineage metadata is absent.
 - All columns sharing an ambiguous gene symbol, ignoring case, are excluded. Repeated recognized metadata headers are rejected. Inspect column diagnostics for each exclusion reason.
 - Ensure each cell line occurs once. The app does not deduplicate repeated observations, so repeated rows would contribute repeatedly to means and group counts.
+
+### Data checks and column diagnostics
+
+Open **Data checks & column diagnostics** to inspect the validation report. The diagnostics view is built only when this panel is opened. By default, it shows gene columns that need review: excluded genes or genes with missing, nonnumeric, or infinite values. Non-gene columns, including cell-line identifiers and lineage metadata, are available in a separate optional view; their presence in the report does not mean they were included in the gene ranking.
+
+The `position` field in the full CSV is the column's **zero-based position in the original CSV**, not its gene rank. For the built-in matrix, the seven metadata columns occupy positions 0–6, so `A1BG` starts at position 7.
+
+Search to narrow the displayed columns. Each preview shows at most 200 rows; click **Full column diagnostics CSV** to generate and download the complete report. These display and download controls do not skip the validation required for an analysis.
 
 ### Gene lists
 
@@ -172,10 +180,14 @@ Also cite the underlying DepMap release and relevant methodology. The repository
 
 Report bugs and request features through [GitHub Issues](https://github.com/ChanghaoKan/crispr-score-analyzer/issues). Include reproduction steps, relevant package versions, and a small synthetic example when reporting a data problem. Pull requests should describe the behavior changed and the checks performed.
 
-Maintainer: [Changhao Kan](https://github.com/ChanghaoKan), Deng Lab, Shenzhen Bay Laboratory.
+Maintainer: [Changhao Kan](https://github.com/ChanghaoKan).
 
 ## License and acknowledgements
 
 The application code is licensed under the [MIT License](License). DepMap and other source datasets retain their own terms; consult the [DepMap Portal](https://depmap.org/portal/) before redistributing data.
 
-Thanks to the DepMap Consortium for the dependency data and Deng Lab for institutional support.
+Thanks to the DepMap Consortium for the dependency data.
+
+### Development assistance
+
+[Claude (Anthropic)](https://www.anthropic.com/claude) and [Codex (OpenAI)](https://openai.com/codex/) provided AI development assistance. Codex assisted with code and interface improvements, testing, and documentation. The maintainer is responsible for reviewing these contributions and validating the software's scientific use.

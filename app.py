@@ -2,7 +2,7 @@
 CRISPR Score Analyzer - Public Gene Essentiality Analysis Tool
 A multilingual, theme-aware interactive platform for DepMap CRISPR data.
 
-Author: Deng Lab
+Author: Changhao Kan
 """
 
 import streamlit as st
@@ -145,7 +145,7 @@ TRANSLATIONS = {
         'acknowledgements': 'Acknowledgements',
         'data_from': 'Data Source',
         'dev_with': 'Development Assistance',
-        'ai_dev': 'AI-assisted development',
+        'ai_dev': 'AI assistance with code, interface design, testing and documentation',
         'citation': '📚 How to Cite',
         'cite_this_tool': 'Cite this tool',
         'copy_bibtex': 'Copy BibTeX',
@@ -253,7 +253,7 @@ TRANSLATIONS = {
         'acknowledgements': '致谢',
         'data_from': '数据来源',
         'dev_with': '开发协助',
-        'ai_dev': 'AI 辅助开发',
+        'ai_dev': 'AI 辅助代码开发、界面设计、测试与文档整理',
         'citation': '📚 引用方式',
         'cite_this_tool': '引用本工具',
         'copy_bibtex': '复制 BibTeX',
@@ -1297,12 +1297,57 @@ def render_download_buttons(fig, filename_base, key_prefix, height=600):
                         st.error(ui('Export failed: ', '导出失败：') + str(exc))
 
 
+@st.fragment
 def render_diagnostics():
-    with st.expander(ui('Data checks & column diagnostics', '数据校验与列详情')):
-        st.caption(ui('Only explicitly recognized gene columns enter the ranking. Constant genes and small cohorts are retained; nonfinite scores are excluded and counted. Means use each gene’s valid scores.',
-                      '排名仅使用明确识别的基因列。保留低变异基因和小样本；无效分数单独计数。均值使用各基因的有效分数。'))
-        st.dataframe(diagnostics, hide_index=True, width='stretch')
-        st.download_button(ui('Column diagnostics CSV', '列校验 CSV'), diagnostics.to_csv(index=False),
+    panel = st.expander(ui('Data checks & column diagnostics', '数据校验与列详情'),
+                        key='diagnostics_open', on_change='rerun')
+    if not panel.open:
+        return
+    with panel:
+        gene_rows = diagnostics['gene'].ne('')
+        review = gene_rows & (
+            diagnostics['status'].ne('included')
+            | diagnostics[['n_missing', 'n_invalid', 'n_infinite']].fillna(0).gt(0).any(axis=1))
+        st.caption(ui('Cell-line IDs, names and lineage fields describe samples; they are not gene scores. Only included gene columns enter the ranking.',
+                      '细胞系编号、名称和癌种字段用于描述样本，不是基因分数。只有纳入的基因列参与排名。'))
+        st.caption(ui(f"{diagnostics['status'].eq('included').sum():,} included genes · {review.sum():,} gene columns to review · {(~gene_rows).sum():,} other columns",
+                      f"纳入 {diagnostics['status'].eq('included').sum():,} 个基因 · {review.sum():,} 个基因列待检查 · {(~gene_rows).sum():,} 个其他列"))
+        labels = {'review': ui('Genes needing review', '待检查的基因列'),
+                  'genes': ui('All gene columns', '全部基因列'),
+                  'other': ui('Other columns (not ranked)', '其他列（不参与排名）')}
+        view = st.selectbox(ui('Show', '查看'), list(labels), format_func=labels.get,
+                            key='diagnostics_view')
+        query = st.text_input(ui('Find a gene or column', '搜索基因或列名'),
+                              key='diagnostics_search').strip()
+        mask = {'review': review, 'genes': gene_rows, 'other': ~gene_rows}[view]
+        if query:
+            mask &= (diagnostics['column'].astype(str).str.contains(query, case=False, regex=False)
+                     | diagnostics['gene'].str.contains(query, case=False, regex=False))
+        filtered = diagnostics.loc[mask]
+        columns = ['column', 'reason'] if view == 'other' else [
+            'gene', 'column', 'reason', 'n_valid', 'n_missing', 'n_invalid', 'n_infinite']
+        preview = filtered.loc[:, columns].head(200).copy()
+        reasons = {
+            'included': ui('Included in ranking', '已纳入排名'),
+            'not_selected': ui('Not selected as a gene score', '未选作基因分数列'),
+            'non_gene_schema': ui('Not recognized as a gene score', '未识别为基因分数列'),
+            'ambiguous_gene_symbol': ui('Duplicate gene symbol', '基因名重复'),
+            'no_finite_values': ui('No valid scores', '没有有效分数'),
+        }
+        preview['reason'] = preview['reason'].map(reasons).fillna(preview['reason'])
+        if preview.empty:
+            st.info(ui('No columns to show for this selection.', '当前筛选下没有需要显示的列。'))
+        else:
+            st.dataframe(preview, hide_index=True, width='stretch', column_config={
+                key: label for key, label in [
+                    ('gene', ui('Gene', '基因')), ('column', ui('Source column', '原始列名')),
+                    ('reason', ui('Column use / exclusion reason', '列用途 / 排除原因')),
+                    ('n_valid', ui('Valid', '有效')), ('n_missing', ui('Missing / nonfinite', '缺失 / 无效')),
+                    ('n_invalid', ui('Nonnumeric', '非数值')), ('n_infinite', ui('Infinite', '无穷值'))]})
+        st.caption(ui(f'Showing {len(preview):,} of {len(filtered):,} columns. Search to narrow the view; download the full audit below.',
+                      f'显示 {len(preview):,} / {len(filtered):,} 列。可搜索缩小范围，或下载完整校验记录。'))
+        st.download_button(ui('Full column diagnostics CSV', '完整列校验 CSV'),
+                            lambda frame=diagnostics: frame.to_csv(index=False).encode('utf-8-sig'),
                             'column_diagnostics.csv', 'text/csv', key='diagnostics_csv', on_click='ignore')
 
 
@@ -1412,7 +1457,8 @@ def result_downloads(result, fig, prefix):
             }
             st.dataframe(lineage_summary(result['plot_data']), hide_index=True, width='stretch',
                          column_config=group_config)
-        st.download_button(ui('Plot data CSV', '绘图数据 CSV'), result['plot_data'].to_csv(index=False),
+        st.download_button(ui('Plot data CSV', '绘图数据 CSV'),
+                           lambda frame=result['plot_data']: frame.to_csv(index=False).encode('utf-8-sig'),
                            f'{prefix}_plot_data.csv', 'text/csv', key=f'{prefix}_data', on_click='ignore')
         bundle_key = f'_export_{prefix}_zip'
         bundle_signature = hashlib.sha256(json.dumps(metadata, sort_keys=True, default=str).encode()).hexdigest()
@@ -1609,7 +1655,7 @@ gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_
 n_cell_lines = len(df_scope)
 hero_version = t('custom_dataset') if uploaded_file is not None else DATA_VERSION
 st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
-            f'<div class="hero-kicker">DENG LAB · DEPMAP</div>'
+            f'<div class="hero-kicker">GENE DEPENDENCY EXPLORER</div>'
             f'<h1 class="main-header"><span class="brand-accent">CRISPR</span> Score Analyzer</h1>'
             f'<p class="sub-header">{t("app_subtitle")}</p></div>'
             f'<div class="hero-version">{escape(hero_version)}</div></section>', unsafe_allow_html=True)
@@ -1990,6 +2036,7 @@ with st.expander(f"📚 {t('resources')}", expanded=False):
                 <p>
                     <strong>{t('dev_with')}</strong><br>
                     <a href="https://www.anthropic.com/claude" target="_blank">Claude (Anthropic)</a><br>
+                    <a href="https://openai.com/codex/" target="_blank">Codex (OpenAI)</a><br>
                     <span style="font-size: 0.8rem;">{t('ai_dev')}</span>
                 </p>
             </div>
@@ -2002,7 +2049,7 @@ with st.expander(f"📚 {t('resources')}", expanded=False):
 st.markdown(
     f'<div style="text-align:center; color:{get_theme()["text_muted"]}; '
     f'font-size:0.8rem; padding:1rem;">'
-    f'CRISPR Score Analyzer {TOOL_VERSION} | Deng Lab | '
+    f'CRISPR Score Analyzer {TOOL_VERSION} | Changhao Kan | '
     f'<a href="{GITHUB_URL}" target="_blank" style="color:{get_theme()["accent"]};">GitHub</a>'
     f'</div>',
     unsafe_allow_html=True
