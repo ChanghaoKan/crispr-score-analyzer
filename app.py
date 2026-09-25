@@ -81,7 +81,7 @@ GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"
 TRANSLATIONS = {
     'en': {
         'app_title': 'CRISPR Score Analyzer',
-        'app_subtitle': 'Explore gene dependencies across cancer cell lines.',
+        'app_subtitle': 'Gene dependency analysis and visualization across cancer cell lines',
         'hero_kicker': 'DEPMAP · CRISPR SCREENING',
         'sidebar_settings': 'Settings',
         'language': 'Language',
@@ -188,8 +188,8 @@ TRANSLATIONS = {
         'corr_tbl_lineage': 'Cancer type',
     },
     'zh': {
-        'app_title': 'CRISPR 基因依赖分析',
-        'app_subtitle': '探索癌症细胞系中的基因依赖性。',
+        'app_title': 'CRISPR Score Analyzer',
+        'app_subtitle': '癌症细胞系中的基因依赖分析与可视化',
         'hero_kicker': 'DEPMAP · CRISPR 筛选',
         'sidebar_settings': '设置',
         'language': '语言',
@@ -386,28 +386,52 @@ def inject_css():
         p, .stCaption {{ line-height: 1.5; }}
         [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; }}
         .hero-shell {{
+            position: relative; overflow: hidden;
             display: flex; align-items: center; justify-content: space-between;
-            gap: 1rem; padding: 0.35rem 0 0.7rem;
+            gap: 1.25rem; padding: 1rem 1.25rem;
+            background: {th['bg_card']}; border: 1px solid {th['border']};
+            border-radius: 14px; box-shadow: 0 5px 18px rgba(31,54,78,0.06);
+            margin-bottom: 0.25rem;
+        }}
+        .hero-shell::after {{
+            content: ""; position: absolute; width: 14rem; height: 14rem;
+            border-radius: 50%; right: -5rem; top: -9rem;
+            background: {th['accent']}09; pointer-events: none;
+        }}
+        .hero-copy, .hero-version {{ position: relative; z-index: 1; }}
+        .hero-kicker {{
+            font-size: 0.64rem; font-weight: 650; letter-spacing: 0.12em;
+            color: {th['text_muted']}; margin: 0 0 0.35rem;
         }}
         .main-header {{
-            font-size: clamp(1.35rem, 2.3vw, 1.85rem) !important;
-            font-weight: 720; letter-spacing: -0.045em; line-height: 1.2;
+            font-size: clamp(1.45rem, 2.5vw, 2rem) !important;
+            font-weight: 740; letter-spacing: -0.035em; line-height: 1.15;
             margin: 0 !important; padding: 0 !important;
         }}
-        .sub-header {{ margin: 0.35rem 0 0; color: {th['text_muted']}; font-size: 0.9rem; }}
+        .brand-accent {{ color: {th['accent']}; }}
+        .sub-header {{ margin: 0.4rem 0 0; color: {th['text_muted']}; font-size: 0.88rem; }}
         .hero-version {{
-            flex-shrink: 0; border: 1px solid {th['border']}; border-radius: 6px;
-            color: {th['accent']}; background: {th['bg_card']};
-            font-size: 0.75rem; font-weight: 650; padding: 0.35rem 0.6rem;
+            flex-shrink: 0; border: 1px solid {th['accent']}25; border-radius: 999px;
+            color: {th['accent']}; background: {th['accent']}09;
+            font-size: 0.73rem; font-weight: 650; padding: 0.42rem 0.75rem;
         }}
-        .context-strip {{
-            display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem 1.25rem;
-            padding: 0.8rem 1rem; border: 1px solid {th['border']};
-            background: {th['bg_card']}; border-radius: 8px;
-            color: {th['text_muted']}; font-size: 0.82rem;
+        .metrics-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }}
+        .metric-card {{
+            position: relative; overflow: hidden; background: {th['bg_card']};
+            border: 1px solid {th['border']}; border-radius: 12px;
+            padding: 0.65rem 1rem; box-shadow: 0 3px 12px rgba(31,54,78,0.04);
         }}
-        .context-strip strong {{ color: {th['text']}; font-size: 1rem; margin-right: 0.25rem; }}
-        .context-scope {{ margin-left: auto; overflow-wrap: anywhere; }}
+        .metric-card::before {{
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: {th['accent']}70;
+        }}
+        .metric-label {{ color: {th['text_muted']}; font-size: 0.76rem; margin-bottom: 0.2rem; }}
+        .metric-value {{ color: {th['text']}; font-size: 1.6rem; font-weight: 720; line-height: 1.15; }}
+        .scope-note {{ font-size: 0.78rem; color: {th['text_muted']}; padding: 0.15rem 0.1rem; overflow-wrap: anywhere; }}
+        .st-key-rank_input, .st-key-box_input, .st-key-multi_input {{
+            background: {th['bg_card']}; border: 1px solid {th['border']};
+            border-radius: 12px; padding: 1rem; box-shadow: 0 4px 16px rgba(31,54,78,0.04);
+        }}
         .status-strip {{
             padding: 0.65rem 0.85rem; border-left: 3px solid {th['success']};
             background: {th['bg_card']}; border-radius: 5px;
@@ -498,8 +522,9 @@ def inject_css():
         [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; }}
         @media (max-width: 900px) {{
             [data-testid="stMainBlockContainer"] {{ padding: 1rem 0.85rem 2rem; }}
-            .hero-shell {{ align-items: flex-start; flex-wrap: wrap; gap: 0.55rem; }}
-            .context-scope {{ width: 100%; margin-left: 0; }}
+            .hero-shell {{ align-items: flex-start; flex-wrap: wrap; gap: 0.65rem; padding: 0.9rem 1rem; }}
+            .metrics-grid {{ gap: 0.65rem; }}
+            .metric-value {{ font-size: 1.4rem; }}
         }}
         @media (prefers-reduced-motion: reduce) {{
             *, *::before, *::after {{ scroll-behavior: auto !important; transition: none !important; }}
@@ -1273,7 +1298,7 @@ def render_diagnostics():
 
 def read_gene_input(prefix, default, method):
     if method == 'text':
-        value = st.text_area(t('gene_list'), default, height=90, key=f'{prefix}_genes',
+        value = st.text_area(t('gene_list'), default, height=110, key=f'{prefix}_genes',
                              help=ui('Separate with newlines, spaces, tabs, commas or semicolons.',
                                      '支持换行、空格、制表符、中英文逗号和分号。'))
         return value, None
@@ -1573,7 +1598,9 @@ if st.session_state.get('_analysis_context') != context_hash:
 gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_columns)
 n_cell_lines = len(df_scope)
 hero_version = t('custom_dataset') if uploaded_file is not None else DATA_VERSION
-st.markdown(f'<section class="hero-shell"><div><h1 class="main-header">{t("app_title")}</h1>'
+st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
+            f'<div class="hero-kicker">DENG LAB · DEPMAP</div>'
+            f'<h1 class="main-header"><span class="brand-accent">CRISPR</span> Score Analyzer</h1>'
             f'<p class="sub-header">{t("app_subtitle")}</p></div>'
             f'<div class="hero-version">{escape(hero_version)}</div></section>', unsafe_allow_html=True)
 scope_name = ', '.join(cohort) if cohort else ui('All cancer types', '全部癌种')
@@ -1584,9 +1611,13 @@ if gene_rankings.empty:
                   '没有可分析的基因列。请检查列详情，或在侧栏手动映射分数列。'))
     st.stop()
 
-st.markdown(f'<div class="context-strip"><span><strong>{n_cell_lines:,}</strong> {t("cell_lines")}</span>'
-            f'<span><strong>{len(gene_rankings):,}</strong> {t("gene_count")}</span>'
-            f'<span class="context-scope">{escape(scope_name)}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="metrics-grid">'
+            f'<div class="metric-card"><div class="metric-label">{t("cell_lines")}</div>'
+            f'<div class="metric-value">{n_cell_lines:,}</div></div>'
+            f'<div class="metric-card"><div class="metric-label">{t("gene_count")}</div>'
+            f'<div class="metric-value">{len(gene_rankings):,}</div></div></div>'
+            f'<div class="scope-note">{ui("Analysis scope", "分析范围")} · {escape(scope_name)}</div>',
+            unsafe_allow_html=True)
 with st.sidebar.expander(ui('Data overview', '数据概况')):
     st.metric(t('essential_genes').format(threshold=ESSENTIALITY_THRESHOLD),
               f"{(gene_rankings.mean_score < ESSENTIALITY_THRESHOLD).sum():,}")
@@ -1614,7 +1645,7 @@ view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi'], 
 if view == 'rank':
     st.caption(ui('Locate genes in the dependency ranking. Lower mean scores indicate stronger dependency.',
                   '定位关注基因的依赖排名；平均分越低，依赖越强。'))
-    with st.container(border=True):
+    with st.container(border=False, key='rank_input'):
         method = st.radio(t('input_method'), ['text', 'file'], horizontal=True, key='rank_method',
                           format_func={'text': t('input_direct'), 'file': t('input_file')}.get,
                           label_visibility='collapsed')
@@ -1647,7 +1678,7 @@ elif view == 'box':
     if not lineage_col:
         st.info(t('lineage_missing'))
     else:
-        with st.container(border=True):
+        with st.container(border=False, key='box_input'):
             method = st.radio(t('input_method'), ['text', 'file'], horizontal=True, key='box_method',
                               format_func={'text': t('input_direct'), 'file': t('input_file')}.get,
                               label_visibility='collapsed')
@@ -1722,7 +1753,7 @@ elif view == 'box':
 elif view == 'multi':
     st.caption(ui('Mark a background gene set and highlight selected genes within the same ranking.',
                   '在同一排名中标注背景基因集，并突出显示关注基因。'))
-    with st.container(border=True):
+    with st.container(border=False, key='multi_input'):
         c1, c2 = st.columns(2)
         with c1:
             bg_text = st.text_area(t('bg_gene_set'), 'CDK1\nCDK2\nCCNB1\nCCND1\nCCNE1', key='multi_bg', height=110)

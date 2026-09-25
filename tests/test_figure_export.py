@@ -34,7 +34,7 @@ def figure():
     )
     fig.add_annotation(
         text="<i>KIF18A</i>", x=2, y=-0.7, showarrow=True,
-        font=dict(color="white", size=15, family="Arial"),
+        font=dict(color="white", size=15, family="Arial"), bgcolor="#182430",
     )
     fig.add_hline(y=-0.5, line_dash="dash", line_color="white")
     return fig
@@ -83,10 +83,23 @@ def test_export_copy_is_vector_readable_and_preserves_formatting(figure):
     assert annotation.font.family == "Arial"
     assert annotation.font.size == 15
     assert annotation.font.color == "#1a1a1a"
+    assert annotation.bgcolor == "white"
+    assert figure.layout.annotations[0].bgcolor == "#182430"
     assert exported.data[1].textfont.size == 13
     assert exported.data[1].marker.color == "#0072B2"
     assert exported.layout.shapes[0].line.dash == "dash"
     assert prepare_export_figure(figure, full_vector=False).data[0].type == "scattergl"
+
+
+@pytest.mark.parametrize("name", ["All genes", "全部基因"])
+def test_background_points_export_consistently_in_both_languages(figure, name):
+    figure.data[0].name = name
+    figure.data[0].marker.color = "rgba(170,183,195,0.22)"
+    exported = prepare_export_figure(figure)
+    assert exported.data[0].name == name
+    assert exported.data[0].marker.color == "rgba(150,150,150,0.55)"
+    assert figure.data[0].marker.color == "rgba(170,183,195,0.22)"
+    assert exported.data[1].marker.color == figure.data[1].marker.color
 
 
 @pytest.mark.parametrize("options", [
@@ -108,6 +121,13 @@ def test_actual_svg_is_vector_pdf_is_valid_and_png_has_dpi(figure):
     assert svg_root.tag.endswith("svg")
     assert not any(element.tag.rsplit("}", 1)[-1] == "image" for element in svg_root.iter())
     assert b"KIF18A" in svg
+    annotation_backgrounds = [element for group in svg_root.iter()
+                              if group.get("class") == "annotation"
+                              for element in group.iter()
+                              if element.tag.endswith("rect") and element.get("class") == "bg"]
+    assert annotation_backgrounds
+    assert all("fill: rgb(255, 255, 255)" in element.get("style", "")
+               for element in annotation_backgrounds)
     pdf = render_figure_bytes(figure, "pdf", width=360, height=240)
     assert pdf.startswith(b"%PDF-")
     assert b"%%EOF" in pdf[-1024:]

@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from PIL import Image
 
 
-_EXPORT_VERSION = 1
+_EXPORT_VERSION = 2
 MAX_PNG_PIXELS = 24_000_000
 _INK = "#1a1a1a"
 
@@ -77,11 +77,11 @@ def prepare_export_figure(fig, full_vector=True):
     )
     export_fig.update_xaxes(**axis_style)
     export_fig.update_yaxes(**axis_style)
-    export_fig.update_annotations(font=dict(color=_INK), arrowcolor=_INK)
+    export_fig.update_annotations(font=dict(color=_INK), arrowcolor=_INK, bgcolor="white")
     for shape in export_fig.layout.shapes:
         shape.line.color = "#667085"
     for trace in export_fig.data:
-        if trace.name == "All genes":
+        if trace.name in {"All genes", "全部基因"}:
             trace.marker.color = "rgba(150,150,150,0.55)"
         if trace.type == "box":
             trace.line.color = "#3f4b55"
