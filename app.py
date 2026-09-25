@@ -306,9 +306,9 @@ def t(key: str) -> str:
 # =============================================================================
 # Session State
 # =============================================================================
-if 'lang' not in st.session_state:
+if st.session_state.get('lang') not in TRANSLATIONS:
     st.session_state.lang = 'en'
-if 'theme' not in st.session_state:
+if st.session_state.get('theme') not in {'light', 'dark'}:
     st.session_state.theme = 'light'
 
 
@@ -360,7 +360,7 @@ THEMES = {
 
 
 def get_theme():
-    return THEMES[st.session_state.get('theme', 'light')]
+    return THEMES.get(st.session_state.get('theme'), THEMES['light'])
 
 
 def inject_css():
@@ -1420,17 +1420,23 @@ def render_run_status(prefix, draft, result):
                 f' · {escape(summary)}<br>{escape(timestamp)}</div>', unsafe_allow_html=True)
 
 
-def update_preferences():
-    st.session_state.lang = st.session_state.lang_select
-    st.session_state.theme = st.session_state.theme_select
+def update_preferences(preference):
+    options = TRANSLATIONS if preference == 'lang' else THEMES
+    value = st.session_state.get(f'{preference}_select')
+    if value in options:
+        st.session_state[preference] = value
 
 
 def render_preferences():
     with st.sidebar.expander(ui('Preferences', '界面设置')):
         st.selectbox('Language / 语言', ['en', 'zh'], key='lang_select',
-                     format_func={'en': 'English', 'zh': '中文'}.get, on_change=update_preferences)
+                     index=['en', 'zh'].index(st.session_state.lang),
+                     format_func={'en': 'English', 'zh': '中文'}.get,
+                     on_change=update_preferences, args=('lang',))
         st.selectbox(t('theme'), ['light', 'dark'], key='theme_select',
-                     format_func={x: t(x) for x in ['light', 'dark']}.get, on_change=update_preferences)
+                     index=['light', 'dark'].index(st.session_state.theme),
+                     format_func={x: t(x) for x in ['light', 'dark']}.get,
+                     on_change=update_preferences, args=('theme',))
 
 
 for draft_key in ['rank_genes', 'box_genes', 'multi_bg', 'multi_hl', 'rank_method', 'box_method',
@@ -1438,8 +1444,9 @@ for draft_key in ['rank_genes', 'box_genes', 'multi_bg', 'multi_hl', 'rank_metho
     if draft_key in st.session_state:
         st.session_state[draft_key] = st.session_state[draft_key]
 
-st.session_state.setdefault('lang_select', st.session_state.lang)
-st.session_state.setdefault('theme_select', st.session_state.theme)
+for preference, options in [('lang', TRANSLATIONS), ('theme', THEMES)]:
+    if st.session_state.get(f'{preference}_select') not in options:
+        st.session_state[f'{preference}_select'] = st.session_state[preference]
 inject_css()
 with st.sidebar:
     st.markdown(f"## {t('data_source')}")
