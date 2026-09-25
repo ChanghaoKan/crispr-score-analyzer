@@ -51,7 +51,7 @@ Gene-list and per-view analysis edits are drafts until Run is clicked. After lea
 
 Locate matched genes within the selected cohort's mean-score ranking. Hover over a point for the gene, mean score, rank, rank percentile, and valid sample count. Reference A and Reference B are configurable visual anchors.
 
-Ranking charts use a compact layout with transparent gene labels and leader lines, keeping the underlying score curve visible. Gene-set annotation uses the same presentation.
+Ranking charts use a compact, centered 4:3 layout (640 × 480 px), with transparent gene labels and leader lines that keep the underlying score curve visible. Charts shrink to fit narrower screens. Gene-set annotation uses the same presentation, and figure exports default to these dimensions.
 
 ### Cancer-type comparison
 

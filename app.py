@@ -965,8 +965,15 @@ PLOT_CONFIG = {
 
 
 def centered_plot(fig, config=None):
-    """使用容器宽度渲染，避免窄屏三列布局造成图表压缩。"""
-    st.plotly_chart(fig, config=config or PLOT_CONFIG, theme=None)
+    """Center width-limited figures while allowing them to shrink on narrow screens."""
+    render_config = dict(config or PLOT_CONFIG)
+    render_config['toImageButtonOptions'] = {
+        **render_config.get('toImageButtonOptions', {}),
+        'width': int(fig.layout.width or 1000),
+        'height': int(fig.layout.height or 600),
+    }
+    with st.container(horizontal_alignment='center'):
+        st.plotly_chart(fig, width=fig.layout.width or 'stretch', config=render_config, theme=None)
 
 
 def apply_theme_to_fig(fig):
@@ -1002,7 +1009,7 @@ def _rank_label_annotations(points, x_range, y_range):
     Positions use data coordinates so labels and leader lines also remain vector
     objects in exports and scale with the responsive chart.
     """
-    plot_width, plot_height = 720, 346
+    plot_width, plot_height = 552, 366
     x_span, y_span = x_range[1] - x_range[0], y_range[1] - y_range[0]
     occupied = {}
     annotations = []
@@ -1116,7 +1123,7 @@ def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
                    font=dict(size=13), x=0, xanchor='left'),
         legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5,
                     font=dict(size=12), itemsizing='constant'),
-        height=460, margin=dict(l=64, r=24, t=42, b=72))
+        width=640, height=480, margin=dict(l=64, r=24, t=42, b=72))
     return apply_theme_to_fig(fig)
 
 
@@ -1254,7 +1261,8 @@ def render_download_buttons(fig, filename_base, key_prefix, height=600):
     """Keep at most one current file per format, tied to its exact figure."""
     with st.expander(ui('Figure size', '图形尺寸'), expanded=False):
         c1, c2 = st.columns(2)
-        width = c1.number_input(ui('Width (px)', '宽度（px）'), 400, 3000, 1000, 50,
+        width = c1.number_input(ui('Width (px)', '宽度（px）'), 400, 3000,
+                                min(3000, max(400, int(fig.layout.width or 1000))), 50,
                                 key=f'{key_prefix}_width')
         out_height = c2.number_input(ui('Height (px)', '高度（px）'), 300, 12000,
                                     min(12000, max(300, int(height))), 50,

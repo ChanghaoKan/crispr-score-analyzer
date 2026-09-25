@@ -68,10 +68,12 @@ def test_close_labels_are_separated_and_arrows_preserve_true_positions(plot_help
         assert annotation.bgcolor == 'rgba(0,0,0,0)'
         assert annotation.borderwidth == 0
         for other in annotations[i + 1:]:
-            # At the conservative 720 × 346 plotting area, these short gene
+            # At the default plotting area, these short gene
             # labels need either a full text width or a line height of space.
-            horizontal = abs(annotation.ax - other.ax) / x_span * 720
-            vertical = abs(annotation.ay - other.ay) / y_span * 346
+            horizontal = abs(annotation.ax - other.ax) / x_span * (
+                fig.layout.width - fig.layout.margin.l - fig.layout.margin.r)
+            vertical = abs(annotation.ay - other.ay) / y_span * (
+                fig.layout.height - fig.layout.margin.t - fig.layout.margin.b)
             assert horizontal >= 44 or vertical >= 23
     repeated = make_plot(rankings, ['E2F3', 'E2F1'], n_cell_lines=12)
     assert [a.to_plotly_json() for a in annotations] == [a.to_plotly_json() for a in repeated.layout.annotations]
