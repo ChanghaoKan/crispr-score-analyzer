@@ -249,6 +249,29 @@ class AppSubmissionTests(unittest.TestCase):
         self.switch_view("rank")
         self.assertIn("Run", self.app.button(key="rank_run").label)
 
+    def test_language_change_tolerates_unset_theme_and_roundtrip_can_run(self):
+        original = self.run_rank("MYC")
+        self.app.selectbox(key="theme_select").set_value("dark").run()
+        self.assert_healthy()
+
+        # A translated selectbox can be recreated before its value reaches the
+        # server. An unrelated unset widget must not erase the active theme.
+        self.app.selectbox(key="theme_select").set_value(None)
+        self.app.selectbox(key="lang_select").set_value("zh").run()
+        self.assert_healthy()
+        self.assertEqual(self.app.session_state["lang"], "zh")
+        self.assertEqual(self.app.session_state["theme"], "dark")
+        self.assertEqual(self.result("rank_result")["input_signature"], original["input_signature"])
+
+        self.run_rank("PTEN")
+        self.app.selectbox(key="lang_select").set_value("en").run()
+        self.assert_healthy()
+        self.assertEqual(self.app.session_state["theme"], "dark")
+        self.assertEqual(self.app.selectbox(key="theme_select").value, "dark")
+        result = self.run_rank("MYC PTEN")
+        self.assertEqual(result["genes"], ["MYC", "PTEN"])
+        self.assertEqual(len(self.app.warning), 0)
+
     def test_more_than_eight_box_genes_requires_explicit_selection(self):
         requested = ["PTEN", "MYC", "E2F8", "E2F7", "E2F6", "E2F5", "E2F4", "E2F3", "E2F2", "E2F1"]
         self.switch_view("box")
