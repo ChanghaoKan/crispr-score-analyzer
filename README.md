@@ -12,7 +12,7 @@ This README describes the source in this checkout. The hosted app may lag behind
 - Gene dependency rankings within all available cell lines or selected cancer lineages.
 - Cancer-type comparisons with valid sample counts, median or alphabetical ordering, and optional individual cell-line points.
 - Two-layer gene-set annotation with configurable colors and reference genes.
-- English and Chinese interfaces, light and dark themes, compact navigation, and readable result tables with localized headers.
+- English and Chinese interfaces, light and dark themes, a card-based layout with a consistent product title, compact navigation, and readable result tables with localized headers.
 - Custom score-matrix uploads with explicit gene-column mapping and column diagnostics.
 - PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, and provenance.
 
