@@ -519,7 +519,8 @@ def inject_css():
             background: {th['bg_card']} !important; color: {th['text']} !important;
             border: 1px solid {th['border']};
         }}
-        [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; }}
+        [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"],
+        [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] p {{ color: {th['text_muted']} !important; }}
         @media (max-width: 900px) {{
             [data-testid="stMainBlockContainer"] {{ padding: 1rem 0.85rem 2rem; }}
             .hero-shell {{ align-items: flex-start; flex-wrap: wrap; gap: 0.65rem; padding: 0.9rem 1rem; }}
@@ -1276,7 +1277,7 @@ def render_download_buttons(fig, filename_base, key_prefix, height=600):
                 st.download_button(f'↓ {fmt.upper()}', cached['bytes'],
                                    f'{filename_base}.{fmt}', mime,
                                    key=f'{key_prefix}_{fmt}_dl', on_click='ignore', width='stretch')
-            elif st.button(ui(f'Generate {fmt.upper()}', f'生成 {fmt.upper()}'),
+            elif st.button(fmt.upper(), help=ui(f'Generate {fmt.upper()}', f'生成 {fmt.upper()}'),
                            key=f'{key_prefix}_{fmt}_btn', width='stretch'):
                 with st.spinner(ui('Generating figure…', '正在生成图片…')):
                     try:
