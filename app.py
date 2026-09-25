@@ -466,6 +466,31 @@ def inject_css():
         button:focus-visible, input:focus-visible, textarea:focus-visible {{
             outline: 3px solid {th['accent']}80 !important; outline-offset: 2px !important;
         }}
+        .stApp button {{
+            background-color: {th['bg_card']}; color: {th['text']} !important;
+            border-color: {th['border']};
+        }}
+        .stApp button p, .stApp button span {{ color: inherit !important; }}
+        .stApp button[kind="primary"] {{
+            background-color: {th['accent']}; color: {th['bg_card']} !important;
+            border-color: {th['accent']};
+        }}
+        .stApp button[kind="primary"]:hover {{ background-color: {th['accent_hover']}; }}
+        .stApp [data-testid="stButtonGroup"] button[aria-checked="true"],
+        .stApp [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
+            background-color: {th['accent']}22; color: {th['accent']} !important;
+            border-color: {th['accent']};
+        }}
+        .stApp [data-testid="stExpander"] summary,
+        .stApp [data-testid="stExpander"] summary p,
+        .stApp [data-testid="stExpander"] summary span {{ color: {th['text']} !important; }}
+        .stApp [data-baseweb="select"] > div {{
+            background-color: {th['bg_card']} !important;
+            color: {th['text']} !important; border-color: {th['border']} !important;
+        }}
+        .stApp [data-baseweb="select"] span,
+        .stApp [data-baseweb="select"] input {{ color: {th['text']} !important; }}
+        .stApp [data-testid="stAlert"] p {{ color: {th['text']} !important; }}
         @media (max-width: 900px) {{
             [data-testid="stMainBlockContainer"] {{ padding: 1rem 0.85rem 2rem; }}
             .hero-shell {{ align-items: flex-start; flex-wrap: wrap; gap: 0.55rem; }}
