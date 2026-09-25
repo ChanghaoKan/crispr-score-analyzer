@@ -13,7 +13,7 @@ This README describes the source in this checkout. The hosted app may lag behind
 - Cancer-type comparisons with valid sample counts, median or alphabetical ordering, and optional individual cell-line points.
 - Two-layer gene-set annotation with configurable colors and reference genes.
 - English and Chinese interfaces, light and dark themes, a card-based layout with a consistent product title, compact navigation, and readable result tables with localized headers.
-- Custom score-matrix uploads with explicit gene-column mapping and column diagnostics.
+- Custom score-matrix uploads with explicit gene-column mapping and downloadable validation records.
 - PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, and provenance.
 
 The experimental gene–drug correlation code is retained in the repository but disabled in the public interface.
@@ -36,7 +36,7 @@ python -m streamlit run app.py
 
 On Windows, create the environment with `python -m venv .venv` and activate it using `.venv\Scripts\Activate.ps1` in PowerShell. Open the local URL printed by Streamlit, normally `http://localhost:8501`.
 
-The initial built-in dataset download requires an internet connection. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for the on-demand diagnostics panel and CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
+The initial built-in dataset download requires an internet connection. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for on-demand CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
 
 ## Usage
 
@@ -92,16 +92,14 @@ ACH-000002,Example B,Lung,-2.13,0.08
 - For plain-symbol headers such as `MYC`, open **Gene column mapping** in the sidebar, enable **Select columns manually**, and select the score columns. Other descriptive headers must first be renamed to valid symbols.
 - Include a cell-line identifier such as `ModelID`, `depmap_id`, or `cell_line`. Include `cell_line_display_name` or `CellLineName` for readable point labels. Without an identifier, row indices are used.
 - Include `lineage`, `OncotreeLineage`, or another recognized lineage column for cohort filtering and boxplots. Missing labels become `Unknown`; ranking remains available when lineage metadata is absent.
-- All columns sharing an ambiguous gene symbol, ignoring case, are excluded. Repeated recognized metadata headers are rejected. Inspect column diagnostics for each exclusion reason.
+- All columns sharing an ambiguous gene symbol, ignoring case, are excluded. Repeated recognized metadata headers are rejected. The analysis ZIP includes column inclusion/exclusion reasons in `diagnostics.csv`.
 - Ensure each cell line occurs once. The app does not deduplicate repeated observations, so repeated rows would contribute repeatedly to means and group counts.
 
-### Data checks and column diagnostics
+### Data validation
 
-Open **Data checks & column diagnostics** to inspect the validation report. The diagnostics view is built only when this panel is opened. By default, it shows gene columns that need review: excluded genes or genes with missing, nonnumeric, or infinite values. Non-gene columns, including cell-line identifiers and lineage metadata, are available in a separate optional view; their presence in the report does not mean they were included in the gene ranking.
+The app validates columns and scores before ranking, and reports input errors where they occur. Cell-line identifiers, names and lineage metadata describe samples and are not part of the gene ranking. Full validation records are available as `diagnostics.csv` inside **Prepare analysis ZIP** under **Details & reproducibility**. If no gene columns can be analyzed, the error message provides a separate **Download validation report** button.
 
 The `position` field in the full CSV is the column's **zero-based position in the original CSV**, not its gene rank. For the built-in matrix, the seven metadata columns occupy positions 0–6, so `A1BG` starts at position 7.
-
-Search to narrow the displayed columns. Each preview shows at most 200 rows; click **Full column diagnostics CSV** to generate and download the complete report. These display and download controls do not skip the validation required for an analysis.
 
 ### Gene lists
 

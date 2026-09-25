@@ -1297,60 +1297,6 @@ def render_download_buttons(fig, filename_base, key_prefix, height=600):
                         st.error(ui('Export failed: ', '导出失败：') + str(exc))
 
 
-@st.fragment
-def render_diagnostics():
-    panel = st.expander(ui('Data checks & column diagnostics', '数据校验与列详情'),
-                        key='diagnostics_open', on_change='rerun')
-    if not panel.open:
-        return
-    with panel:
-        gene_rows = diagnostics['gene'].ne('')
-        review = gene_rows & (
-            diagnostics['status'].ne('included')
-            | diagnostics[['n_missing', 'n_invalid', 'n_infinite']].fillna(0).gt(0).any(axis=1))
-        st.caption(ui('Cell-line IDs, names and lineage fields describe samples; they are not gene scores. Only included gene columns enter the ranking.',
-                      '细胞系编号、名称和癌种字段用于描述样本，不是基因分数。只有纳入的基因列参与排名。'))
-        st.caption(ui(f"{diagnostics['status'].eq('included').sum():,} included genes · {review.sum():,} gene columns to review · {(~gene_rows).sum():,} other columns",
-                      f"纳入 {diagnostics['status'].eq('included').sum():,} 个基因 · {review.sum():,} 个基因列待检查 · {(~gene_rows).sum():,} 个其他列"))
-        labels = {'review': ui('Genes needing review', '待检查的基因列'),
-                  'genes': ui('All gene columns', '全部基因列'),
-                  'other': ui('Other columns (not ranked)', '其他列（不参与排名）')}
-        view = st.selectbox(ui('Show', '查看'), list(labels), format_func=labels.get,
-                            key='diagnostics_view')
-        query = st.text_input(ui('Find a gene or column', '搜索基因或列名'),
-                              key='diagnostics_search').strip()
-        mask = {'review': review, 'genes': gene_rows, 'other': ~gene_rows}[view]
-        if query:
-            mask &= (diagnostics['column'].astype(str).str.contains(query, case=False, regex=False)
-                     | diagnostics['gene'].str.contains(query, case=False, regex=False))
-        filtered = diagnostics.loc[mask]
-        columns = ['column', 'reason'] if view == 'other' else [
-            'gene', 'column', 'reason', 'n_valid', 'n_missing', 'n_invalid', 'n_infinite']
-        preview = filtered.loc[:, columns].head(200).copy()
-        reasons = {
-            'included': ui('Included in ranking', '已纳入排名'),
-            'not_selected': ui('Not selected as a gene score', '未选作基因分数列'),
-            'non_gene_schema': ui('Not recognized as a gene score', '未识别为基因分数列'),
-            'ambiguous_gene_symbol': ui('Duplicate gene symbol', '基因名重复'),
-            'no_finite_values': ui('No valid scores', '没有有效分数'),
-        }
-        preview['reason'] = preview['reason'].map(reasons).fillna(preview['reason'])
-        if preview.empty:
-            st.info(ui('No columns to show for this selection.', '当前筛选下没有需要显示的列。'))
-        else:
-            st.dataframe(preview, hide_index=True, width='stretch', column_config={
-                key: label for key, label in [
-                    ('gene', ui('Gene', '基因')), ('column', ui('Source column', '原始列名')),
-                    ('reason', ui('Column use / exclusion reason', '列用途 / 排除原因')),
-                    ('n_valid', ui('Valid', '有效')), ('n_missing', ui('Missing / nonfinite', '缺失 / 无效')),
-                    ('n_invalid', ui('Nonnumeric', '非数值')), ('n_infinite', ui('Infinite', '无穷值'))]})
-        st.caption(ui(f'Showing {len(preview):,} of {len(filtered):,} columns. Search to narrow the view; download the full audit below.',
-                      f'显示 {len(preview):,} / {len(filtered):,} 列。可搜索缩小范围，或下载完整校验记录。'))
-        st.download_button(ui('Full column diagnostics CSV', '完整列校验 CSV'),
-                            lambda frame=diagnostics: frame.to_csv(index=False).encode('utf-8-sig'),
-                            'column_diagnostics.csv', 'text/csv', key='diagnostics_csv', on_click='ignore')
-
-
 def read_gene_input(prefix, default, method):
     if method == 'text':
         value = st.text_area(t('gene_list'), default, height=110, key=f'{prefix}_genes',
@@ -1379,8 +1325,8 @@ def show_matches(parsed, matched, missing, title=None):
     if missing or parsed['duplicates']:
         with st.expander(ui('Input details / unmatched genes', '输入详情 / 未匹配基因')):
             if missing:
-                st.write(ui('Not matched (check column diagnostics for excluded genes):',
-                            '未匹配（被排除的基因请查看列校验详情）：'))
+                st.write(ui('Not matched (check gene symbols, dataset and score-column mapping):',
+                            '未匹配（请检查基因名称、数据集和分数列映射）：'))
                 st.code('\n'.join(missing), language=None)
             if parsed['duplicates']:
                 st.write(ui('Duplicate entries removed:', '已去除的重复输入：'), ', '.join(parsed['duplicates']))
@@ -1662,9 +1608,11 @@ st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
 scope_name = ', '.join(cohort) if cohort else ui('All cancer types', '全部癌种')
 if gene_rankings.empty:
     render_preferences()
-    render_diagnostics()
-    st.warning(ui('No analyzable gene columns. Check the column diagnostics or manually map your score columns in the sidebar.',
-                  '没有可分析的基因列。请检查列详情，或在侧栏手动映射分数列。'))
+    st.warning(ui('No analyzable gene columns. For custom CSVs, select score columns in the sidebar. Gene symbols must be unique, with at least one finite numeric score per gene.',
+                  '没有可分析的基因列。自定义 CSV 请在侧栏选择分数列；基因名不能重复，且每个基因至少需要一个有效数值分数。'))
+    st.download_button(ui('Download validation report', '下载数据校验报告'),
+                       lambda frame=diagnostics: frame.to_csv(index=False).encode('utf-8-sig'),
+                       'column_diagnostics.csv', 'text/csv', key='validation_report', on_click='ignore')
     st.stop()
 
 st.markdown(f'<div class="metrics-grid">'
@@ -1851,8 +1799,6 @@ elif view == 'multi':
         centered_plot(fig)
         result_downloads(result, fig, 'multi')
 
-
-render_diagnostics()
 
 # ---- Gene × Drug correlation (temporarily hidden from the public UI) ----
 if ENABLE_GENE_DRUG_UI:
