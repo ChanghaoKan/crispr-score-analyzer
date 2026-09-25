@@ -83,7 +83,8 @@ def test_export_copy_is_vector_readable_and_preserves_formatting(figure):
     assert annotation.font.family == "Arial"
     assert annotation.font.size == 15
     assert annotation.font.color == "#1a1a1a"
-    assert annotation.bgcolor == "white"
+    assert annotation.bgcolor == "rgba(0,0,0,0)"
+    assert annotation.borderwidth == 0
     assert figure.layout.annotations[0].bgcolor == "#182430"
     assert exported.data[1].textfont.size == 13
     assert exported.data[1].marker.color == "#0072B2"
@@ -126,7 +127,7 @@ def test_actual_svg_is_vector_pdf_is_valid_and_png_has_dpi(figure):
                               for element in group.iter()
                               if element.tag.endswith("rect") and element.get("class") == "bg"]
     assert annotation_backgrounds
-    assert all("fill: rgb(255, 255, 255)" in element.get("style", "")
+    assert all("fill-opacity: 0;" in element.get("style", "")
                for element in annotation_backgrounds)
     pdf = render_figure_bytes(figure, "pdf", width=360, height=240)
     assert pdf.startswith(b"%PDF-")

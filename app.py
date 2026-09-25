@@ -995,14 +995,14 @@ def apply_theme_to_fig(fig):
 # =============================================================================
 # 绘图函数
 # =============================================================================
-def _rank_label_annotations(points, x_range, y_range, background):
+def _rank_label_annotations(points, x_range, y_range):
     """Space labels in a conservative viewport, keeping arrows on the true data.
 
     A small spatial grid bounds collision checks even for a large submitted set.
     Positions use data coordinates so labels and leader lines also remain vector
     objects in exports and scale with the responsive chart.
     """
-    plot_width, plot_height = 720, 360
+    plot_width, plot_height = 720, 346
     x_span, y_span = x_range[1] - x_range[0], y_range[1] - y_range[0]
     occupied = {}
     annotations = []
@@ -1041,7 +1041,8 @@ def _rank_label_annotations(points, x_range, y_range, background):
             ay=y_range[1] - cy / plot_height * y_span, axref='x', ayref='y',
             text=escape(point['gene']), showarrow=True, arrowhead=0,
             arrowwidth=0.8, arrowcolor=point['color'], standoff=5,
-            xanchor='center', yanchor='middle', borderpad=2, bgcolor=background,
+            xanchor='center', yanchor='middle', borderpad=2,
+            bgcolor='rgba(0,0,0,0)', borderwidth=0,
             font=dict(size=13, color=point['color'], family=FONT_FAMILY),
         ))
     return annotations
@@ -1109,13 +1110,13 @@ def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
                    showgrid=False, automargin=True),
         yaxis=dict(title=ui('Mean CRISPR score', '平均 CRISPR 分数'), range=y_range,
                    showgrid=True, gridcolor=th['plot_grid'], automargin=True),
-        annotations=_rank_label_annotations(label_points, x_range, y_range, th['plot_bg']),
+        annotations=_rank_label_annotations(label_points, x_range, y_range),
         title=dict(text=ui(f'{n_cell_lines:,} cell lines · hover for gene-level sample counts',
                            f'{n_cell_lines:,} 个细胞系 · 悬停查看各基因有效样本数'),
                    font=dict(size=13), x=0, xanchor='left'),
-        legend=dict(orientation='h', yanchor='top', y=-0.18, xanchor='center', x=0.5,
+        legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5,
                     font=dict(size=12), itemsizing='constant'),
-        height=540, margin=dict(l=75, r=30, t=50, b=100))
+        height=460, margin=dict(l=64, r=24, t=42, b=72))
     return apply_theme_to_fig(fig)
 
 

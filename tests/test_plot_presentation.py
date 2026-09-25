@@ -49,7 +49,9 @@ def rankings():
     return frame
 
 
-def test_close_labels_are_separated_and_arrows_preserve_true_positions(plot_helpers, rankings):
+@pytest.mark.parametrize('theme', ['light', 'dark'])
+def test_close_labels_are_separated_and_arrows_preserve_true_positions(plot_helpers, rankings, theme):
+    plot_helpers['st'].session_state['theme'] = theme
     make_plot = plot_helpers['create_rank_plot']
     fig = make_plot(rankings, ['E2F1', 'E2F3'], n_cell_lines=12)
     annotations = fig.layout.annotations
@@ -63,11 +65,13 @@ def test_close_labels_are_separated_and_arrows_preserve_true_positions(plot_help
         assert annotation.showarrow
         assert annotation.axref == 'x' and annotation.ayref == 'y'
         assert annotation.font.size >= 13
+        assert annotation.bgcolor == 'rgba(0,0,0,0)'
+        assert annotation.borderwidth == 0
         for other in annotations[i + 1:]:
-            # At the conservative 720 × 360 plotting area, these short gene
+            # At the conservative 720 × 346 plotting area, these short gene
             # labels need either a full text width or a line height of space.
             horizontal = abs(annotation.ax - other.ax) / x_span * 720
-            vertical = abs(annotation.ay - other.ay) / y_span * 360
+            vertical = abs(annotation.ay - other.ay) / y_span * 346
             assert horizontal >= 44 or vertical >= 23
     repeated = make_plot(rankings, ['E2F3', 'E2F1'], n_cell_lines=12)
     assert [a.to_plotly_json() for a in annotations] == [a.to_plotly_json() for a in repeated.layout.annotations]

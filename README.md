@@ -51,6 +51,8 @@ Gene-list and per-view analysis edits are drafts until Run is clicked. After lea
 
 Locate matched genes within the selected cohort's mean-score ranking. Hover over a point for the gene, mean score, rank, rank percentile, and valid sample count. Reference A and Reference B are configurable visual anchors.
 
+Ranking charts use a compact layout with transparent gene labels and leader lines, keeping the underlying score curve visible. Gene-set annotation uses the same presentation.
+
 ### Cancer-type comparison
 
 Choose genes, then open **Comparison options** to optionally restrict the displayed lineages within the sidebar cohort and select median-score or alphabetical ordering. Each group shows its valid `n`. Enable **Show all cell lines** to display every observation; point hover includes the cell-line name and identifier when available.
@@ -116,7 +118,7 @@ Ranks depend on both the selected cell lines and the analyzable gene columns. A 
 
 ## Exports
 
-Open **Export figure** beside the results heading, click **Generate PDF/PNG/SVG**, then download the resulting file. Use **Figure size** within this panel to change dimensions. Exports use a white background regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
+Open **Export figure** beside the results heading, click **PDF**, **PNG**, or **SVG**, then download the resulting file. Use **Figure size** within this panel to change dimensions. Exports use a white page background and transparent text labels regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
 
 | Format | Behavior |
 |---|---|
