@@ -1391,7 +1391,7 @@ def result_downloads(result, fig, prefix):
         'language': st.session_state.lang, 'theme': st.session_state.theme,
         'reference_genes': [essential_gene, nonessential_gene],
         'show_labels': show_labels, 'point_size': point_size,
-    }, 'export': {'width': st.session_state.get(f'{prefix}_width', 1000),
+    }, 'export': {'width': st.session_state.get(f'{prefix}_width', int(fig.layout.width or 1000)),
                   'height': st.session_state.get(f'{prefix}_height', int(fig.layout.height or 600)),
                   'png_scale': 3, 'png_dpi': 300, 'full_vector_pdf_svg': True}}
     with st.expander(ui('Details & reproducibility', '详细数据与复现'), expanded=False):

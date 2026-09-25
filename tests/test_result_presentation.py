@@ -98,7 +98,7 @@ def presentation():
     result = {'rankings': ranking, 'genes': ['PTEN', 'MYC'],
               'plot_data': pd.DataFrame({'gene': ['MYC'], 'crispr_score': [-1.23456789]}),
               'metadata': {'created_at_utc': '2026-09-25T01:02:03Z', 'selected_genes': ['PTEN', 'MYC']}}
-    return ui, namespace['result_downloads'], result, SimpleNamespace(layout=SimpleNamespace(height=600)), bundles
+    return ui, namespace['result_downloads'], result, SimpleNamespace(layout=SimpleNamespace(width=640, height=480)), bundles
 
 
 def test_readable_localized_table_preserves_csv_values(presentation):
@@ -132,6 +132,8 @@ def test_zip_is_prepared_on_demand_and_invalidated_for_new_analysis_or_dimension
     ui.clicked = {'rank_zip_btn'}
     render(result, fig, 'rank')
     assert len(bundles) == 1
+    assert bundles[0]['export']['width'] == 640
+    assert bundles[0]['export']['height'] == 480
     first = ui.downloads['rank_zip']
     ui.clicked.clear()
     render(result, fig, 'rank')
