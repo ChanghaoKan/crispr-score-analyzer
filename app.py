@@ -466,24 +466,24 @@ def inject_css():
         button:focus-visible, input:focus-visible, textarea:focus-visible {{
             outline: 3px solid {th['accent']}80 !important; outline-offset: 2px !important;
         }}
-        .stApp button {{
+        :is(.stApp, [data-testid="stPopoverBody"]) button {{
             background-color: {th['bg_card']}; color: {th['text']} !important;
             border-color: {th['border']};
         }}
-        .stApp button p, .stApp button span {{ color: inherit !important; }}
-        .stApp button[kind="primary"] {{
+        :is(.stApp, [data-testid="stPopoverBody"]) button p, :is(.stApp, [data-testid="stPopoverBody"]) button span {{ color: inherit !important; }}
+        :is(.stApp, [data-testid="stPopoverBody"]) button[kind="primary"] {{
             background-color: {th['accent']}; color: {th['bg_card']} !important;
             border-color: {th['accent']};
         }}
-        .stApp button[kind="primary"]:hover {{ background-color: {th['accent_hover']}; }}
+        :is(.stApp, [data-testid="stPopoverBody"]) button[kind="primary"]:hover {{ background-color: {th['accent_hover']}; }}
         .stApp [data-testid="stButtonGroup"] button[aria-checked="true"],
         .stApp [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
             background-color: {th['accent']}22; color: {th['accent']} !important;
             border-color: {th['accent']};
         }}
-        .stApp [data-testid="stExpander"] summary,
-        .stApp [data-testid="stExpander"] summary p,
-        .stApp [data-testid="stExpander"] summary span {{ color: {th['text']} !important; }}
+        :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary,
+        :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary p,
+        :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary span {{ color: {th['text']} !important; }}
         .stApp [data-baseweb="select"] > div {{
             background-color: {th['bg_card']} !important;
             color: {th['text']} !important; border-color: {th['border']} !important;
@@ -491,6 +491,11 @@ def inject_css():
         .stApp [data-baseweb="select"] span,
         .stApp [data-baseweb="select"] input {{ color: {th['text']} !important; }}
         .stApp [data-testid="stAlert"] p {{ color: {th['text']} !important; }}
+        [data-testid="stPopoverBody"] {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+            border: 1px solid {th['border']};
+        }}
+        [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; }}
         @media (max-width: 900px) {{
             [data-testid="stMainBlockContainer"] {{ padding: 1rem 0.85rem 2rem; }}
             .hero-shell {{ align-items: flex-start; flex-wrap: wrap; gap: 0.55rem; }}
@@ -935,7 +940,7 @@ PLOT_CONFIG = {
 
 def centered_plot(fig, config=None):
     """使用容器宽度渲染，避免窄屏三列布局造成图表压缩。"""
-    st.plotly_chart(fig, config=config or PLOT_CONFIG)
+    st.plotly_chart(fig, config=config or PLOT_CONFIG, theme=None)
 
 
 def apply_theme_to_fig(fig):
@@ -945,6 +950,7 @@ def apply_theme_to_fig(fig):
         paper_bgcolor=th['plot_bg'],
         font=dict(family=FONT_FAMILY, size=13, color=th['plot_text']),
         hoverlabel=dict(font=dict(family=FONT_FAMILY, size=13)),
+        legend_font_color=th['plot_text'], title_font_color=th['plot_text'],
     )
     fig.update_xaxes(
         linecolor=th['plot_axis'], tickcolor=th['plot_axis'],
@@ -956,6 +962,7 @@ def apply_theme_to_fig(fig):
         tickfont=dict(size=12, color=th['plot_text']),
         title_font=dict(size=14, color=th['plot_text']),
     )
+    fig.update_annotations(font_color=th['plot_text'])
     return fig
 
 
@@ -1709,7 +1716,7 @@ elif view == 'box':
                 if absent:
                     st.info(ui('No valid scores in these groups: ', '这些基因在所选分组没有有效分数：') + ', '.join(absent))
                 fig = create_lineage_boxplot(valid_data, result['genes'], result['config']['sort'], result['config']['all_points'])
-                st.plotly_chart(fig, config=PLOT_CONFIG, width='stretch')
+                st.plotly_chart(fig, config=PLOT_CONFIG, width='stretch', theme=None)
                 result_downloads(result, fig, 'box')
 
 elif view == 'multi':
