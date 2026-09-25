@@ -101,23 +101,70 @@ class AppSubmissionTests(unittest.TestCase):
         self.app.segmented_control(key="analysis_tab").set_value(view).run()
         self.assert_healthy()
 
+    def select_custom_source(self):
+        self.app.segmented_control(key="dataset_source").set_value("custom").run()
+        self.assert_healthy()
+
     def test_run_commits_inputs_and_draft_preserves_last_result(self):
         first = self.run_rank("MYC")
         self.assertEqual(first["genes"], ["MYC"])
         first_ranking = first["rankings"].copy(deep=True)
+        first_signature = first["input_signature"]
 
         self.app.text_area(key="rank_genes").set_value("PTEN").run()
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["genes"], ["MYC"])
         self.assertTrue(self.result("rank_result")["rankings"].equals(first_ranking))
+        self.assertEqual(self.result("rank_result")["input_signature"], first_signature)
+        self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
 
         self.app.button(key="rank_run").click().run()
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["genes"], ["PTEN"])
+        self.assertNotEqual(self.result("rank_result")["input_signature"], first_signature)
+        self.assertFalse(any("Inputs changed" in warning.value for warning in self.app.warning))
+
+    def test_unmatched_submission_keeps_result_and_warns(self):
+        original = self.run_rank("MYC")
+        self.run_rank("NOT_A_REAL_GENE")
+        self.assertEqual(self.result("rank_result")["genes"], ["MYC"])
+        self.assertEqual(self.result("rank_result")["metadata"]["created_at_utc"],
+                         original["metadata"]["created_at_utc"])
+        self.assertTrue(any("No matched genes" in warning.value for warning in self.app.warning))
+
+    def test_example_and_clear_change_draft_without_replacing_result(self):
+        cases = [
+            ("rank", {"rank_genes": "MYC"}, {"rank_genes": "E2F1\nE2F2\nE2F3"}),
+            ("box", {"box_genes": "MYC"}, {"box_genes": "E2F1\nE2F2"}),
+            ("multi", {"multi_bg": "MYC", "multi_hl": "PTEN"},
+             {"multi_bg": "CDK1\nCDK2\nCCNB1\nCCND1\nCCNE1", "multi_hl": "PLK1\nAURKA"}),
+        ]
+        for view, initial, example in cases:
+            with self.subTest(view=view):
+                self.switch_view(view)
+                for key, text in initial.items():
+                    self.app.text_area(key=key).set_value(text)
+                self.app.button(key=f"{view}_run").click().run()
+                self.assert_healthy()
+                committed = self.result(f"{view}_result")
+
+                self.app.button(key=f"{view}_example").click().run()
+                self.assert_healthy()
+                for key, text in example.items():
+                    self.assertEqual(self.app.text_area(key=key).value, text)
+                self.assertEqual(self.result(f"{view}_result")["genes"], committed["genes"])
+                self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+
+                self.app.button(key=f"{view}_clear").click().run()
+                self.assert_healthy()
+                for key in initial:
+                    self.assertEqual(self.app.text_area(key=key).value, "")
+                self.assertEqual(self.result(f"{view}_result")["genes"], committed["genes"])
+                self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
 
     def test_submitting_another_tab_does_not_submit_rank_draft(self):
         self.run_rank("MYC")
-        self.app.text_area(key="rank_genes").set_value("PTEN")
+        self.app.text_area(key="rank_genes").set_value("PTEN").run()
         self.switch_view("multi")
         self.app.text_area(key="multi_bg").set_value("CDK1 CDK2")
         self.app.text_area(key="multi_hl").set_value("MYC")
@@ -142,6 +189,9 @@ class AppSubmissionTests(unittest.TestCase):
 
     def test_new_upload_invalidates_result_and_uses_new_scores(self):
         self.run_rank("MYC")
+        self.select_custom_source()
+        self.assertIsNone(self.result("rank_result"))
+        self.assertEqual(len(self.app.get("plotly_chart")), 0)
         self.current_upload = Upload(score_csv(offset=0.5))
         self.app.run()
         self.assert_healthy()
@@ -153,7 +203,7 @@ class AppSubmissionTests(unittest.TestCase):
     def test_plain_symbol_upload_requires_explicit_column_mapping(self):
         self.run_rank("MYC")
         self.current_upload = Upload(built_in_score_csv(), "plain_symbols.csv")
-        self.app.run()
+        self.select_custom_source()
         self.assert_healthy()
         self.assertIsNone(self.result("rank_result"))
         self.assertGreater(len(self.app.warning), 0)
@@ -165,6 +215,7 @@ class AppSubmissionTests(unittest.TestCase):
 
     def test_invalid_upload_shows_error_without_retaining_results(self):
         self.run_rank("MYC")
+        self.select_custom_source()
         invalid_inputs = {
             "no_gene_columns": b"ModelID,lineage,notes\nACH-1,Liver,hello\n",
             "malformed_csv": b"ModelID,lineage,MYC (4609)\nACH-1,Liver,-1\nACH-2,Lung,-0.5,extra\n",
@@ -181,10 +232,15 @@ class AppSubmissionTests(unittest.TestCase):
                 self.assertIsNone(self.result("rank_result"))
 
     def test_language_switch_keeps_committed_result_and_localizes_run(self):
-        self.run_rank("MYC")
+        original = self.run_rank("MYC")
         self.app.selectbox(key="lang_select").set_value("zh").run()
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["genes"], ["MYC"])
+        self.assertEqual(len(self.app.warning), 0)
+        self.app.selectbox(key="theme_select").set_value("dark").run()
+        self.assert_healthy()
+        self.assertEqual(self.result("rank_result")["input_signature"], original["input_signature"])
+        self.assertEqual(len(self.app.warning), 0)
         for view, key in [("rank", "rank_run"), ("box", "box_run"), ("multi", "multi_run")]:
             self.switch_view(view)
             self.assertIn("生成", self.app.button(key=key).label)
@@ -208,6 +264,25 @@ class AppSubmissionTests(unittest.TestCase):
         self.assert_healthy()
         self.assertEqual(self.result("box_result")["genes"], selected)
 
+    def test_editing_box_draft_discards_pending_selection_and_keeps_saved_plot(self):
+        self.switch_view("box")
+        self.app.text_area(key="box_genes").set_value("MYC")
+        self.app.button(key="box_run").click().run()
+        self.assert_healthy()
+        committed = self.result("box_result")
+
+        self.app.text_area(key="box_genes").set_value(" ".join(GENES[:10]))
+        self.app.button(key="box_run").click().run()
+        self.assert_healthy()
+        self.assertIsNotNone(self.result("box_candidates"))
+        self.assertEqual(self.result("box_result")["genes"], ["MYC"])
+
+        self.app.text_area(key="box_genes").set_value("PTEN").run()
+        self.assert_healthy()
+        self.assertIsNone(self.result("box_candidates"))
+        self.assertEqual(self.result("box_result")["input_signature"], committed["input_signature"])
+        self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+
     def test_box_selection_uses_valid_counts_and_preserves_cell_identity(self):
         rows = list(csv.reader(io.StringIO(score_csv().decode("utf-8"))))
         rows[0].insert(1, "cell_line_display_name")
@@ -218,7 +293,7 @@ class AppSubmissionTests(unittest.TestCase):
         content = io.StringIO()
         csv.writer(content).writerows(rows)
         self.current_upload = Upload(content.getvalue().encode("utf-8"), "missing_scores.csv")
-        self.app.run()
+        self.select_custom_source()
         self.assert_healthy()
         self.switch_view("box")
         self.app.text_area(key="box_genes").set_value("MYC\nPTEN")

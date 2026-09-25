@@ -165,6 +165,9 @@ def test_app_download_cache_replaces_bytes_when_plot_or_dimensions_change(figure
         def spinner(self, label):
             return Block()
 
+        def expander(self, label, **kwargs):
+            return Block()
+
         def download_button(self, label, data, filename, mime, **kwargs):
             assert kwargs["on_click"] == "ignore"
             self.downloads.append((filename, data))

@@ -8,11 +8,11 @@ This README describes the source in this checkout. The hosted app may lag behind
 
 ## Features
 
-- Explicit **Run / 生成图表** controls, input matching summaries, and separate submitted results for each analysis view.
+- Explicit **Run analysis / Run · 生成图表** controls, example and clear actions, input matching feedback, and a record of the last submitted analysis in each view.
 - Gene dependency rankings within all available cell lines or selected cancer lineages.
-- Lineage boxplots with valid sample counts, median or alphabetical ordering, and optional individual cell-line points.
+- Cancer-type comparisons with valid sample counts, median or alphabetical ordering, and optional individual cell-line points.
 - Two-layer gene-set annotation with configurable colors and reference genes.
-- English and Chinese interfaces, light and dark themes, and a responsive layout.
+- English and Chinese interfaces, light and dark themes, compact navigation, and readable result tables with localized headers.
 - Custom score-matrix uploads with explicit gene-column mapping and column diagnostics.
 - PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, and provenance.
 
@@ -40,26 +40,26 @@ The initial built-in dataset download requires an internet connection. The appli
 
 ## Usage
 
-1. Keep the built-in dataset or upload a score matrix in the sidebar. Map plain-symbol gene columns explicitly when using a custom matrix.
-2. Select the **Cancer-type scope**. An empty selection uses all available lineages.
-3. Choose an analysis view, enter gene symbols, and click **Run**. The keyboard submit shortcut remains optional.
-4. Inspect matching feedback and valid sample counts, then open the export or results panel.
+1. Select **Built-in** or **Custom CSV** under **Data Source** in the sidebar. The upload control appears for custom data; map plain-symbol gene columns explicitly when using a custom matrix.
+2. Choose **Cancer types** under **Analysis scope**. An empty selection uses all available lineages. Figure settings follow the cohort controls; language and theme are under **Preferences**.
+3. Choose **Gene ranking**, **Cancer-type comparison**, or **Gene-set annotation**, enter gene symbols, and click **Run analysis**. **Load example** and **Clear** help edit the input.
+4. Review the run's genes, cohort, and UTC time above the plot. A compact results table appears below the plot, beside **Export figure** and **Download results** controls.
 
-Gene-list and per-view analysis edits are drafts until submitted. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly.
+Gene-list and per-view analysis edits are drafts until Run is clicked. After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly.
 
 ### Gene ranking
 
 Locate matched genes within the selected cohort's mean-score ranking. Hover over a point for the gene, mean score, rank, rank percentile, and valid sample count. Reference A and Reference B are configurable visual anchors.
 
-### Lineage boxplot
+### Cancer-type comparison
 
-Choose genes, optionally restrict the displayed lineages within the sidebar cohort, and select median-score or alphabetical ordering. Each group shows its valid `n`. Enable **Show all cell lines** to display every observation; point hover includes the cell-line name and identifier when available.
+Choose genes, then open **Comparison options** to optionally restrict the displayed lineages within the sidebar cohort and select median-score or alphabetical ordering. Each group shows its valid `n`. Enable **Show all cell lines** to display every observation; point hover includes the cell-line name and identifier when available.
 
 If more than eight genes match, choose up to eight explicitly before generating the plot. The complete submitted input remains recorded in the analysis metadata. The accompanying gene ranking uses the sidebar cohort; group summaries and plotted observations use the boxplot's additional lineage selection.
 
-### Multi-layer annotation
+### Gene-set annotation
 
-Enter a background gene set and a highlight set, choose their colors, and click Run. Both lists receive matching feedback. Highlight genes take precedence when the sets overlap. This view uses the same cohort ranking as the gene-ranking view; it does not run a gene-set enrichment test.
+Enter a background gene set and a highlight set, choose their colors under **Annotation colors**, and click **Run analysis**. Both lists receive matching feedback. Highlight genes take precedence when the sets overlap. This view uses the same cohort ranking as the gene-ranking view; it does not run a gene-set enrichment test.
 
 ## Data and input formats
 
@@ -87,7 +87,7 @@ ACH-000002,Example B,Lung,-2.13,0.08
 ```
 
 - Automatic detection requires `SYMBOL (numeric Entrez ID)`, such as `MYC (4609)`. Numeric metadata is not automatically treated as a gene.
-- For plain-symbol headers such as `MYC`, enable **Select columns manually** in the sidebar and select the score columns. Other descriptive headers must first be renamed to valid symbols.
+- For plain-symbol headers such as `MYC`, open **Gene column mapping** in the sidebar, enable **Select columns manually**, and select the score columns. Other descriptive headers must first be renamed to valid symbols.
 - Include a cell-line identifier such as `ModelID`, `depmap_id`, or `cell_line`. Include `cell_line_display_name` or `CellLineName` for readable point labels. Without an identifier, row indices are used.
 - Include `lineage`, `OncotreeLineage`, or another recognized lineage column for cohort filtering and boxplots. Missing labels become `Unknown`; ranking remains available when lineage metadata is absent.
 - All columns sharing an ambiguous gene symbol, ignoring case, are excluded. Repeated recognized metadata headers are rejected. Inspect column diagnostics for each exclusion reason.
@@ -99,7 +99,7 @@ Gene-list input is separate from score-matrix upload. Use gene symbols, such as 
 
 Paste symbols separated by whitespace, newlines, tabs, commas, or semicolons; Chinese commas and semicolons are also accepted. Matching is case-insensitive. Duplicate inputs are removed while preserving their first occurrence, and unmatched genes are shown for correction.
 
-The ranking and boxplot views also accept UTF-8 `.txt`, `.csv`, and `.tsv` lists. CSV/TSV uploads read the first column. A recognized header such as `gene`, `gene_symbol`, or `symbol` is optional; a headerless file keeps its first gene. Multi-layer annotation uses the two text inputs.
+The ranking and boxplot views also accept UTF-8 `.txt`, `.csv`, and `.tsv` lists. CSV/TSV uploads read the first column. A recognized header such as `gene`, `gene_symbol`, or `symbol` is optional; a headerless file keeps its first gene. Gene-set annotation uses the two text inputs.
 
 ## Analysis and interpretation
 
@@ -116,7 +116,7 @@ Ranks depend on both the selected cell lines and the analyzable gene columns. A 
 
 ## Exports
 
-Figure files are generated on demand. Choose dimensions, click **Generate PDF/PNG/SVG**, then download the resulting file. Exports use a white background regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
+Open **Export figure** beside the results heading, click **Generate PDF/PNG/SVG**, then download the resulting file. Use **Figure size** within this panel to change dimensions. Exports use a white background regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
 
 | Format | Behavior |
 |---|---|
@@ -125,7 +125,9 @@ Figure files are generated on demand. Choose dimensions, click **Generate PDF/PN
 
 For example, an export size of 1,000 × 600 produces a 3,000 × 1,800-pixel PNG. DPI metadata does not increase pixel resolution. PNG output is capped at **24 million pixels**; reduce dimensions or choose PDF/SVG for larger figures.
 
-The results panel offers separate selected-results and plot-data CSV downloads, plus a complete analysis ZIP:
+The visible results table shows gene symbols, mean scores, ranks, rank percentiles, and valid sample counts. Browser labels follow the selected language; means display three decimal places and percentiles display a percent sign. **Download results** exports CSV with canonical field names and full numeric precision, independent of these display formats.
+
+Open **Details & reproducibility** for missing-value counts, cancer-type summaries, plot-data CSV, and analysis metadata. Click **Prepare analysis ZIP** to generate the complete bundle, then download it. Bundles are generated only on request; changes to the analysis or recorded display/export settings require a new bundle. Pending input edits do not change exported results until Run is clicked:
 
 | ZIP member | Contents |
 |---|---|
@@ -135,7 +137,7 @@ The results panel offers separate selected-results and plot-data CSV downloads, 
 | `metadata.json` | Data source, release, pinned revision, file SHA-256, cohort, column mapping, input matching, parameters, timestamp, software versions, ranking method, and display/export settings. |
 | `diagnostics.csv` | Column inclusion/exclusion status and reason, with valid, missing, invalid, and infinite counts for recognized candidate columns. |
 
-For ranking and multi-layer views, observation data covers the selected genes; `full_rankings.csv` also records the background ranking. The ZIP does not contain figure files or a copy of the entire original score matrix. Keep the source matrix and downloaded figures alongside the bundle when archiving an analysis.
+For gene-ranking and gene-set annotation views, observation data covers the selected genes; `full_rankings.csv` also records the background ranking. The ZIP does not contain figure files or a copy of the entire original score matrix. Keep the source matrix and downloaded figures alongside the bundle when archiving an analysis.
 
 ## Tests and development
 
@@ -146,7 +148,7 @@ python -m pip install pytest
 python -m pytest tests -q
 ```
 
-The suite covers parsing, ranking and missingness, submitted-result persistence, cohort changes, export cache invalidation, and actual SVG/PDF/PNG rendering. Tests use small deterministic fixtures and mock the public dataset download; they do not fetch DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
+The suite covers parsing, ranking and missingness, draft and submitted-result state, cohort changes, localized table formatting without loss of CSV precision, on-demand bundle generation, export cache invalidation, and actual SVG/PDF/PNG rendering. Tests use small deterministic fixtures and mock the public dataset download; they do not fetch DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
 
 For a check that excludes the actual image-rendering test:
 
