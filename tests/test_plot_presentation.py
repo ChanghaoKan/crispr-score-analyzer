@@ -21,8 +21,9 @@ def plot_helpers():
         '_ranking_fingerprint', '_cached_background_trace',
         'build_rank_figure', 'create_rank_plot', 'create_multilayer_rank_plot',
         'create_lineage_boxplot',
+        '_preference_scale', '_add_preference_lollipop', 'create_preference_plot',
     }
-    constants = {'THEMES', 'PLOT_COLORS', 'FONT_FAMILY', 'ESSENTIALITY_THRESHOLD'}
+    constants = {'THEMES', 'PLOT_COLORS', 'FONT_FAMILY', 'ESSENTIALITY_THRESHOLD', 'PREFERENCE_MIN_N'}
     tree = ast.parse((Path(__file__).resolve().parents[1] / 'app.py').read_text())
     nodes = [node for node in tree.body
              if (isinstance(node, ast.FunctionDef) and node.name in names)
@@ -144,3 +145,28 @@ def test_lineage_plot_shows_readable_counts_and_localized_point_hover(plot_helpe
     assert fig.layout.annotations[0].font.size >= 15
     assert all(trace.boxpoints == 'all' and '细胞系' in trace.hovertemplate for trace in fig.data)
     assert fig.layout.xaxis.title.text == 'CRISPR 分数'
+
+
+def test_preference_plot_is_a_labeled_lollipop_per_gene(plot_helpers):
+    plot_helpers['st'].session_state['theme'] = 'dark'
+    table = pd.DataFrame({
+        'gene': ['MYC', 'MYC', 'MYC', 'PTEN', 'PTEN', 'PTEN'],
+        'lineage': ['Lung', 'Liver', 'Bone', 'Lung', 'Liver', 'Bone'],
+        'n_valid': [12, 8, 3, 12, 8, 9],
+        'mean': [-2.2, -1.4, -1.0, 0.1, 0.4, 0.2],
+        'panel_mean': [-1.8, -1.8, -1.8, 0.3, 0.3, 0.3],
+        'difference': [-0.4, 0.4, 0.8, -0.2, 0.1, -0.1],
+    })
+    fig = plot_helpers['create_preference_plot'](table)
+    assert fig is not None
+    assert all(trace.type == 'scatter' for trace in fig.data)
+    assert [annotation.text for annotation in fig.layout.annotations] == [
+        'MYC · all-type mean -1.80', 'PTEN · all-type mean 0.30']
+    # Bone has only 3 lines, below the plotting minimum, so MYC shows Lung then Liver.
+    assert list(fig.layout.yaxis.categoryarray) == ['Liver', 'Lung']
+    assert list(fig.layout.yaxis2.categoryarray) == ['Liver', 'Bone', 'Lung']
+    assert fig.layout.xaxis.range[0] < 0 < fig.layout.xaxis.range[1]
+    assert abs(fig.layout.xaxis.range[1]) > abs(fig.layout.xaxis2.range[1])
+    marker_text = [trace.text for trace in fig.data if trace.mode == 'markers+text']
+    assert marker_text[0] == ('+0.40', '-0.40')
+    assert 'more dependent' in fig.layout.xaxis.title.text

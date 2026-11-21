@@ -1628,50 +1628,68 @@ def _preference_scale():
     return [[0.0, "#2f6fad"], [0.5, neutral], [1.0, "#d4785a"]]
 
 
-def _preference_shown(table):
-    shown = table[table["n_valid"] >= PREFERENCE_MIN_N].copy()
-    if shown.empty:
-        return shown
-    order = shown.groupby("lineage")["difference"].mean().sort_values(ascending=False).index
-    return shown, list(order)
-
-
 def create_preference_plot(table):
-    """One gene is a diverging lollipop. Several genes are a diverging heatmap.
+    """One labeled lollipop per gene. Left of zero is more dependent.
 
-    Both are centered on each gene's all-lineage mean. PCA would mix those
-    genes into components and hide which tumor type shifts which gene.
+    Each gene keeps its own scale, so a small shift is still readable next to
+    a gene whose means move much further. The printed number is the difference.
     """
     shown = table[table["n_valid"] >= PREFERENCE_MIN_N]
     if shown.empty:
         return None
-    order = shown.groupby("lineage")["difference"].mean().sort_values(ascending=False).index.tolist()
     genes = list(dict.fromkeys(shown["gene"]))
-    if len(genes) == 1:
-        return _preference_lollipop(shown, order, genes[0])
-    return _preference_heatmap(shown, order, genes)
-
-
-def _preference_lollipop(shown, order, gene):
+    longest = int(shown.groupby("gene").size().max())
+    titles = []
+    for gene in genes:
+        mean = float(shown.loc[shown["gene"] == gene, "panel_mean"].iloc[0])
+        titles.append(ui(f"{gene} · all-type mean {mean:.2f}", f"{gene} · 总平均 {mean:.2f}"))
+    spacing = 0.12 if len(genes) < 3 else min(0.08, 0.85 / (len(genes) - 1))
+    fig = make_subplots(
+        rows=len(genes), cols=1, shared_xaxes=False, subplot_titles=titles,
+        vertical_spacing=spacing,
+    )
+    for index, gene in enumerate(genes, start=1):
+        _add_preference_lollipop(fig, shown[shown["gene"] == gene], gene, index)
+    fig.update_layout(
+        height=max(480, len(genes) * (26 * longest + 108)),
+        showlegend=False,
+        margin=dict(l=8, r=36, t=42, b=56),
+    )
+    themed = apply_theme_to_fig(fig)
     th = get_theme()
-    part = shown.set_index("lineage").reindex(order)
-    limit = float(np.nanmax(np.abs(part["difference"].to_numpy()))) or 0.1
-    stems_x, stems_y = [], []
-    for lineage, diff in zip(order, part["difference"]):
-        stems_x.extend([0, diff, None])
-        stems_y.extend([lineage, lineage, None])
-    fig = go.Figure()
+    themed.update_annotations(font=dict(size=15, family=FONT_FAMILY, color=th["plot_text"]))
+    return themed
+
+
+def _add_preference_lollipop(fig, gene_rows, gene, row):
+    th = get_theme()
+    part = gene_rows.sort_values(["difference", "lineage"], ascending=[False, True])
+    order = part["lineage"].tolist()
+    diffs = part["difference"].to_numpy(dtype=float)
+    limit = float(np.nanmax(np.abs(diffs))) or 0.1
+    stems = {"#2f6fad": ([], []), "#d4785a": ([], [])}
+    for lineage, diff in zip(order, diffs):
+        xs, ys = stems["#2f6fad" if diff < 0 else "#d4785a"]
+        xs.extend((0, diff, None))
+        ys.extend((lineage, lineage, None))
+    for color, (xs, ys) in stems.items():
+        if not xs:
+            continue
+        fig.add_trace(go.Scatter(
+            x=xs, y=ys, mode="lines",
+            line=dict(color=color, width=2),
+            hoverinfo="skip", showlegend=False,
+        ), row=row, col=1)
     fig.add_trace(go.Scatter(
-        x=stems_x, y=stems_y, mode="lines",
-        line=dict(color=th["plot_axis"], width=1.4),
-        hoverinfo="skip", showlegend=False,
-    ))
-    fig.add_trace(go.Scatter(
-        x=part["difference"], y=order, mode="markers",
-        marker=dict(size=11, color=part["difference"], colorscale=_preference_scale(),
-                    cmid=0, cmin=-limit, cmax=limit,
-                    colorbar=dict(title=ui("Difference", "差值"), thickness=12, len=0.7),
-                    line=dict(width=0)),
+        x=diffs, y=order, mode="markers+text",
+        text=[f"{value:+.2f}" for value in diffs],
+        textposition=["middle left" if value < 0 else "middle right" for value in diffs],
+        textfont=dict(size=12, color=th["plot_text"]),
+        cliponaxis=False,
+        marker=dict(
+            size=12, color=diffs, colorscale=_preference_scale(),
+            cmid=0, cmin=-limit, cmax=limit, showscale=False, line=dict(width=0),
+        ),
         customdata=np.column_stack((part["mean"], part["panel_mean"], part["n_valid"])),
         hovertemplate=(
             f"<b>%{{y}}</b> · {gene}<br>"
@@ -1681,44 +1699,18 @@ def _preference_lollipop(shown, order, gene):
             + ui("Valid cell lines", "有效细胞系数") + ": %{customdata[2]:.0f}<extra></extra>"
         ),
         showlegend=False,
-    ))
-    fig.add_vline(x=0, line_width=1, line_color=th["plot_axis"])
-    fig.update_layout(
-        height=max(420, 24 * len(order) + 80),
-        xaxis_title=ui("Mean minus all-lineage mean", "均值减全队列均值"),
-        margin=dict(l=8, r=16, t=8, b=48),
+    ), row=row, col=1)
+    fig.add_vline(x=0, line_width=1.6, line_color=th["plot_axis"], row=row, col=1)
+    quiet_grid = "rgba(182,195,207,0.16)" if st.session_state.get("theme") == "dark" else "rgba(47,61,75,0.10)"
+    fig.update_yaxes(
+        automargin=True, categoryorder="array", categoryarray=order,
+        showgrid=True, gridcolor=quiet_grid, gridwidth=1, row=row, col=1,
     )
-    fig.update_yaxes(automargin=True, categoryorder="array", categoryarray=order)
-    return apply_theme_to_fig(fig)
-
-
-def _preference_heatmap(shown, order, genes):
-    diff = shown.pivot(index="lineage", columns="gene", values="difference").reindex(index=order, columns=genes)
-    mean = shown.pivot(index="lineage", columns="gene", values="mean").reindex(index=order, columns=genes)
-    panel = shown.pivot(index="lineage", columns="gene", values="panel_mean").reindex(index=order, columns=genes)
-    counts = shown.pivot(index="lineage", columns="gene", values="n_valid").reindex(index=order, columns=genes)
-    limit = float(np.nanmax(np.abs(diff.to_numpy()))) or 0.1
-    fig = go.Figure(go.Heatmap(
-        z=diff.to_numpy(), x=list(genes), y=order,
-        customdata=np.dstack((mean.to_numpy(), panel.to_numpy(), counts.to_numpy())),
-        colorscale=_preference_scale(), zmid=0, zmin=-limit, zmax=limit,
-        xgap=3, ygap=3,
-        colorbar=dict(title=ui("Difference", "差值"), thickness=12, len=0.7),
-        hovertemplate=(
-            "<b>%{y}</b> · %{x}<br>"
-            + ui("Difference", "差值") + ": %{z:+.3f}<br>"
-            + ui("Cancer-type mean", "该癌种均值") + ": %{customdata[0]:.3f}<br>"
-            + ui("All-lineage mean", "全队列均值") + ": %{customdata[1]:.3f}<br>"
-            + ui("Valid cell lines", "有效细胞系数") + ": %{customdata[2]:.0f}<extra></extra>"
-        ),
-    ))
-    fig.update_layout(
-        height=max(420, 22 * len(order) + 110),
-        margin=dict(l=8, r=16, t=28, b=36),
+    fig.update_xaxes(
+        range=[-limit * 1.48, limit * 1.58], zeroline=False, showgrid=False,
+        title_text=ui("← more dependent · less dependent →", "← 更依赖 · 更不依赖 →"),
+        row=row, col=1,
     )
-    fig.update_xaxes(side="top", automargin=True, tickfont=dict(size=13))
-    fig.update_yaxes(automargin=True, categoryorder="array", categoryarray=order)
-    return apply_theme_to_fig(fig)
 
 
 def render_lineage_preference(result):
@@ -1728,11 +1720,11 @@ def render_lineage_preference(result):
         return
     st.markdown(f"### {ui('Lineage preference', '癌种偏好')}")
     st.caption(ui(
-        "Blue means that cancer type's score is lower than the gene's average across all types, "
-        "so the cells look more dependent there. Warm means the opposite. Types with fewer than "
-        f"{PREFERENCE_MIN_N} cell lines are omitted. This describes the means. It is not a test of selectivity or significance.",
-        "蓝色表示该癌种分数低于这个基因在全部癌种中的平均，依赖更强；暖色相反。"
-        f"细胞系少于 {PREFERENCE_MIN_N} 的癌种不显示。这只是均值描述，不是选择性或显著性检验。"))
+        "Each gene has its own list and its own scale. A point left of zero means that cancer type scores lower than "
+        "this gene's average, so dependency is stronger there. The number is that difference. Stronger types are at the top. "
+        f"Types with fewer than {PREFERENCE_MIN_N} cell lines are omitted. This describes the means. It is not a test of selectivity or significance.",
+        "每个基因单独一条，刻度也各自独立。点在 0 的左边，表示该癌种分数低于这个基因的总平均，依赖更强。"
+        f"数字就是这个差值，靠上的更明显。细胞系少于 {PREFERENCE_MIN_N} 的癌种不显示。这只是均值描述，不是选择性或显著性检验。"))
     figure = create_preference_plot(table)
     if figure is None:
         st.caption(ui("No cancer type has enough cell lines to plot.", "没有癌种达到可绘图的细胞系数。"))
