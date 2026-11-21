@@ -368,8 +368,8 @@ THEMES = {
         'plot_text': '#edf3f8',
         'plot_axis': '#b6c3cf',
         'plot_reference': 'rgba(182,195,207,0.32)',
-        'plot_grid': 'rgba(255,255,255,0.08)',
-        'plot_scatter_bg': 'rgba(170,183,195,0.22)',
+        'plot_grid': 'rgba(255,255,255,0.16)',
+        'plot_scatter_bg': 'rgba(198,210,222,0.62)',
     }
 }
 
@@ -479,18 +479,45 @@ def inject_css():
         }}
         button[kind="primary"] {{ background: {th['accent']}; border-color: {th['accent']}; color: {th['bg_card']}; }}
         button[kind="primary"]:hover {{ background: {th['accent_hover']}; border-color: {th['accent_hover']}; }}
-        .stTextInput input, .stTextArea textarea {{
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
+            -webkit-text-fill-color: {th['text']} !important;
             border-color: {th['border']} !important; line-height: 1.55;
         }}
+        .stSelectbox [role="group"], .stMultiSelect [role="group"],
         .stSelectbox div[data-baseweb="select"] > div,
         .stMultiSelect div[data-baseweb="select"] > div {{
-            background: {th['bg_card']}; color: {th['text']}; border-color: {th['border']};
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+            border: 1px solid {th['border']} !important; border-radius: 8px !important;
+        }}
+        .stSelectbox input[role="combobox"], .stMultiSelect input[role="combobox"] {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+            -webkit-text-fill-color: {th['text']} !important; caret-color: {th['text']};
+        }}
+        .stSelectbox button[aria-label="Open"], .stMultiSelect button[aria-label="Open"] {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+            border: none !important;
         }}
         .stSelectbox div[data-baseweb="select"] span {{ color: {th['text']}; }}
-        div[data-baseweb="popover"], div[role="listbox"] {{ background: {th['bg_card']}; color: {th['text']}; }}
+        div[data-baseweb="popover"], div[role="listbox"],
+        div:has(> [role="listbox"]) {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+            border: 1px solid {th['border']} !important;
+        }}
+        [role="option"] {{
+            background: {th['bg_card']} !important; color: {th['text']} !important;
+        }}
+        [role="option"][aria-selected="true"], [role="option"][data-focused="true"] {{
+            background: {th['accent']}33 !important;
+        }}
         [data-testid="stExpander"] summary {{ background: {th['bg_card']}; font-weight: 550; }}
         [data-testid="stDataFrame"] {{ border-radius: 8px; overflow: hidden; border: 1px solid {th['border']}; }}
+        .theme-grid-wrap {{ overflow-x: auto; border: 1px solid {th['border']}; border-radius: 8px; }}
+        .theme-grid {{ width: 100%; border-collapse: collapse; background: {th['bg_card']}; color: {th['text']}; font-size: 0.92rem; }}
+        .theme-grid th, .theme-grid td {{ padding: 0.48rem 0.75rem; border-bottom: 1px solid {th['border']}; text-align: right; white-space: nowrap; }}
+        .theme-grid th:first-child, .theme-grid td:first-child {{ text-align: left; }}
+        .theme-grid th {{ color: {th['text_muted']}; font-weight: 650; background: {th['bg_secondary']}; }}
+        .theme-grid tr:last-child td {{ border-bottom: none; }}
         .footer-card {{ padding: 1rem; background: {th['bg_card']}; border: 1px solid {th['border']}; border-radius: 8px; }}
         .footer-card h4 {{ margin: 0 0 0.5rem; }}
         .footer-card p {{ color: {th['text_muted']}; margin: 0; font-size: 0.85rem; }}
@@ -1410,6 +1437,49 @@ def build_result(genes, matches, config=None, plot_data=None, draft=None):
     }
 
 
+def show_grid(frame, column_config):
+    """Use Streamlit's grid in light mode, and a themed HTML table in dark mode.
+
+    The grid draws its header on a canvas from the light Streamlit theme, so a
+    Styler cannot recolor that header.
+    """
+    if st.session_state.get("theme") != "dark":
+        st.dataframe(frame, hide_index=True, width="stretch", column_config=column_config)
+        return
+    th = get_theme()
+
+    def label_of(column):
+        return column_config.get(column, {}).get("label", column)
+
+    def text_of(column, value):
+        if pd.isna(value):
+            return ""
+        spec = (column_config.get(column, {}).get("type_config") or {}).get("format")
+        if spec == "percent":
+            return escape(f"{float(value) * 100:.2f}%")
+        if not spec:
+            return escape(str(value))
+        percent = spec.endswith("%%")
+        core = spec[:-2] if percent else spec
+        pattern = core[1:] if core.startswith("%") else core
+        try:
+            rendered = str(int(value)) if pattern in {"d", "i"} else format(value, pattern)
+        except (TypeError, ValueError):
+            return escape(str(value))
+        return escape(rendered + ("%" if percent else ""))
+
+    head = "".join(f"<th>{escape(str(label_of(column)))}</th>" for column in frame.columns)
+    body = []
+    for _, row in frame.iterrows():
+        cells = "".join(f"<td>{text_of(column, row[column])}</td>" for column in frame.columns)
+        body.append(f"<tr>{cells}</tr>")
+    st.markdown(
+        f'<div class="theme-grid-wrap"><table class="theme-grid"><thead><tr>{head}</tr></thead>'
+        f"<tbody>{''.join(body)}</tbody></table></div>",
+        unsafe_allow_html=True,
+    )
+
+
 def result_downloads(result, fig, prefix):
     selected = result['rankings'].set_index('gene', drop=False).reindex(result['genes']).reset_index(drop=True)
     state = st.session_state
@@ -1445,7 +1515,7 @@ def result_downloads(result, fig, prefix):
         'n_missing': st.column_config.NumberColumn(ui('Missing samples', '缺失样本数'), format='%d'),
         'missing_fraction': st.column_config.NumberColumn(ui('Missing fraction', '缺失比例'), format='percent'),
     }
-    st.dataframe(selected[display_columns], hide_index=True, width='stretch', column_config=table_config)
+    show_grid(selected[display_columns], table_config)
     st.caption(ui('Lower rank percentile indicates stronger mean dependency. Valid samples count finite scores. CSV downloads retain the original field names and full precision.',
                   '排名百分位越低，平均依赖越强。有效样本数仅统计有限数值。CSV 下载保留规范字段名与原始精度。'))
     if prefix == 'box':
@@ -1460,8 +1530,7 @@ def result_downloads(result, fig, prefix):
                   'png_scale': 3, 'png_dpi': 300, 'full_vector_pdf_svg': True}}
     with st.expander(ui('Details & reproducibility', '详细数据与复现'), expanded=False):
         st.markdown(f"**{ui('Sample completeness', '样本完整性')}**")
-        st.dataframe(selected[['gene', 'n_valid', 'n_missing', 'missing_fraction']],
-                     hide_index=True, width='stretch', column_config=table_config)
+        show_grid(selected[['gene', 'n_valid', 'n_missing', 'missing_fraction']], table_config)
         if prefix == 'box':
             st.markdown(f"**{ui('Cancer-type summaries', '癌种分组统计')}**")
             group_config = {
@@ -1474,8 +1543,7 @@ def result_downloads(result, fig, prefix):
                     ('max', ui('Maximum', '最大值')),
                 ]},
             }
-            st.dataframe(lineage_summary(result['plot_data']), hide_index=True, width='stretch',
-                         column_config=group_config)
+            show_grid(lineage_summary(result['plot_data']), group_config)
         st.download_button(ui('Plot data CSV', '绘图数据 CSV'),
                            lambda frame=result['plot_data']: frame.to_csv(index=False).encode('utf-8-sig'),
                            f'{prefix}_plot_data.csv', 'text/csv', key=f'{prefix}_data', on_click='ignore')
@@ -1532,7 +1600,7 @@ def render_score_contrast(result):
     st.caption(ui(
         f"Selected mean minus the all-lineage mean ({scope}). A negative difference is a lower, more dependent score in the selected cancer types. This describes the two means. It is not a test of selectivity or significance.",
         f"所选范围均值减去全队列均值（{scope}）。差值为负表示所选癌种分数更低、依赖更强。这只是两个均值的描述，不是选择性或显著性检验。"))
-    st.dataframe(table, hide_index=True, width='stretch', column_config={
+    show_grid(table, {
         "gene": st.column_config.TextColumn(ui("Gene", "基因")),
         "cohort_mean": st.column_config.NumberColumn(ui("Selected mean", "所选均值"), format="%.3f"),
         "panel_mean": st.column_config.NumberColumn(ui("All-lineage mean", "全队列均值"), format="%.3f"),

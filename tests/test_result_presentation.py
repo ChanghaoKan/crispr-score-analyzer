@@ -86,9 +86,9 @@ def presentation():
         'hashlib': hashlib, 'json': json,
     }
     source = (Path(__file__).resolve().parents[1] / 'app.py').read_text()
-    function = next(node for node in ast.parse(source).body
-                    if isinstance(node, ast.FunctionDef) and node.name == 'result_downloads')
-    exec(compile(ast.Module(body=[function], type_ignores=[]), 'app.py', 'exec'), namespace)
+    functions = [node for node in ast.parse(source).body
+                 if isinstance(node, ast.FunctionDef) and node.name in {'show_grid', 'result_downloads'}]
+    exec(compile(ast.Module(body=functions, type_ignores=[]), 'app.py', 'exec'), namespace)
     ranking = pd.DataFrame({
         'gene': ['MYC', 'PTEN'], 'gene_upper': ['MYC', 'PTEN'],
         'mean_score': [-1.23456789, .12345678], 'rank': [1, 2],
