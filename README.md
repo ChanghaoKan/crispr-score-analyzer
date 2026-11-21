@@ -2,7 +2,7 @@
 
 Explore gene dependency in DepMap CRISPR screens through a browser. Locate genes in a cohort-wide ranking, compare cancer lineages, and export figures with their underlying data and analysis settings.
 
-[Live app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/) · [Dataset](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap) · [Report an issue](https://github.com/ChanghaoKan/crispr-score-analyzer/issues) · [Citation](CITATION.cff)
+[Live app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/) · [Report an issue](https://github.com/ChanghaoKan/crispr-score-analyzer/issues) · [Citation](CITATION.cff)
 
 This README describes the source in this checkout. The hosted app may lag behind these changes until its deployment is updated.
 
@@ -15,8 +15,6 @@ This README describes the source in this checkout. The hosted app may lag behind
 - English and Chinese interfaces, light and dark themes, a card-based layout with a consistent product title, compact navigation, and readable result tables with localized headers.
 - Custom score-matrix uploads with explicit gene-column mapping and downloadable validation records.
 - PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, and provenance.
-
-The experimental gene–drug correlation code is retained in the repository but disabled in the public interface.
 
 ## Quick start
 
@@ -82,7 +80,7 @@ The default is **DepMap Public 26Q3 Chronos Gene Effect**, bundled with the app 
 
 The three metadata columns are not gene scores. `lineage` is the cancer-type scope. Uploaded files do not inherit these column names. The number of ranked genes can vary after column validation or cohort-specific missingness.
 
-Hugging Face is not on the path that opens the app. The previous 412 MB CSV had to be downloaded and parsed before the first figure, which is what made startup slow. Switching that same CSV to another host would not fix it. The bundled float32 matrix is already on disk after deployment; on this machine, reading it and ranking every gene takes about 1.2 seconds. [ChanghaoKan/crispr-depmap](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap) still holds the older 25Q3 subset and the experimental 26Q1 gene–drug files. The public interface does not load those files.
+The app reads the bundled matrix from disk. It does not download a score matrix when a page opens. On this machine, reading the file and ranking every gene takes about 1.2 seconds. The first visit after Community Cloud has slept still waits for the platform to start the container.
 
 Rebuild the bundle from an official portal download of the same release:
 
@@ -173,7 +171,7 @@ python -m pip install pytest
 python -m pytest tests -q
 ```
 
-The suite covers parsing, ranking and missingness, draft and submitted-result state, cohort changes, localized table formatting without loss of CSV precision, on-demand bundle generation, export cache invalidation, and actual SVG/PDF/PNG rendering. Tests use small deterministic fixtures and mock the public dataset download; they do not fetch DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
+The suite covers parsing, ranking and missingness, draft and submitted-result state, cohort changes, localized table formatting without loss of CSV precision, on-demand bundle generation, export cache invalidation, citation wording, and actual SVG/PDF/PNG rendering. Tests use small deterministic fixtures. They do not fetch DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
 
 For a check that excludes the actual image-rendering test:
 
@@ -185,7 +183,9 @@ GitHub Actions runs the full suite on Python 3.12. Automated checks do not repla
 
 ## Citation
 
-See [CITATION.cff](CITATION.cff) for the recorded software citation. It identifies the project concept DOI as [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602). Cite the archived software version used for a study, and record the commit when using changes that are not part of that release.
+This repository is CRISPR Score Analyzer 1.1.0 (2026-11-21), with DepMap Public 26Q3 bundled in the app. Record that version and the data release with an analysis from the current app.
+
+The archived software deposit is version 1.0.0, published 2026-04-16: [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603). The concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602) still resolves to that deposit. Its Zenodo license is CC-BY-4.0. The code in this repository is MIT. [CITATION.cff](CITATION.cff) cites the deposit as the preferred citation and records 1.1.0 as the version of this checkout. A newer Zenodo version has not been deposited.
 
 Also cite the underlying DepMap release and relevant methodology. The bundled matrix is DepMap Public 26Q3. The repository records this foundational reference:
 

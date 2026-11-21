@@ -10,9 +10,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import io
 import os
-import re
 import copy
 import hashlib
 from html import escape
@@ -38,45 +36,26 @@ st.set_page_config(
 )
 
 # =============================================================================
-# 内置矩阵。打开页面时从仓库读取，不再从 Hugging Face 下载 CSV。
-# 实验性的基因 × 药物文件仍放在同一个 HF 数据集里，公开界面不会加载它们。
+# 内置矩阵。打开页面时从仓库读取。
 # =============================================================================
-HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 BUILTIN_MATRIX = Path(__file__).resolve().parent / "data" / "depmap_chronos.npz"
 GENE_ALIAS_FILE = Path(__file__).resolve().parent / "data" / "gene_aliases.json"
 DATA_VERSION = "DepMap Public 26Q3"
 SCORE_TYPE = "Chronos Gene Effect"
 ESSENTIALITY_THRESHOLD = -0.5
 
-# 暂时不在公开网页中展示基因 × 药物分析。底层分析代码仍保留，便于后续恢复。
-ENABLE_GENE_DRUG_UI = False
-
-# ---- Gene × Drug correlation module (DepMap 26Q1 + GDSC2) ----
-# 同一个 HF 数据集仓库内放置以下三个文件即可（行/列键已对齐到 DepMap ModelID）：
-#   GDSC2: index=ModelID(ACH-xxxxxx), columns=CompoundID(DPC-xxxxxx), values=AUC
-#   CRISPR(26Q1): index=ModelID, columns="GENE (entrez)", values=Gene Effect(Chronos)
-#   Compounds: 列含 CompoundID/CompoundName/GeneSymbolOfTargets/TargetOrMechanism
-HF_GDSC_FILENAME = "GDSC2_AUC_Matrix.csv"
-HF_CRISPR26Q1_FILENAME = "CRISPRGeneEffect_26Q1.csv"
-HF_COMPOUNDS_FILENAME = "PortalCompounds.csv"
-HF_MODEL_FILENAME = "Model.csv"  # 提供 ModelID -> OncotreeLineage/PrimaryDisease
-
-# 肿瘤类型分层：粗(lineage) / 细(primary disease)
-LINEAGE_COL_COARSE = "OncotreeLineage"
-LINEAGE_COL_FINE = "OncotreePrimaryDisease"
-MIN_N_PER_GROUP = 10  # 分层相关每组最少细胞系数
-
-# 默认演示用的基因 / 药物关键词（用户可改）
-DEFAULT_CORR_GENE = "DUSP6"
-DEFAULT_CORR_DRUG_QUERY = "PARP"
-
 # =============================================================================
-# Citation / DOI 配置
+# Citation / DOI
+# 运行中的软件是 1.1.0。Zenodo 上最新的存档仍是 2026-04-16 的 1.0.0。
 # =============================================================================
-ZENODO_DOI = "10.5281/zenodo.19607603"
-TOOL_VERSION = "v1.0"
+TOOL_VERSION = "1.1.0"
+TOOL_RELEASED = "2026-11-21"
 TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
+ZENODO_CONCEPT_DOI = "10.5281/zenodo.19607602"
+ZENODO_VERSION_DOI = "10.5281/zenodo.19607603"
+ZENODO_VERSION = "1.0.0"
+ZENODO_RELEASED = "2026-04-16"
 GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"
 
 # =============================================================================
@@ -118,7 +97,6 @@ TRANSLATIONS = {
         'tab1': 'Gene ranking',
         'tab2': 'Cancer-type comparison',
         'tab3': 'Gene-set annotation',
-        'tab4': '🔗 Gene × Drug',
         'gene_ranking_title': 'Gene dependency ranking',
         'gene_ranking_desc': 'Locate your genes of interest in genome-wide CRISPR screens.',
         'input_target_genes': 'Input target genes',
@@ -152,44 +130,6 @@ TRANSLATIONS = {
         'ai_dev': 'AI assistance with code, interface design, testing and documentation',
         'citation': '📚 How to Cite',
         'cite_this_tool': 'Cite this tool',
-        'copy_bibtex': 'Copy BibTeX',
-        'doi_pending': 'DOI pending — please cite by URL until release',
-        # ---- Tab4: Gene x Drug correlation ----
-        'corr_title': 'Gene Dependency × Drug Sensitivity Correlation',
-        'corr_desc': 'Test whether cell lines more dependent on a gene (CRISPR) are also more sensitive to a drug (GDSC2 AUC), aligned by DepMap ModelID.',
-        'corr_gene_label': 'Gene of interest (CRISPR dependency)',
-        'corr_gene_help': 'e.g. DUSP6 — matched against the 26Q1 CRISPR gene-effect matrix.',
-        'corr_drug_search': 'Search drug (name or target)',
-        'corr_drug_search_help': 'e.g. PARP (matches all PARP inhibitors via target), or comma-separated names: olaparib, talazoparib, niraparib.',
-        'corr_drug_select': 'Select compound',
-        'corr_gdsc2_only': 'Only compounds with GDSC2 data',
-        'corr_gdsc2_only_help': 'PortalCompounds lists many compounds from various sources; only some have GDSC2 AUC values. Keep this on to show only analyzable drugs.',
-        'corr_no_drug': 'No compound matches your search.',
-        'corr_run': 'Run correlation',
-        'corr_loading': 'Loading correlation datasets (GDSC2 + CRISPR 26Q1 + Compounds)...',
-        'corr_gene_not_found': 'Gene not found in CRISPR matrix.',
-        'corr_drug_not_found': 'Compound not found in GDSC2 matrix.',
-        'corr_too_few': 'Too few overlapping cell lines for a reliable estimate (n < 10).',
-        'corr_result_dir_pos': 'Positive ρ: cell lines more dependent on this gene (lower Gene Effect) tend to be MORE sensitive to the drug (lower AUC) — consistent with a shared-vulnerability hypothesis.',
-        'corr_result_dir_neg': 'Negative ρ: cell lines more dependent on this gene tend to be LESS sensitive to the drug — opposite to the shared-vulnerability hypothesis.',
-        'corr_result_dir_ns': 'Correlation is not statistically significant (p ≥ 0.05); no clear association in this pan-cancer set.',
-        'corr_axis_x': 'CRISPR Gene Effect (lower = more dependent)',
-        'corr_axis_y': 'GDSC2 AUC (lower = more sensitive)',
-        'corr_stat_n': 'Overlapping cell lines',
-        'corr_stat_rho': "Spearman ρ",
-        'corr_stat_p': 'p-value',
-        'corr_caveat': '⚠️ Pan-cancer correlation only. Lineage and mutation background (e.g. BRCA/HR status for PARP inhibitors) are NOT controlled here — a significant ρ may reflect confounding. Interpret as association, not mechanism.',
-        'corr_lineage_gran': 'Cancer-type granularity',
-        'corr_gran_coarse': 'Lineage (broad)',
-        'corr_gran_fine': 'Primary disease (fine)',
-        'corr_restrict_lineage': 'Restrict to one cancer type',
-        'corr_all_lineages': 'All cancer types',
-        'corr_no_model': 'Model.csv not found in the dataset repo — lineage stratification is disabled. Upload Model.csv to enable per-cancer-type analysis.',
-        'corr_strat_title': 'Per-lineage correlation (confounding check)',
-        'corr_strat_desc': 'Spearman ρ computed within each cancer type (n ≥ 10). If the overall correlation holds within lineages, it is less likely to be driven purely by cancer-type composition. Red points: BH-FDR < 0.05.',
-        'corr_strat_insufficient': 'Not enough cancer types with ≥10 cell lines for stratified analysis.',
-        'corr_forest_sub': 'Point size ∝ n; red = BH-FDR < 0.05',
-        'corr_tbl_lineage': 'Cancer type',
     },
     'zh': {
         'app_title': 'CRISPR Score Analyzer',
@@ -226,7 +166,6 @@ TRANSLATIONS = {
         'tab1': '基因排名',
         'tab2': '癌种比较',
         'tab3': '基因集标注',
-        'tab4': '🔗 基因×药物',
         'gene_ranking_title': '基因依赖排名',
         'gene_ranking_desc': '在全基因组 CRISPR 筛选数据中定位您关注的基因。',
         'input_target_genes': '输入目标基因',
@@ -260,44 +199,6 @@ TRANSLATIONS = {
         'ai_dev': 'AI 辅助代码开发、界面设计、测试与文档整理',
         'citation': '📚 引用方式',
         'cite_this_tool': '引用本工具',
-        'copy_bibtex': '复制 BibTeX',
-        'doi_pending': 'DOI 申请中 — 正式发布前请用网址引用',
-        # ---- Tab4: 基因×药物相关 ----
-        'corr_title': '基因依赖性 × 药物敏感性相关分析',
-        'corr_desc': '检验：对某基因依赖性越强（CRISPR）的细胞系，是否也越敏感于某药物（GDSC2 AUC）。按 DepMap ModelID 对齐。',
-        'corr_gene_label': '目标基因（CRISPR 依赖性）',
-        'corr_gene_help': '如 DUSP6，在 26Q1 CRISPR 基因效应矩阵中匹配。',
-        'corr_drug_search': '搜索药物（名称或靶点）',
-        'corr_drug_search_help': '如 PARP（按靶点匹配所有 PARP 抑制剂），或逗号分隔多个药名：olaparib, talazoparib, niraparib。',
-        'corr_drug_select': '选择化合物',
-        'corr_gdsc2_only': '仅显示 GDSC2 有数据的化合物',
-        'corr_gdsc2_only_help': 'PortalCompounds 收录了多来源的化合物，但只有部分在 GDSC2 里有 AUC 数据。保持勾选可只显示能分析的药物。',
-        'corr_no_drug': '没有匹配的化合物。',
-        'corr_run': '运行相关分析',
-        'corr_loading': '加载相关分析数据集（GDSC2 + CRISPR 26Q1 + 化合物表）...',
-        'corr_gene_not_found': '在 CRISPR 矩阵中未找到该基因。',
-        'corr_drug_not_found': '在 GDSC2 矩阵中未找到该化合物。',
-        'corr_too_few': '重叠细胞系太少，结果不可靠（n < 10）。',
-        'corr_result_dir_pos': 'ρ 为正：对该基因依赖越强（Gene Effect 越低）的细胞系，往往对该药更敏感（AUC 越低）——与「共享脆弱性」假设方向一致。',
-        'corr_result_dir_neg': 'ρ 为负：对该基因依赖越强的细胞系，往往对该药更不敏感——与「共享脆弱性」假设方向相反。',
-        'corr_result_dir_ns': '相关不显著（p ≥ 0.05）；在该泛癌集合中无明确关联。',
-        'corr_axis_x': 'CRISPR Gene Effect（越低=依赖越强）',
-        'corr_axis_y': 'GDSC2 AUC（越低=越敏感）',
-        'corr_stat_n': '重叠细胞系数',
-        'corr_stat_rho': "Spearman ρ",
-        'corr_stat_p': 'p 值',
-        'corr_caveat': '⚠️ 仅为泛癌相关。此处未控制谱系与突变背景（如 PARP 抑制剂的 BRCA/HR 状态）——显著的 ρ 可能来自混杂。结论应表述为关联，而非机制。',
-        'corr_lineage_gran': '肿瘤类型粒度',
-        'corr_gran_coarse': '谱系（粗）',
-        'corr_gran_fine': '原发病种（细）',
-        'corr_restrict_lineage': '仅分析某一肿瘤类型',
-        'corr_all_lineages': '全部肿瘤类型',
-        'corr_no_model': '数据集仓库中未找到 Model.csv —— 肿瘤分层功能已禁用。上传 Model.csv 即可启用按癌种分析。',
-        'corr_strat_title': '分层相关（混杂检查）',
-        'corr_strat_desc': '在每个肿瘤类型内部分别计算 Spearman ρ（n ≥ 10）。若整体相关在各谱系内部依然成立，则更不可能纯粹由癌种构成驱动。红点：BH-FDR < 0.05。',
-        'corr_strat_insufficient': '细胞系数 ≥10 的肿瘤类型不足，无法做分层分析。',
-        'corr_forest_sub': '点大小 ∝ n；红色 = BH-FDR < 0.05',
-        'corr_tbl_lineage': '肿瘤类型',
     }
 }
 
@@ -624,378 +525,9 @@ def load_uploaded_data(file_hash: str, _file_content: bytes):
     return read_score_csv(_file_content)
 
 
-def extract_gene_name(col_name: str) -> str:
-    match = re.match(r'^([A-Za-z0-9_.-]+)\s*\(', str(col_name))
-    if match:
-        return match.group(1)
-    return str(col_name)
-
-
 @st.cache_data(show_spinner=False, max_entries=4)
 def compute_gene_rankings(df_hash: str, _df: pd.DataFrame, gene_columns=None):
     return analyze_dataset(_df, gene_columns=gene_columns)
-
-
-# =============================================================================
-# 基因 × 药物 相关分析模块
-# =============================================================================
-@st.cache_resource(show_spinner=False)
-def load_corr_datasets(repo_id, gdsc_file, crispr_file, compounds_file, model_file=None):
-    """加载并缓存相关分析数据集。返回 (gdsc, crispr, compounds, model, err)。
-    gdsc/crispr 的第一列是 ModelID，设为 index。
-    model 为 ModelID->lineage 的精简表；若文件缺失则为 None（不报错，仅禁用分层）。"""
-    try:
-        from huggingface_hub import hf_hub_download
-    except ImportError:
-        return None, None, None, None, "huggingface_hub not installed"
-    try:
-        gdsc = pd.read_csv(
-            hf_hub_download(repo_id=repo_id, filename=gdsc_file, repo_type="dataset"),
-            index_col=0)
-        crispr = pd.read_csv(
-            hf_hub_download(repo_id=repo_id, filename=crispr_file, repo_type="dataset"),
-            index_col=0)
-        compounds = pd.read_csv(
-            hf_hub_download(repo_id=repo_id, filename=compounds_file, repo_type="dataset"))
-        model = None
-        if model_file:
-            try:
-                m = pd.read_csv(
-                    hf_hub_download(repo_id=repo_id, filename=model_file,
-                                    repo_type="dataset"))
-                keep = ['ModelID'] + [c for c in [LINEAGE_COL_COARSE, LINEAGE_COL_FINE]
-                                      if c in m.columns]
-                if 'ModelID' in m.columns and len(keep) > 1:
-                    model = m[keep].set_index('ModelID')
-            except Exception:
-                model = None  # Model.csv 缺失或格式不符：分层功能禁用，主分析照常
-        return gdsc, crispr, compounds, model, None
-    except Exception as e:
-        return None, None, None, None, f"HF error: {str(e)}"
-
-
-def find_crispr_gene_column(crispr_df, gene_name):
-    """在 'GENE (entrez)' 形式的列里按基因名(忽略大小写)定位列。"""
-    target = gene_name.strip().upper()
-    for col in crispr_df.columns:
-        if extract_gene_name(col).upper() == target:
-            return col
-    return None
-
-
-# 药名别名：搜常用名也能命中 GDSC2 里的旧代号
-COMPOUND_ALIASES = {
-    'rucaparib': ['ag-014699', 'ag014699', 'pf-01367338'],
-    'veliparib': ['abt 888', 'abt-888', 'abt888'],
-}
-
-
-def search_compounds(compounds_df, query, gdsc2_only=False, gdsc_drug_ids=None):
-    """按 CompoundName / CompoundID / GeneSymbolOfTargets / TargetOrMechanism / Synonyms 模糊匹配。
-    支持逗号或空格分隔的多关键词（任一命中即收录）。
-    gdsc2_only=True 时，仅保留在 GDSC2 矩阵中真有列的化合物（需传 gdsc_drug_ids）。
-    返回按药名排序、按 CompoundID 去重的 [(CompoundID, label)]。"""
-    raw = query.strip().lower()
-    if not raw:
-        return []
-    if ',' in raw:
-        terms = [s.strip() for s in raw.split(',') if s.strip()]
-    else:
-        terms = [s for s in raw.split() if s]
-    if not terms:
-        return []
-    # 展开别名：搜 rucaparib 也匹配 ag-014699 等
-    expanded = set(terms)
-    for term in terms:
-        for canon, aliases in COMPOUND_ALIASES.items():
-            if term == canon or term in aliases:
-                expanded.add(canon)
-                expanded.update(aliases)
-    terms = list(expanded)
-
-    id_col = 'CompoundID' if 'CompoundID' in compounds_df.columns else None
-    if id_col is None:
-        return []
-    name_col = 'CompoundName' if 'CompoundName' in compounds_df.columns else None
-    tgt_cols = [c for c in ['GeneSymbolOfTargets', 'TargetOrMechanism', 'Synonyms']
-                if c in compounds_df.columns]
-    has_sid = 'SampleIDs' in compounds_df.columns
-
-    seen = set()
-    results = []
-    for _, row in compounds_df.iterrows():
-        cid = str(row[id_col])
-        if not cid.startswith('DPC') or cid in seen:
-            continue
-        # GDSC2-only 过滤：优先用矩阵真实列，否则退回 SampleIDs 标注
-        if gdsc2_only:
-            if gdsc_drug_ids is not None:
-                if cid not in gdsc_drug_ids:
-                    continue
-            elif has_sid and 'GDSC2' not in str(row['SampleIDs']):
-                continue
-        hay = cid.lower()
-        if name_col:
-            hay += " " + str(row[name_col]).lower()
-        for tc in tgt_cols:
-            hay += " " + str(row[tc]).lower()
-        if any(term in hay for term in terms):
-            nm = str(row[name_col]) if name_col else cid
-            tgt = (str(row['GeneSymbolOfTargets'])
-                   if 'GeneSymbolOfTargets' in compounds_df.columns else '')
-            label = f"{nm} ({cid})" + (f" · {tgt}" if tgt and tgt != 'nan' else "")
-            results.append((cid, label, nm))
-            seen.add(cid)
-    results.sort(key=lambda x: x[2].lower())
-    return [(cid, label) for cid, label, _ in results]
-
-
-def _rankdata(a):
-    """平均秩（处理并列），纯 numpy，等价于 scipy.stats.rankdata 默认行为。"""
-    a = np.asarray(a, dtype=float)
-    order = a.argsort()
-    ranks = np.empty(len(a), dtype=float)
-    ranks[order] = np.arange(1, len(a) + 1)
-    # 处理并列：同值取平均秩
-    _, inv, counts = np.unique(a, return_inverse=True, return_counts=True)
-    # 累计起始秩
-    csum = np.cumsum(counts)
-    start = csum - counts
-    avg = (start + csum + 1) / 2.0  # 每组的平均秩 (1-indexed)
-    return avg[inv]
-
-
-def _spearman_with_p(x, y):
-    """不依赖 scipy 的 Spearman ρ 与近似 p 值（t 分布双尾）。
-    ρ = 秩变换后的 Pearson 相关；p 用学生 t 近似。"""
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-    n = len(x)
-    if n < 3:
-        return float('nan'), float('nan')
-    rx = _rankdata(x)
-    ry = _rankdata(y)
-    # 秩的 Pearson 相关
-    sx = rx.std()
-    sy = ry.std()
-    if sx == 0 or sy == 0:
-        return float('nan'), float('nan')
-    rho = float(np.corrcoef(rx, ry)[0, 1])
-    # 完全相关时 p->0
-    if abs(rho) >= 1.0:
-        return float(rho), 0.0
-    # t = rho * sqrt((n-2)/(1-rho^2)) ~ t(n-2)
-    t = rho * np.sqrt((n - 2) / (1 - rho ** 2))
-    from math import lgamma, log
-    df = n - 2
-    def betacf(a, b, xx):
-        MAXIT, EPS, FPMIN = 200, 3e-12, 1e-300
-        qab, qap, qam = a + b, a + 1.0, a - 1.0
-        c = 1.0; d = 1.0 - qab * xx / qap
-        if abs(d) < FPMIN: d = FPMIN
-        d = 1.0 / d; h = d
-        for m in range(1, MAXIT + 1):
-            m2 = 2 * m
-            aa = m * (b - m) * xx / ((qam + m2) * (a + m2))
-            d = 1.0 + aa * d
-            if abs(d) < FPMIN: d = FPMIN
-            c = 1.0 + aa / c
-            if abs(c) < FPMIN: c = FPMIN
-            d = 1.0 / d; h *= d * c
-            aa = -(a + m) * (qab + m) * xx / ((a + m2) * (qap + m2))
-            d = 1.0 + aa * d
-            if abs(d) < FPMIN: d = FPMIN
-            c = 1.0 + aa / c
-            if abs(c) < FPMIN: c = FPMIN
-            d = 1.0 / d; delta = d * c; h *= delta
-            if abs(delta - 1.0) < EPS: break
-        return h
-    def betai(a, b, xx):
-        if xx <= 0.0: return 0.0
-        if xx >= 1.0: return 1.0
-        lbeta = lgamma(a + b) - lgamma(a) - lgamma(b)
-        bt = np.exp(lbeta + a * log(xx) + b * log(1.0 - xx))
-        if xx < (a + 1.0) / (a + b + 2.0):
-            return bt * betacf(a, b, xx) / a
-        else:
-            return 1.0 - bt * betacf(b, a, 1.0 - xx) / b
-    x_beta = df / (df + t * t)
-    p = betai(df / 2.0, 0.5, x_beta)
-    return float(rho), float(min(max(p, 0.0), 1.0))
-
-
-def compute_gene_drug_correlation(crispr_df, gdsc_df, gene_col, compound_id):
-    """按 ModelID 对齐，返回 (merged_df, rho, p, n, err)。
-    merged_df 列: dep (Gene Effect), auc (GDSC2 AUC)。"""
-    if compound_id not in gdsc_df.columns:
-        return None, None, None, 0, 'drug_not_found'
-    dep = crispr_df[gene_col].rename('dep')
-    auc = gdsc_df[compound_id].rename('auc')
-    merged = pd.concat([dep, auc], axis=1).dropna()
-    n = len(merged)
-    if n < 10:
-        return merged, None, None, n, 'too_few'
-    rho, p = _spearman_with_p(merged['dep'].values, merged['auc'].values)
-    return merged, float(rho), float(p), n, None
-
-
-def create_correlation_scatter(merged, gene_name, drug_label, rho, p, point_size=4):
-    """散点 + 线性拟合线，沿用 Morandi/theme_classic 风格，p 值斜体。"""
-    th = get_theme()
-    x = merged['dep'].values
-    y = merged['auc'].values
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=x, y=y, mode='markers',
-        marker=dict(size=point_size * 2.0, color=PLOT_COLORS['interest'],
-                    opacity=0.55, line=dict(width=0.35, color=th['plot_axis'])),
-        hovertemplate='Gene Effect: %{x:.3f}<br>AUC: %{y:.3f}<extra></extra>',
-        showlegend=False,
-    ))
-    # 线性拟合线
-    if len(x) >= 2:
-        coef = np.polyfit(x, y, 1)
-        xs = np.array([x.min(), x.max()])
-        ys = coef[0] * xs + coef[1]
-        fig.add_trace(go.Scatter(
-            x=xs, y=ys, mode='lines',
-            line=dict(color=PLOT_COLORS['essential'], width=1.2, dash='solid'),
-            showlegend=False, hoverinfo='skip',
-        ))
-
-    p_txt = f"<i>p</i> = {p:.2g}" if p is not None else ""
-    rho_txt = f"Spearman ρ = {rho:.2f}" if rho is not None else ""
-    subtitle = f"{rho_txt}　{p_txt}　n = {len(merged)}"
-
-    fig.update_layout(
-        title=dict(text=f"{gene_name}  ×  {drug_label}<br><sub>{subtitle}</sub>",
-                   font=dict(size=16, family=FONT_FAMILY), x=0.5, xanchor='center'),
-        xaxis_title=t('corr_axis_x'),
-        yaxis_title=t('corr_axis_y'),
-        height=520,
-        margin=dict(l=70, r=40, t=80, b=60),
-    )
-    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
-    fig.update_yaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
-    apply_theme_to_fig(fig)
-    return fig
-
-
-# ---- 肿瘤类型分层 ----
-# Morandi 风格分类配色（低饱和度）
-MORANDI_PALETTE = [
-    '#A7B5A0', '#C5A9A0', '#9FA8B0', '#C7B79B', '#B0A1B5',
-    '#8FA8A3', '#C2A38F', '#A2A9B8', '#BFAFA0', '#A8B0A0',
-    '#B5A0A8', '#9DAEB0', '#C8B5A0', '#A0A5B0', '#B8A8A0',
-    '#A5B0A8', '#B0A0A5', '#A0B0B5', '#C0B0A0', '#ABA5B0',
-]
-
-
-def attach_lineage(merged, model_df, lineage_col):
-    """给 merged(index=ModelID) 加一列 lineage；缺失或无 model_df 时返回原表+None。"""
-    if model_df is None or lineage_col not in (model_df.columns if model_df is not None else []):
-        return merged, None
-    out = merged.copy()
-    out['lineage'] = model_df[lineage_col].reindex(out.index)
-    out['lineage'] = out['lineage'].fillna('Unknown')
-    return out, 'lineage'
-
-
-def stratified_correlation(merged_with_lin, min_n=MIN_N_PER_GROUP):
-    """对每个 lineage 分别算 Spearman ρ/p；返回按 |ρ| 排序的 DataFrame，含 BH-FDR。
-    需要 merged_with_lin 含列 dep/auc/lineage。"""
-    rows = []
-    for lin, g in merged_with_lin.groupby('lineage'):
-        gg = g[['dep', 'auc']].dropna()
-        if len(gg) < min_n:
-            continue
-        rho, p = _spearman_with_p(gg['dep'].values, gg['auc'].values)
-        if np.isnan(rho):
-            continue
-        rows.append({'lineage': lin, 'n': len(gg), 'rho': rho, 'p': p})
-    if not rows:
-        return pd.DataFrame(columns=['lineage', 'n', 'rho', 'p', 'fdr'])
-    df = pd.DataFrame(rows)
-    # Benjamini-Hochberg
-    df = df.sort_values('p').reset_index(drop=True)
-    m = len(df)
-    df['fdr'] = (df['p'] * m / (df.index + 1)).clip(upper=1.0)
-    df['fdr'] = df['fdr'][::-1].cummin()[::-1]  # 单调化
-    df = df.sort_values('rho', ascending=False).reset_index(drop=True)
-    return df
-
-
-def create_lineage_scatter(merged_lin, gene_name, drug_label, rho, p, point_size=4):
-    """按 lineage 着色的总体散点（Morandi 调色），保留总体拟合线与总体 ρ。"""
-    th = get_theme()
-    fig = go.Figure()
-    lineages = sorted(merged_lin['lineage'].dropna().unique().tolist())
-    for i, lin in enumerate(lineages):
-        sub = merged_lin[merged_lin['lineage'] == lin]
-        fig.add_trace(go.Scatter(
-            x=sub['dep'].values, y=sub['auc'].values, mode='markers', name=str(lin),
-            marker=dict(size=point_size * 2.0,
-                        color=MORANDI_PALETTE[i % len(MORANDI_PALETTE)],
-                        opacity=0.7, line=dict(width=0.35, color=th['plot_axis'])),
-            hovertemplate=f'{lin}<br>Gene Effect: %{{x:.3f}}<br>AUC: %{{y:.3f}}<extra></extra>',
-        ))
-    # 总体拟合线
-    x = merged_lin['dep'].values
-    y = merged_lin['auc'].values
-    if len(x) >= 2:
-        coef = np.polyfit(x, y, 1)
-        xs = np.array([x.min(), x.max()])
-        fig.add_trace(go.Scatter(
-            x=xs, y=coef[0] * xs + coef[1], mode='lines', name='Overall fit',
-            line=dict(color=th['plot_axis'], width=1.2),
-            hoverinfo='skip', showlegend=False,
-        ))
-    p_txt = f"<i>p</i> = {p:.2g}" if p is not None else ""
-    subtitle = f"Overall Spearman ρ = {rho:.2f}　{p_txt}　n = {len(merged_lin)}"
-    fig.update_layout(
-        title=dict(text=f"{gene_name}  ×  {drug_label}<br><sub>{subtitle}</sub>",
-                   font=dict(size=16, family=FONT_FAMILY), x=0.5, xanchor='center'),
-        xaxis_title=t('corr_axis_x'), yaxis_title=t('corr_axis_y'),
-        height=560, margin=dict(l=70, r=40, t=80, b=60),
-        legend=dict(font=dict(size=10, family=FONT_FAMILY)),
-    )
-    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
-    fig.update_yaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
-    apply_theme_to_fig(fig)
-    return fig
-
-
-def create_forest_plot(strat_df, gene_name, drug_label):
-    """分层相关森林图：每个 lineage 一行，点=ρ，按显著性着色。"""
-    th = get_theme()
-    d = strat_df.iloc[::-1].reset_index(drop=True)  # 从下往上画
-    colors = [PLOT_COLORS['essential'] if r < 0.05 else th['plot_axis']
-              for r in d['fdr']]
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=d['rho'], y=d['lineage'], mode='markers',
-        marker=dict(size=[8 + min(np.sqrt(n), 12) for n in d['n']],
-                    color=colors, opacity=0.85,
-                    line=dict(width=0.35, color=th['plot_axis'])),
-        customdata=np.stack([d['n'], d['p'], d['fdr']], axis=-1),
-        hovertemplate=('%{y}<br>ρ = %{x:.2f}<br>n = %{customdata[0]}'
-                       '<br>p = %{customdata[1]:.2g}<br>FDR = %{customdata[2]:.2g}<extra></extra>'),
-        showlegend=False,
-    ))
-    fig.add_vline(x=0, line=dict(color=th['plot_axis'], width=0.5, dash='dot'))
-    fig.update_layout(
-        title=dict(text=f"Per-lineage Spearman ρ: {gene_name} × {drug_label}"
-                        f"<br><sub>{t('corr_forest_sub')}</sub>",
-                   font=dict(size=15, family=FONT_FAMILY), x=0.5, xanchor='center'),
-        xaxis_title="Spearman ρ", yaxis_title="",
-        height=max(320, 40 * len(d) + 120), margin=dict(l=160, r=40, t=80, b=50),
-    )
-    fig.update_xaxes(showgrid=False, zeroline=False, linewidth=0.35, ticks='outside')
-    fig.update_yaxes(showgrid=False, linewidth=0.35,
-                     tickfont=dict(size=10, family=FONT_FAMILY))
-    apply_theme_to_fig(fig)
-    return fig
 
 
 # =============================================================================
@@ -1297,49 +829,49 @@ def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=
 # Citation 渲染
 # =============================================================================
 def build_citations():
-    has_doi = bool(ZENODO_DOI.strip())
+    """Separate the running app from the Zenodo deposit.
 
-    if has_doi:
-        apa = (f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}) "
-               f"[Software]. Zenodo. https://doi.org/{ZENODO_DOI}")
-        bibtex = f"""@software{{crispr_score_analyzer_{TOOL_YEAR},
+    The version DOI is the 1.0.0 snapshot from 2026-04-16. This checkout is 1.1.0.
+    """
+    running = (
+        f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}, {TOOL_RELEASED}) "
+        f"[Software]. {GITHUB_URL}. Data: {DATA_VERSION}."
+    )
+    archived = (
+        f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({ZENODO_VERSION}) "
+        f"[Software]. Zenodo. https://doi.org/{ZENODO_VERSION_DOI}"
+    )
+    bibtex = f"""@software{{kan_2026_crispr_score_analyzer,
   author  = {{{TOOL_AUTHORS}}},
   title   = {{CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality}},
   year    = {{{TOOL_YEAR}}},
-  version = {{{TOOL_VERSION}}},
-  doi     = {{{ZENODO_DOI}}},
-  url     = {{https://doi.org/{ZENODO_DOI}}}
+  version = {{{ZENODO_VERSION}}},
+  doi     = {{{ZENODO_VERSION_DOI}}},
+  url     = {{https://doi.org/{ZENODO_VERSION_DOI}}}
 }}"""
-    else:
-        apa = (f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}) "
-               f"[Software]. {GITHUB_URL}")
-        bibtex = f"""@software{{crispr_score_analyzer_{TOOL_YEAR},
-  author  = {{{TOOL_AUTHORS}}},
-  title   = {{CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality}},
-  year    = {{{TOOL_YEAR}}},
-  version = {{{TOOL_VERSION}}},
-  url     = {{{GITHUB_URL}}}
-}}"""
-
-    return apa, bibtex, has_doi
+    return running, archived, bibtex
 
 
 def render_citation_section():
-    apa, bibtex, has_doi = build_citations()
+    running, archived, bibtex = build_citations()
 
     st.markdown(f"### {t('citation')}")
-
-    if has_doi:
-        st.markdown(
-            f'<a href="https://doi.org/{ZENODO_DOI}" target="_blank" class="doi-badge">'
-            f'DOI: {ZENODO_DOI}</a>',
-            unsafe_allow_html=True
-        )
-    else:
-        st.caption(f"⏳ {t('doi_pending')}")
-
-    st.markdown(f"**{t('cite_this_tool')} (APA):**")
-    st.markdown(f'<div class="cite-box">{apa}</div>', unsafe_allow_html=True)
+    st.markdown(f"**{ui('This deployment', '当前部署')}**")
+    st.markdown(f'<div class="cite-box">{escape(running)}</div>', unsafe_allow_html=True)
+    st.caption(ui(
+        "Record this version and the data release with an analysis from the current app.",
+        "记录当前网页上的分析时，写上这个版本和数据版本。"))
+    st.markdown(f"**{ui('Archived software', '已归档版本')} (APA)**")
+    st.markdown(
+        f'<a href="https://doi.org/{ZENODO_VERSION_DOI}" target="_blank" class="doi-badge">'
+        f'DOI: {ZENODO_VERSION_DOI}</a>',
+        unsafe_allow_html=True)
+    st.markdown(f'<div class="cite-box">{escape(archived)}</div>', unsafe_allow_html=True)
+    st.caption(ui(
+        f"Deposited {ZENODO_RELEASED}. Concept DOI {ZENODO_CONCEPT_DOI} still resolves to version {ZENODO_VERSION}. "
+        "That Zenodo record is CC-BY-4.0. The code in this repository is MIT.",
+        f"存档日期 {ZENODO_RELEASED}。概念 DOI {ZENODO_CONCEPT_DOI} 目前仍指向 {ZENODO_VERSION}。"
+        "Zenodo 记录是 CC-BY-4.0，本仓库代码是 MIT。"))
 
     st.markdown("**BibTeX:**")
     st.code(bibtex, language="bibtex")
@@ -1992,6 +1524,10 @@ dataset_metadata = {
     'lineage_column': lineage_col, 'gene_column_mapping': gene_columns,
     'cohort_rows': n_cell_lines, 'ranked_genes': len(gene_rankings),
     'mean_score_cutoff': ESSENTIALITY_THRESHOLD,
+    'tool_version': TOOL_VERSION,
+    'tool_released': TOOL_RELEASED,
+    'zenodo_version': ZENODO_VERSION,
+    'zenodo_version_doi': ZENODO_VERSION_DOI,
     'software': {name: version(name) for name in ['streamlit', 'pandas', 'numpy', 'plotly', 'kaleido', 'pillow']},
     'analysis_schema': 4,
 }
@@ -2147,168 +1683,6 @@ elif view == 'multi':
         render_curve_result('multi')
 
 
-# ---- Gene × Drug correlation (temporarily hidden from the public UI) ----
-if ENABLE_GENE_DRUG_UI:
-    st.markdown(f"### {t('corr_title')}")
-    st.markdown(t('corr_desc'))
-
-    with st.spinner(t('corr_loading')):
-        gdsc_df, crispr26_df, compounds_df, model_df, corr_err = load_corr_datasets(
-            HF_REPO_ID, HF_GDSC_FILENAME, HF_CRISPR26Q1_FILENAME,
-            HF_COMPOUNDS_FILENAME, HF_MODEL_FILENAME)
-
-    if corr_err is not None:
-        st.error(f"❌ {corr_err}")
-        st.caption(
-            "请确认 HF 数据集仓库内包含："
-            f"`{HF_GDSC_FILENAME}` / `{HF_CRISPR26Q1_FILENAME}` / `{HF_COMPOUNDS_FILENAME}`"
-        )
-    else:
-        c_left, c_right = st.columns(2)
-        with c_left:
-            corr_gene = st.text_input(t('corr_gene_label'),
-                                      value=DEFAULT_CORR_GENE,
-                                      help=t('corr_gene_help'),
-                                      key="corr_gene")
-        with c_right:
-            drug_query = st.text_input(t('corr_drug_search'),
-                                       value=DEFAULT_CORR_DRUG_QUERY,
-                                       help=t('corr_drug_search_help'),
-                                       key="corr_drug_query")
-
-        gdsc2_only = st.checkbox(t('corr_gdsc2_only'), value=True,
-                                 help=t('corr_gdsc2_only_help'),
-                                 key="corr_gdsc2_only")
-
-        gdsc_ids = set(gdsc_df.columns)
-        matches = search_compounds(compounds_df, drug_query,
-                                   gdsc2_only=gdsc2_only, gdsc_drug_ids=gdsc_ids)
-        selected_cid = None
-        if matches:
-            labels = [lbl for _, lbl in matches]
-            sel_label = st.selectbox(
-                f"{t('corr_drug_select')}  ({len(labels)})",
-                labels, key="corr_drug_sel")
-            selected_cid = matches[labels.index(sel_label)][0]
-        elif drug_query.strip():
-            st.warning(t('corr_no_drug'))
-
-        # ---- 肿瘤类型分层控件（仅当 Model.csv 加载成功时显示）----
-        lineage_available = model_df is not None
-        lin_gran_col = LINEAGE_COL_COARSE
-        restrict_lineage = None
-        if lineage_available:
-            lc1, lc2 = st.columns(2)
-            with lc1:
-                gran_label = st.radio(
-                    t('corr_lineage_gran'),
-                    [t('corr_gran_coarse'), t('corr_gran_fine')],
-                    horizontal=True, key="corr_gran")
-                lin_gran_col = (LINEAGE_COL_COARSE
-                                if gran_label == t('corr_gran_coarse')
-                                else LINEAGE_COL_FINE)
-            with lc2:
-                if lin_gran_col in model_df.columns:
-                    opts = [t('corr_all_lineages')] + sorted(
-                        model_df[lin_gran_col].dropna().unique().tolist())
-                    pick = st.selectbox(t('corr_restrict_lineage'), opts,
-                                        key="corr_restrict")
-                    restrict_lineage = None if pick == t('corr_all_lineages') else pick
-        else:
-            st.caption(f"ℹ️ {t('corr_no_model')}")
-
-        run = st.button(f"▶️ {t('corr_run')}", key="corr_run_btn",
-                        width="content")
-
-        if run and selected_cid:
-            gene_col = find_crispr_gene_column(crispr26_df, corr_gene)
-            if gene_col is None:
-                st.error(f"❌ {t('corr_gene_not_found')} ({corr_gene})")
-            else:
-                merged, rho, p, n, err = compute_gene_drug_correlation(
-                    crispr26_df, gdsc_df, gene_col, selected_cid)
-                drug_label = next((lbl for cid, lbl in matches
-                                   if cid == selected_cid), selected_cid)
-                drug_short = drug_label.split(' (')[0]
-
-                # 附加 lineage
-                lin_key = None
-                if lineage_available and err != 'drug_not_found':
-                    merged, lin_key = attach_lineage(merged, model_df, lin_gran_col)
-                    if restrict_lineage is not None and lin_key:
-                        merged = merged[merged['lineage'] == restrict_lineage]
-                        if len(merged) >= 10:
-                            rho, p = _spearman_with_p(
-                                merged['dep'].values, merged['auc'].values)
-                            n = len(merged)
-                        else:
-                            err = 'too_few'
-                            n = len(merged)
-
-                if err == 'drug_not_found':
-                    st.error(f"❌ {t('corr_drug_not_found')}")
-                elif err == 'too_few':
-                    st.warning(f"⚠️ {t('corr_too_few')} (n = {n})")
-                else:
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric(t('corr_stat_n'), f"{n:,}")
-                    m2.metric(t('corr_stat_rho'), f"{rho:.3f}")
-                    m3.metric(t('corr_stat_p'), f"{p:.2g}")
-
-                    title_suffix = f" · {restrict_lineage}" if restrict_lineage else ""
-                    # A：散点（有 lineage 且未限定单一癌种时按癌种着色）
-                    if lin_key and restrict_lineage is None:
-                        fig = create_lineage_scatter(
-                            merged, corr_gene.upper(), drug_short + title_suffix,
-                            rho, p, point_size=st.session_state.get('point_size', 4))
-                    else:
-                        fig = create_correlation_scatter(
-                            merged, corr_gene.upper(), drug_short + title_suffix,
-                            rho, p, point_size=st.session_state.get('point_size', 4))
-                    centered_plot(fig)
-
-                    if p is not None and p < 0.05 and rho > 0:
-                        st.success(t('corr_result_dir_pos'))
-                    elif p is not None and p < 0.05 and rho < 0:
-                        st.info(t('corr_result_dir_neg'))
-                    else:
-                        st.info(t('corr_result_dir_ns'))
-
-                    # B：分层相关（仅在有 lineage 且看全部癌种时）
-                    if lin_key and restrict_lineage is None:
-                        strat = stratified_correlation(merged, min_n=MIN_N_PER_GROUP)
-                        if len(strat) >= 2:
-                            st.markdown(f"#### {t('corr_strat_title')}")
-                            st.caption(t('corr_strat_desc'))
-                            forest = create_forest_plot(
-                                strat, corr_gene.upper(), drug_short)
-                            centered_plot(forest)
-                            show_tbl = strat.copy()
-                            show_tbl['rho'] = show_tbl['rho'].round(3)
-                            show_tbl['p'] = show_tbl['p'].map(lambda v: f"{v:.2g}")
-                            show_tbl['fdr'] = show_tbl['fdr'].map(lambda v: f"{v:.2g}")
-                            show_tbl.columns = [t('corr_tbl_lineage'), 'n',
-                                                'Spearman ρ', 'p', 'BH-FDR']
-                            st.dataframe(show_tbl, width="stretch",
-                                         hide_index=True)
-                        else:
-                            st.caption(f"ℹ️ {t('corr_strat_insufficient')}")
-
-                    st.warning(t('corr_caveat'))
-
-                    with st.expander(f"📥 {t('export_title')}", expanded=False):
-                        render_download_buttons(fig, "gene_drug_correlation",
-                                                 "corr", height=export_height)
-                    with st.expander(f"📊 {t('download_csv')}", expanded=False):
-                        cols_out = ['dep', 'auc'] + (['lineage'] if lin_key else [])
-                        csv_out = merged[cols_out].reset_index().rename(
-                            columns={'index': 'ModelID'}).to_csv(index=False)
-                        st.download_button(
-                            t('download_csv'), data=csv_out,
-                            file_name=f"{corr_gene}_{selected_cid}_correlation.csv",
-                            mime='text/csv', key="corr_csv_dl")
-
-
 # =============================================================================
 # 页脚：致谢 + 引用
 # =============================================================================
@@ -2339,10 +1713,11 @@ with st.expander(f"📚 {t('resources')}", expanded=False):
 
     render_citation_section()
 
+footer_release = f' · {escape(provenance.get("release", DATA_VERSION))}' if uploaded_file is None else ''
 st.markdown(
     f'<div style="text-align:center; color:{get_theme()["text_muted"]}; '
     f'font-size:0.8rem; padding:1rem;">'
-    f'CRISPR Score Analyzer {TOOL_VERSION} | Changhao Kan | '
+    f'CRISPR Score Analyzer {TOOL_VERSION}{footer_release} | Changhao Kan | '
     f'<a href="{GITHUB_URL}" target="_blank" style="color:{get_theme()["accent"]};">GitHub</a>'
     f'</div>',
     unsafe_allow_html=True
