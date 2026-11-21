@@ -47,7 +47,7 @@ The built-in matrix is stored in the repository as `data/depmap_chronos.npz`. Op
 
 Gene-list and per-view analysis edits are drafts until Run is clicked. The input reports matched symbols, previous or alias symbols, and names that are not in the matrix before Run. Alias resolution uses HGNC previous symbols and aliases that point to exactly one approved symbol in the bundled matrix (`data/gene_aliases.json`). After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly. The background ranking curve is reused when only those display settings change.
 
-When one or more cancer types are selected, a result also shows each gene's selected mean minus its all-lineage mean. A negative difference is a lower score in the selected cancer types. The difference is descriptive. It is not a test of selectivity or significance.
+A result also plots lineage preference across every cancer type: each bar is that type's mean minus the gene's mean over all types. Negative means a lower, more dependent score in that type. Types with fewer than five cell lines are left off the figure. The full rows, including small types, are stored in the analysis ZIP. The difference is descriptive. It is not a test of selectivity or significance.
 
 ### Gene ranking
 

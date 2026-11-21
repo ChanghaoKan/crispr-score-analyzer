@@ -158,13 +158,13 @@ class AppSubmissionTests(unittest.TestCase):
         self.assertIsNone(self.result("rank_result"))
         self.assertTrue(any("not matched 1" in caption.value for caption in self.app.caption))
 
-    def test_selected_cohort_records_score_difference(self):
-        self.app.multiselect(key="cohort").set_value(["Liver"]).run()
+    def test_result_plots_preference_across_cancer_types(self):
         result = self.run_rank("MYC")
-        self.assertIn("cohort_contrast", result["metadata"])
-        row = result["contrast"].iloc[0]
-        self.assertEqual(row["gene"], "MYC")
-        self.assertAlmostEqual(float(row["difference"]), float(row["cohort_mean"]) - float(row["panel_mean"]))
+        self.assertIn("lineage_preference", result["metadata"])
+        lineages = set(result["preference"]["lineage"])
+        self.assertEqual(lineages, {"Liver", "Lung"})
+        row = result["preference"].iloc[0]
+        self.assertAlmostEqual(float(row["difference"]), float(row["mean"]) - float(row["panel_mean"]))
         self.assertTrue(any("not a test of selectivity" in caption.value for caption in self.app.caption))
 
     def test_unmatched_submission_keeps_result_and_warns(self):

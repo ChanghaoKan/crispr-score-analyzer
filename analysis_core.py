@@ -367,6 +367,23 @@ def cohort_mean_contrast(genes: Iterable[str], cohort_rankings: pd.DataFrame, pa
     return pd.DataFrame(rows, columns=columns)
 
 
+def lineage_preference(frame: pd.DataFrame) -> pd.DataFrame:
+    """Per cancer type, mean score minus that gene's all-lineage mean.
+
+    ``frame`` is long-form finite scores with ``gene``, ``lineage`` and
+    ``crispr_score``. A negative difference is a lower score in that type.
+    The difference is descriptive and is not a selectivity test.
+    """
+    summary = lineage_summary(frame)
+    columns = ["gene", "lineage", "n_valid", "mean", "panel_mean", "difference"]
+    if summary.empty:
+        return pd.DataFrame(columns=columns)
+    panel = frame.groupby("gene", sort=False)["crispr_score"].mean()
+    summary["panel_mean"] = summary["gene"].map(panel).astype(float)
+    summary["difference"] = summary["mean"] - summary["panel_mean"]
+    return summary[columns]
+
+
 def find_lineage_column(df: pd.DataFrame):
     """Prefer exact coarse-lineage labels; never select a sub-lineage label."""
     lookup = {str(column).strip().casefold(): column for column in df.columns}

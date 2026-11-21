@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
 from analysis_core import (analyze_dataset, parse_gene_text, parse_gene_upload,
-                           resolve_gene_list, cohort_mean_contrast,
+                           resolve_gene_list, lineage_preference,
                            find_lineage_column, get_lineage_frame,
                            lineage_summary, make_analysis_bundle, read_score_csv,
                            read_builtin_matrix, file_sha256, builtin_provenance_path)
@@ -556,7 +556,23 @@ def inject_css():
         }}
         .stApp [data-baseweb="select"] span,
         .stApp [data-baseweb="select"] input {{ color: {th['text']} !important; }}
-        .stApp [data-testid="stAlert"] p {{ color: {th['text']} !important; }}
+        .stApp [data-testid="stAlert"],
+        .stApp [data-testid="stAlert"] > div,
+        .stApp [data-testid="stAlert"] [data-baseweb="notification"] {{
+            background-color: {th['bg_secondary']} !important;
+            color: {th['text']} !important;
+            border: 1px solid {th['border']} !important;
+            border-left: 3px solid {th['accent']} !important;
+        }}
+        .stApp [data-testid="stAlert"] p,
+        .stApp [data-testid="stAlert"] span,
+        .stApp [data-testid="stAlert"] svg {{
+            color: {th['text']} !important;
+            fill: {th['text']} !important;
+        }}
+        .theme-grid .score-low {{ color: #9ecbf2; font-weight: 700; }}
+        .theme-grid .score-mid {{ color: #d5e4f2; font-weight: 650; }}
+        .theme-grid .score-high {{ color: #f0c7b8; font-weight: 650; }}
         [data-testid="stPopoverBody"] {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
             border: 1px solid {th['border']};
@@ -1437,6 +1453,18 @@ def build_result(genes, matches, config=None, plot_data=None, draft=None):
     }
 
 
+def _score_tone(column, value):
+    """Color a score by direction. Lower scores are the stronger dependency."""
+    if column not in {"mean_score", "mean", "difference"} or pd.isna(value):
+        return None
+    value = float(value)
+    if value < -0.5:
+        return "score-low"
+    if value < 0:
+        return "score-mid"
+    return "score-high"
+
+
 def show_grid(frame, column_config):
     """Use Streamlit's grid in light mode, and a themed HTML table in dark mode.
 
@@ -1446,7 +1474,6 @@ def show_grid(frame, column_config):
     if st.session_state.get("theme") != "dark":
         st.dataframe(frame, hide_index=True, width="stretch", column_config=column_config)
         return
-    th = get_theme()
 
     def label_of(column):
         return column_config.get(column, {}).get("label", column)
@@ -1466,7 +1493,9 @@ def show_grid(frame, column_config):
             rendered = str(int(value)) if pattern in {"d", "i"} else format(value, pattern)
         except (TypeError, ValueError):
             return escape(str(value))
-        return escape(rendered + ("%" if percent else ""))
+        rendered = escape(rendered + ("%" if percent else ""))
+        tone = _score_tone(column, value)
+        return f'<span class="{tone}">{rendered}</span>' if tone else rendered
 
     head = "".join(f"<th>{escape(str(label_of(column)))}</th>" for column in frame.columns)
     body = []
@@ -1590,24 +1619,86 @@ def render_draft_feedback(text, file, draft, result, title=None):
     show_matches(parsed, matched, missing, title, resolved)
 
 
-def render_score_contrast(result):
-    """Show selected-scope mean minus the all-lineage mean for the displayed genes."""
-    table = result.get("contrast")
+PREFERENCE_MIN_N = 5
+_PREFERENCE_COLORS = ["#4c78a8", "#f58518", "#54a24b", "#e45756", "#72b7b2", "#b279a2", "#eeca3b", "#9d755d"]
+
+
+def create_preference_plot(table):
+    """Horizontal bars of each cancer type's mean minus the all-lineage mean."""
+    th = get_theme()
+    shown = table[table["n_valid"] >= PREFERENCE_MIN_N]
+    if shown.empty:
+        return None
+    order = shown.groupby("lineage")["difference"].mean().sort_values(ascending=False).index.tolist()
+    fig = go.Figure()
+    for index, gene in enumerate(dict.fromkeys(shown["gene"])):
+        part = shown[shown["gene"] == gene].set_index("lineage").reindex(order)
+        fig.add_trace(go.Bar(
+            y=order,
+            x=part["difference"],
+            orientation="h",
+            name=str(gene),
+            marker_color=_PREFERENCE_COLORS[index % len(_PREFERENCE_COLORS)],
+            customdata=np.column_stack((
+                part["mean"].to_numpy(),
+                part["panel_mean"].to_numpy(),
+                part["n_valid"].to_numpy(),
+            )),
+            hovertemplate=(
+                "<b>%{y}</b> · %{fullData.name}<br>"
+                + ui("Difference", "差值") + ": %{x:+.3f}<br>"
+                + ui("Cancer-type mean", "该癌种均值") + ": %{customdata[0]:.3f}<br>"
+                + ui("All-lineage mean", "全队列均值") + ": %{customdata[1]:.3f}<br>"
+                + ui("Valid cell lines", "有效细胞系数") + ": %{customdata[2]:.0f}<extra></extra>"
+            ),
+        ))
+    fig.add_vline(x=0, line_width=1, line_color=th["plot_axis"])
+    fig.update_layout(
+        barmode="group",
+        height=max(420, 26 * len(order) + 120),
+        xaxis_title=ui("Mean minus all-lineage mean", "均值减全队列均值"),
+        legend=dict(orientation="h", yanchor="top", y=-0.12, x=0.5, xanchor="center"),
+        margin=dict(l=8, r=16, t=12, b=64),
+    )
+    fig.update_yaxes(automargin=True, categoryorder="array", categoryarray=order,
+                     title=ui("Cancer type", "癌种"))
+    return apply_theme_to_fig(fig)
+
+
+def render_lineage_preference(result):
+    """Plot every cancer type against the all-lineage mean."""
+    table = result.get("preference")
     if table is None or len(table) == 0:
         return
-    scope = ", ".join(result["metadata"].get("cohort_lineages") or [])
-    st.markdown(f"### {ui('Score difference', '分数差')}")
+    st.markdown(f"### {ui('Lineage preference', '癌种偏好')}")
     st.caption(ui(
-        f"Selected mean minus the all-lineage mean ({scope}). A negative difference is a lower, more dependent score in the selected cancer types. This describes the two means. It is not a test of selectivity or significance.",
-        f"所选范围均值减去全队列均值（{scope}）。差值为负表示所选癌种分数更低、依赖更强。这只是两个均值的描述，不是选择性或显著性检验。"))
-    show_grid(table, {
-        "gene": st.column_config.TextColumn(ui("Gene", "基因")),
-        "cohort_mean": st.column_config.NumberColumn(ui("Selected mean", "所选均值"), format="%.3f"),
-        "panel_mean": st.column_config.NumberColumn(ui("All-lineage mean", "全队列均值"), format="%.3f"),
-        "difference": st.column_config.NumberColumn(ui("Difference", "差值"), format="%+.3f"),
-        "cohort_n": st.column_config.NumberColumn(ui("Selected n", "所选 n"), format="%d"),
-        "panel_n": st.column_config.NumberColumn(ui("All-lineage n", "全队列 n"), format="%d"),
-    })
+        "Each bar is that cancer type's mean minus the gene's mean across all cancer types. "
+        "Negative means a lower, more dependent score in that type. Types with fewer than "
+        f"{PREFERENCE_MIN_N} cell lines are omitted. This describes the means. It is not a test of selectivity or significance.",
+        "每条柱是该癌种均值减去该基因在全部癌种中的均值。负值表示该癌种分数更低、依赖更强。"
+        f"细胞系少于 {PREFERENCE_MIN_N} 的癌种不显示。这只是均值描述，不是选择性或显著性检验。"))
+    figure = create_preference_plot(table)
+    if figure is None:
+        st.caption(ui("No cancer type has enough cell lines to plot.", "没有癌种达到可绘图的细胞系数。"))
+        return
+    st.plotly_chart(figure, config=PLOT_CONFIG, width="stretch", theme=None)
+
+
+def attach_preference(result, genes):
+    """Compare every cancer type with the all-lineage mean, independent of the sidebar filter."""
+    if not lineage_col:
+        return result
+    observations = get_lineage_frame(df, genes, gene_rankings, lineage_col)
+    table = lineage_preference(observations)
+    if table.empty:
+        return result
+    result["preference"] = table
+    result["metadata"]["lineage_preference"] = table.to_dict(orient="records")
+    result["metadata"]["lineage_preference_definition"] = (
+        "Per cancer type, mean score minus that gene's all-lineage mean. "
+        "Negative means a lower score in that type. Descriptive only; not a test of selectivity."
+    )
+    return result
 
 
 def figure_controls():
@@ -1638,22 +1729,8 @@ def render_curve_result(prefix):
             cfg["background_color"], cfg["highlight_color"],
             essential, nonessential, n_cell_lines, labels, size)
     centered_plot(fig)
-    render_score_contrast(result)
+    render_lineage_preference(result)
     result_downloads(result, fig, prefix)
-
-
-def attach_contrast(result, genes):
-    """Record the descriptive cohort-minus-panel difference when a cancer type is selected."""
-    if not cohort or pan_rankings is None:
-        return result
-    table = cohort_mean_contrast(genes, gene_rankings, pan_rankings)
-    result["contrast"] = table
-    result["metadata"]["cohort_contrast"] = table.to_dict(orient="records")
-    result["metadata"]["cohort_contrast_definition"] = (
-        "Selected cancer-type mean minus the all-lineage mean. "
-        "Descriptive only; not a test of selectivity or significance."
-    )
-    return result
 
 
 def input_draft(text='', file=None, **options):
@@ -1824,11 +1901,6 @@ if st.session_state.get('_analysis_context') != context_hash:
     st.session_state['_analysis_context'] = context_hash
 
 gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_columns)
-pan_rankings = None
-if cohort:
-    pan_context = json.dumps({'sha256': source_sha, 'cohort': 'ALL', 'gene_columns': gene_columns,
-                              'source': uploaded_file.name if uploaded_file else matrix_path.name}, sort_keys=True)
-    pan_rankings, _ = compute_gene_rankings(hashlib.sha256(pan_context.encode()).hexdigest(), df, gene_columns)
 n_cell_lines = len(df_scope)
 hero_version = t('custom_dataset') if uploaded_file is not None else provenance.get('release', DATA_VERSION)
 st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
@@ -1893,7 +1965,7 @@ if view == 'rank':
         try:
             parsed, matched, missing, resolved = classify_input(gene_text, gene_file)
             if matched:
-                st.session_state.rank_result = attach_contrast(build_result(
+                st.session_state.rank_result = attach_preference(build_result(
                     matched, {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing, 'resolved': resolved}},
                     draft=draft), matched)
             else:
@@ -1947,7 +2019,7 @@ elif view == 'box':
                     frame = get_lineage_frame(df_scope, matched, gene_rankings, lineage_col)
                     if box_lineages:
                         frame = frame[frame.lineage.isin(box_lineages)]
-                    st.session_state.box_result = attach_contrast(build_result(matched, match, config, frame, draft), matched)
+                    st.session_state.box_result = attach_preference(build_result(matched, match, config, frame, draft), matched)
                 else:
                     st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
             except (ValueError, UnicodeError) as exc:
@@ -1964,7 +2036,7 @@ elif view == 'box':
                 frame = get_lineage_frame(df_scope, chosen, gene_rankings, lineage_col)
                 if candidate['config']['lineages']:
                     frame = frame[frame.lineage.isin(candidate['config']['lineages'])]
-                st.session_state.box_result = attach_contrast(
+                st.session_state.box_result = attach_preference(
                     build_result(chosen, candidate['matches'], candidate['config'], frame, candidate['draft']), chosen)
                 del st.session_state.box_candidates
                 st.rerun()
@@ -1983,7 +2055,7 @@ elif view == 'box':
                     st.info(ui('No valid scores in these groups: ', '这些基因在所选分组没有有效分数：') + ', '.join(absent))
                 fig = create_lineage_boxplot(valid_data, result['genes'], result['config']['sort'], result['config']['all_points'])
                 st.plotly_chart(fig, config=PLOT_CONFIG, width='stretch', theme=None)
-                render_score_contrast(result)
+                render_lineage_preference(result)
                 result_downloads(result, fig, 'box')
 
 elif view == 'multi':
@@ -2011,7 +2083,7 @@ elif view == 'multi':
                    'highlight': {'parsed': hl_parsed, 'matched': hl_matched, 'missing': hl_missing, 'resolved': hl_resolved}}
         if bg_matched or hl_matched:
             genes = list(dict.fromkeys(bg_matched + hl_matched))
-            st.session_state.multi_result = attach_contrast(build_result(
+            st.session_state.multi_result = attach_preference(build_result(
                 genes, matches, {'background': bg_matched, 'highlight': hl_matched,
                                  'background_color': bg_color, 'highlight_color': hl_color}, draft=draft), genes)
         else:

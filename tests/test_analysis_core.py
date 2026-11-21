@@ -10,8 +10,8 @@ import pandas as pd
 
 from analysis_core import (
     analyze_dataset, builtin_provenance_path, cohort_mean_contrast, find_lineage_column,
-    get_lineage_frame, lineage_summary, make_analysis_bundle, match_genes, parse_gene_text,
-    parse_gene_upload, read_builtin_matrix, read_score_csv, resolve_gene_list,
+    get_lineage_frame, lineage_preference, lineage_summary, make_analysis_bundle, match_genes,
+    parse_gene_text, parse_gene_upload, read_builtin_matrix, read_score_csv, resolve_gene_list,
 )
 
 
@@ -216,6 +216,20 @@ class CohortContrastTests(unittest.TestCase):
         self.assertAlmostEqual(myc["difference"], -0.5)
         self.assertEqual(int(myc["cohort_n"]), 2)
         self.assertEqual(int(myc["panel_n"]), 3)
+
+
+class LineagePreferenceTests(unittest.TestCase):
+    def test_difference_compares_each_type_with_the_all_lineage_mean(self):
+        frame = pd.DataFrame({
+            "gene": ["MYC"] * 4,
+            "lineage": ["Liver", "Liver", "Lung", "Lung"],
+            "crispr_score": [-2.0, -1.0, 0.0, 0.0],
+        })
+        table = lineage_preference(frame).set_index("lineage")
+        self.assertAlmostEqual(float(table.loc["Liver", "mean"]), -1.5)
+        self.assertAlmostEqual(float(table.loc["Liver", "panel_mean"]), -0.75)
+        self.assertAlmostEqual(float(table.loc["Liver", "difference"]), -0.75)
+        self.assertAlmostEqual(float(table.loc["Lung", "difference"]), 0.75)
 
 
 class NumericMatrixTests(unittest.TestCase):
