@@ -152,6 +152,21 @@ class AppSubmissionTests(unittest.TestCase):
         self.assertNotEqual(self.result("rank_result")["input_signature"], first_signature)
         self.assertFalse(any("Inputs changed" in warning.value for warning in self.app.warning))
 
+    def test_draft_reports_unmatched_symbols_before_run(self):
+        self.app.text_area(key="rank_genes").set_value("NOT_A_REAL_GENE").run()
+        self.assert_healthy()
+        self.assertIsNone(self.result("rank_result"))
+        self.assertTrue(any("not matched 1" in caption.value for caption in self.app.caption))
+
+    def test_selected_cohort_records_score_difference(self):
+        self.app.multiselect(key="cohort").set_value(["Liver"]).run()
+        result = self.run_rank("MYC")
+        self.assertIn("cohort_contrast", result["metadata"])
+        row = result["contrast"].iloc[0]
+        self.assertEqual(row["gene"], "MYC")
+        self.assertAlmostEqual(float(row["difference"]), float(row["cohort_mean"]) - float(row["panel_mean"]))
+        self.assertTrue(any("not a test of selectivity" in caption.value for caption in self.app.caption))
+
     def test_unmatched_submission_keeps_result_and_warns(self):
         original = self.run_rank("MYC")
         self.run_rank("NOT_A_REAL_GENE")

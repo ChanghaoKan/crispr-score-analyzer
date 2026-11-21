@@ -21,7 +21,8 @@ from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
 from analysis_core import (analyze_dataset, parse_gene_text, parse_gene_upload,
-                           match_genes, find_lineage_column, get_lineage_frame,
+                           resolve_gene_list, cohort_mean_contrast,
+                           find_lineage_column, get_lineage_frame,
                            lineage_summary, make_analysis_bundle, read_score_csv,
                            read_builtin_matrix, file_sha256, builtin_provenance_path)
 from figure_export import export_fingerprint, render_figure_bytes, MAX_PNG_PIXELS
@@ -42,6 +43,7 @@ st.set_page_config(
 # =============================================================================
 HF_REPO_ID = "ChanghaoKan/crispr-depmap"
 BUILTIN_MATRIX = Path(__file__).resolve().parent / "data" / "depmap_chronos.npz"
+GENE_ALIAS_FILE = Path(__file__).resolve().parent / "data" / "gene_aliases.json"
 DATA_VERSION = "DepMap Public 26Q3"
 SCORE_TYPE = "Chronos Gene Effect"
 ESSENTIALITY_THRESHOLD = -0.5
@@ -303,6 +305,17 @@ TRANSLATIONS = {
 def t(key: str) -> str:
     lang = st.session_state.get('lang', 'en')
     return TRANSLATIONS[lang].get(key, key)
+
+
+def load_gene_aliases() -> dict:
+    """Uppercase previous/alias symbol to one approved symbol. Missing file yields no aliases."""
+    if not GENE_ALIAS_FILE.is_file():
+        return {}
+    payload = json.loads(GENE_ALIAS_FILE.read_text(encoding="utf-8"))
+    return {str(key).upper(): str(value).upper() for key, value in payload.get("map", {}).items()}
+
+
+GENE_ALIASES = load_gene_aliases()
 
 
 # =============================================================================
@@ -1060,21 +1073,57 @@ def _rank_label_annotations(points, x_range, y_range):
     return annotations
 
 
+def _ranking_fingerprint(rankings):
+    """Identify a ranking curve without hashing every gene name."""
+    if len(rankings) == 0:
+        return (0, "", "", 0.0)
+    scores = rankings["mean_score"].to_numpy(dtype=np.float64, copy=False)
+    return (len(rankings), str(rankings["gene"].iloc[0]), str(rankings["gene"].iloc[-1]), round(float(scores.sum()), 5))
+
+
+def _cached_background_trace(rankings, excluded, color, name, hover):
+    """Reuse the full background curve when only labels or marker size change."""
+    cache = getattr(_cached_background_trace, "cache", None)
+    if cache is None:
+        cache = {}
+        _cached_background_trace.cache = cache
+    key = (_ranking_fingerprint(rankings), tuple(sorted(excluded)), color, name, hover)
+    cached = cache.get(key)
+    if cached is None:
+        upper = rankings["gene_upper"].to_numpy()
+        keep = np.ones(len(rankings), dtype=bool) if not excluded else ~np.isin(upper, list(excluded))
+        cached = go.Scattergl(
+            x=rankings["rank"].to_numpy()[keep],
+            y=rankings["mean_score"].to_numpy()[keep],
+            mode="markers",
+            marker=dict(size=2.5, color=color),
+            name=name,
+            text=rankings["gene"].to_numpy()[keep],
+            customdata=np.column_stack((
+                rankings["n_valid"].to_numpy()[keep],
+                rankings["percentile"].to_numpy()[keep],
+            )),
+            hovertemplate=hover,
+        )
+        if len(cache) >= 8:
+            cache.clear()
+        cache[key] = cached
+    return cached
+
+
 def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
                       show_reference_labels=True):
     th = get_theme()
     fig = go.Figure()
     highlighted = {g.upper() for layer in layers for g in layer['genes']}
     refs = list(dict.fromkeys(g.upper() for g in references if g))
-    bg = rankings[~rankings.gene_upper.isin(highlighted | set(refs))]
     hover = ('<b>%{text}</b><br>' + ui('Rank', '排名') + ': %{x:,}<br>'
              + ui('Mean score', '平均分') + ': %{y:.4f}<br>'
              + ui('Valid cell lines', '有效细胞系数') + ': %{customdata[0]}<br>'
              + ui('Rank percentile (lower = stronger)', '排名百分位（越低依赖越强）')
              + ': %{customdata[1]:.2f}%<extra></extra>')
-    fig.add_trace(go.Scattergl(x=bg['rank'], y=bg.mean_score, mode='markers',
-                              marker=dict(size=2.5, color=th['plot_scatter_bg']), name=ui('All genes', '全部基因'),
-                              text=bg.gene, customdata=bg[['n_valid', 'percentile']].values, hovertemplate=hover))
+    fig.add_trace(_cached_background_trace(
+        rankings, highlighted | set(refs), th['plot_scatter_bg'], ui('All genes', '全部基因'), hover))
     label_points = []
 
     def collect_labels(part, color):
@@ -1142,7 +1191,8 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', none
 
 
 def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, bg_color='#8DA8C0', hl_color='#0072B2',
-                               essential_gene='MYC', nonessential_gene='PTEN', n_cell_lines=0, show_labels=True):
+                               essential_gene='MYC', nonessential_gene='PTEN', n_cell_lines=0, show_labels=True,
+                               point_size=None):
     bg_only = [g for g in background_genes if g not in highlight_genes]
     layers = [
         {'genes': bg_only, 'labels': False, 'color': bg_color, 'size': 1.7,
@@ -1150,8 +1200,10 @@ def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes,
         {'genes': highlight_genes, 'labels': show_labels, 'color': hl_color, 'symbol': 'circle',
          'name': ui('Highlight genes', '高亮基因')},
     ]
+    if point_size is None:
+        point_size = st.session_state.get('point_size', 4)
     return build_rank_figure(gene_rank_df, layers, [essential_gene, nonessential_gene], n_cell_lines,
-                            st.session_state.get('point_size', 4), show_reference_labels=show_labels)
+                            point_size, show_reference_labels=show_labels)
 
 
 def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=False):
@@ -1318,12 +1370,18 @@ def parse_input(text, file):
     return parse_gene_upload(file.getvalue(), file.name) if file else parse_gene_text(text)
 
 
-def show_matches(parsed, matched, missing, title=None):
+def show_matches(parsed, matched, missing, title=None, resolved=None):
+    resolved = list(resolved or [])
+    alias_note = f" · alias resolved {len(resolved)}" if resolved else ""
+    alias_note_zh = f" · 别名解析 {len(resolved)}" if resolved else ""
     if title:
         st.markdown(f'**{title}**')
     st.caption(ui(
-        f"Input {parsed['input_count']} · unique {len(parsed['genes'])} · matched {len(matched)} · not matched {len(missing)} · duplicates {len(parsed['duplicates'])}",
-        f"输入 {parsed['input_count']} · 去重后 {len(parsed['genes'])} · 匹配 {len(matched)} · 未匹配 {len(missing)} · 重复 {len(parsed['duplicates'])}"))
+        f"Input {parsed['input_count']} · unique {len(parsed['genes'])} · matched {len(matched)}{alias_note} · not matched {len(missing)} · duplicates {len(parsed['duplicates'])}",
+        f"输入 {parsed['input_count']} · 去重后 {len(parsed['genes'])} · 匹配 {len(matched)}{alias_note_zh} · 未匹配 {len(missing)} · 重复 {len(parsed['duplicates'])}"))
+    if resolved:
+        st.caption(ui("Previous or alias symbols: ", "旧符号或别名：")
+                   + ", ".join(f"{item['input']} → {item['gene']}" for item in resolved))
     if matched:
         st.markdown(' '.join(f'<span class="gene-tag">{escape(g)}</span>' for g in matched),
                     unsafe_allow_html=True)
@@ -1354,6 +1412,16 @@ def build_result(genes, matches, config=None, plot_data=None, draft=None):
 
 def result_downloads(result, fig, prefix):
     selected = result['rankings'].set_index('gene', drop=False).reindex(result['genes']).reset_index(drop=True)
+    state = st.session_state
+    if "reference_a" in state and "reference_b" in state and "show_labels" in state and "point_size" in state:
+        reference_a = str(state.get("reference_a") or "MYC").strip().upper()
+        reference_b = str(state.get("reference_b") or "PTEN").strip().upper()
+        labels_on = bool(state.get("show_labels"))
+        marker_size = int(state.get("point_size") or 4)
+    elif all(name in globals() for name in ("essential_gene", "nonessential_gene", "show_labels", "point_size")):
+        reference_a, reference_b, labels_on, marker_size = essential_gene, nonessential_gene, show_labels, point_size
+    else:
+        reference_a, reference_b, labels_on, marker_size = "MYC", "PTEN", True, 4
     title_col, figure_col, data_col = st.columns([2, 1, 1.15], vertical_alignment='center')
     with title_col:
         st.markdown(f"### {ui('Results', '分析结果')}")
@@ -1385,8 +1453,8 @@ def result_downloads(result, fig, prefix):
                       '上表排名与均值基于侧栏癌种范围；分组统计与绘图数据基于本次比较所选癌种。'))
     metadata = {**result['metadata'], 'display': {
         'language': st.session_state.lang, 'theme': st.session_state.theme,
-        'reference_genes': [essential_gene, nonessential_gene],
-        'show_labels': show_labels, 'point_size': point_size,
+        'reference_genes': [reference_a, reference_b],
+        'show_labels': labels_on, 'point_size': marker_size,
     }, 'export': {'width': st.session_state.get(f'{prefix}_width', int(fig.layout.width or 1000)),
                   'height': st.session_state.get(f'{prefix}_height', int(fig.layout.height or 600)),
                   'png_scale': 3, 'png_dpi': 300, 'full_vector_pdf_svg': True}}
@@ -1429,6 +1497,95 @@ def result_downloads(result, fig, prefix):
         st.caption(ui('ZIP includes selected results, complete cohort ranking, plot data, input matching, column diagnostics and versioned analysis parameters. Download figures separately.',
                       'ZIP 包含所选结果、当前范围完整排名、绘图数据、输入匹配情况、列校验与版本参数。图形请单独下载。'))
         st.json(metadata, expanded=False)
+
+
+def classify_input(text, file):
+    """Resolve the current draft against the active ranking, including HGNC aliases."""
+    parsed = parse_input(text, file)
+    matched, missing, resolved = resolve_gene_list(gene_rankings, parsed["genes"], GENE_ALIASES)
+    return parsed, matched, missing, resolved
+
+
+def render_draft_feedback(text, file, draft, result, title=None):
+    """Show match status before Run, and again when the draft differs from the displayed result."""
+    if result is not None and result.get("input_signature") == input_signature(draft):
+        return
+    if not text and file is None:
+        return
+    try:
+        parsed, matched, missing, resolved = classify_input(text, file)
+    except (ValueError, UnicodeError) as exc:
+        st.caption(str(exc))
+        return
+    if not parsed["genes"] and not parsed["duplicates"]:
+        return
+    show_matches(parsed, matched, missing, title, resolved)
+
+
+def render_score_contrast(result):
+    """Show selected-scope mean minus the all-lineage mean for the displayed genes."""
+    table = result.get("contrast")
+    if table is None or len(table) == 0:
+        return
+    scope = ", ".join(result["metadata"].get("cohort_lineages") or [])
+    st.markdown(f"### {ui('Score difference', '分数差')}")
+    st.caption(ui(
+        f"Selected mean minus the all-lineage mean ({scope}). A negative difference is a lower, more dependent score in the selected cancer types. This describes the two means. It is not a test of selectivity or significance.",
+        f"所选范围均值减去全队列均值（{scope}）。差值为负表示所选癌种分数更低、依赖更强。这只是两个均值的描述，不是选择性或显著性检验。"))
+    st.dataframe(table, hide_index=True, width='stretch', column_config={
+        "gene": st.column_config.TextColumn(ui("Gene", "基因")),
+        "cohort_mean": st.column_config.NumberColumn(ui("Selected mean", "所选均值"), format="%.3f"),
+        "panel_mean": st.column_config.NumberColumn(ui("All-lineage mean", "全队列均值"), format="%.3f"),
+        "difference": st.column_config.NumberColumn(ui("Difference", "差值"), format="%+.3f"),
+        "cohort_n": st.column_config.NumberColumn(ui("Selected n", "所选 n"), format="%d"),
+        "panel_n": st.column_config.NumberColumn(ui("All-lineage n", "全队列 n"), format="%d"),
+    })
+
+
+def figure_controls():
+    """Chart-only settings. Kept beside the plot so changing them does not rebuild the page."""
+    with st.expander(ui("Figure settings", "图形设置"), expanded=False):
+        essential = st.text_input(t("essential"), value="MYC", key="reference_a").strip().upper()
+        nonessential = st.text_input(t("nonessential"), value="PTEN", key="reference_b").strip().upper()
+        labels = st.checkbox(t("show_labels"), value=True, key="show_labels")
+        size = st.slider(t("point_size"), 2, 8, 4, key="point_size")
+    return essential, nonessential, labels, size
+
+
+@st.fragment
+def render_curve_result(prefix):
+    """Redraw labels and highlight markers without rerunning dataset loading."""
+    result = st.session_state.get(f"{prefix}_result")
+    if not result:
+        return
+    essential, nonessential, labels, size = figure_controls()
+    n_cell_lines = result["metadata"].get("cohort_rows", 0)
+    if prefix == "rank":
+        fig = create_rank_plot(result["rankings"], result["genes"], essential, nonessential,
+                               n_cell_lines, labels, size)
+    else:
+        cfg = result["config"]
+        fig = create_multilayer_rank_plot(
+            result["rankings"], cfg["background"], cfg["highlight"],
+            cfg["background_color"], cfg["highlight_color"],
+            essential, nonessential, n_cell_lines, labels, size)
+    centered_plot(fig)
+    render_score_contrast(result)
+    result_downloads(result, fig, prefix)
+
+
+def attach_contrast(result, genes):
+    """Record the descriptive cohort-minus-panel difference when a cancer type is selected."""
+    if not cohort or pan_rankings is None:
+        return result
+    table = cohort_mean_contrast(genes, gene_rankings, pan_rankings)
+    result["contrast"] = table
+    result["metadata"]["cohort_contrast"] = table.to_dict(orient="records")
+    result["metadata"]["cohort_contrast_definition"] = (
+        "Selected cancer-type mean minus the all-lineage mean. "
+        "Descriptive only; not a test of selectivity or significance."
+    )
+    return result
 
 
 def input_draft(text='', file=None, **options):
@@ -1588,11 +1745,6 @@ with st.sidebar:
     else:
         cohort, all_lineages, df_scope = [], [], df
         st.caption(t('lineage_missing'))
-    with st.expander(ui('Figure settings', '图形设置'), expanded=False):
-        essential_gene = st.text_input(t('essential'), value='MYC', key='reference_a').strip().upper()
-        nonessential_gene = st.text_input(t('nonessential'), value='PTEN', key='reference_b').strip().upper()
-        show_labels = st.checkbox(t('show_labels'), value=True, key='show_labels')
-        point_size = st.slider(t('point_size'), 2, 8, 4, key='point_size')
 
 context = json.dumps({'sha256': source_sha, 'cohort': sorted(cohort),
                       'gene_columns': gene_columns, 'source': uploaded_file.name if uploaded_file else matrix_path.name}, sort_keys=True)
@@ -1604,6 +1756,11 @@ if st.session_state.get('_analysis_context') != context_hash:
     st.session_state['_analysis_context'] = context_hash
 
 gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_columns)
+pan_rankings = None
+if cohort:
+    pan_context = json.dumps({'sha256': source_sha, 'cohort': 'ALL', 'gene_columns': gene_columns,
+                              'source': uploaded_file.name if uploaded_file else matrix_path.name}, sort_keys=True)
+    pan_rankings, _ = compute_gene_rankings(hashlib.sha256(pan_context.encode()).hexdigest(), df, gene_columns)
 n_cell_lines = len(df_scope)
 hero_version = t('custom_dataset') if uploaded_file is not None else provenance.get('release', DATA_VERSION)
 st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
@@ -1648,7 +1805,7 @@ dataset_metadata = {
     'cohort_rows': n_cell_lines, 'ranked_genes': len(gene_rankings),
     'mean_score_cutoff': ESSENTIALITY_THRESHOLD,
     'software': {name: version(name) for name in ['streamlit', 'pandas', 'numpy', 'plotly', 'kaleido', 'pillow']},
-    'analysis_schema': 3,
+    'analysis_schema': 4,
 }
 
 view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi'], default='rank',
@@ -1666,24 +1823,22 @@ if view == 'rank':
         submitted = input_actions('rank')
     if submitted:
         try:
-            parsed = parse_input(gene_text, gene_file)
-            matched, missing = match_genes(gene_rankings, parsed['genes'])
+            parsed, matched, missing, resolved = classify_input(gene_text, gene_file)
             if matched:
-                st.session_state.rank_result = build_result(matched, {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing}}, draft=draft)
+                st.session_state.rank_result = attach_contrast(build_result(
+                    matched, {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing, 'resolved': resolved}},
+                    draft=draft), matched)
             else:
-                show_matches(parsed, matched, missing)
                 st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
         except (ValueError, UnicodeError) as exc:
             st.error(str(exc))
     result = st.session_state.get('rank_result')
     render_run_status('rank', draft, result)
+    render_draft_feedback(gene_text, gene_file, draft, result)
     if result:
         match = result['matches']['targets']
-        show_matches(match['parsed'], match['matched'], match['missing'])
-        fig = create_rank_plot(result['rankings'], result['genes'], essential_gene, nonessential_gene,
-                               n_cell_lines, show_labels, point_size)
-        centered_plot(fig)
-        result_downloads(result, fig, 'rank')
+        show_matches(match['parsed'], match['matched'], match['missing'], resolved=match.get('resolved'))
+        render_curve_result('rank')
 
 elif view == 'box':
     st.caption(ui('Compare score distributions across cancer types for each gene.', '比较每个基因在不同癌种中的分数分布。'))
@@ -1706,14 +1861,14 @@ elif view == 'box':
                 all_points = st.checkbox(ui('Show all cell lines', '显示全部细胞系散点'), key='box_points')
             draft = input_draft(gene_text, gene_file, method=method, lineages=box_lineages, sort=sort_mode, all_points=all_points)
             submitted = input_actions('box')
+        render_draft_feedback(gene_text, gene_file, draft, st.session_state.get('box_result'))
         candidate = st.session_state.get('box_candidates')
         if candidate and candidate['input_signature'] != input_signature(draft):
             st.session_state.pop('box_candidates', None)
         if submitted:
             try:
-                parsed = parse_input(gene_text, gene_file)
-                matched, missing = match_genes(gene_rankings, parsed['genes'])
-                match = {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing}}
+                parsed, matched, missing, resolved = classify_input(gene_text, gene_file)
+                match = {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing, 'resolved': resolved}}
                 config = {'lineages': box_lineages, 'sort': sort_mode, 'all_points': all_points}
                 st.session_state.pop('box_candidates', None)
                 if len(matched) > 8:
@@ -1724,9 +1879,8 @@ elif view == 'box':
                     frame = get_lineage_frame(df_scope, matched, gene_rankings, lineage_col)
                     if box_lineages:
                         frame = frame[frame.lineage.isin(box_lineages)]
-                    st.session_state.box_result = build_result(matched, match, config, frame, draft)
+                    st.session_state.box_result = attach_contrast(build_result(matched, match, config, frame, draft), matched)
                 else:
-                    show_matches(parsed, matched, missing)
                     st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
             except (ValueError, UnicodeError) as exc:
                 st.error(str(exc))
@@ -1742,14 +1896,15 @@ elif view == 'box':
                 frame = get_lineage_frame(df_scope, chosen, gene_rankings, lineage_col)
                 if candidate['config']['lineages']:
                     frame = frame[frame.lineage.isin(candidate['config']['lineages'])]
-                st.session_state.box_result = build_result(chosen, candidate['matches'], candidate['config'], frame, candidate['draft'])
+                st.session_state.box_result = attach_contrast(
+                    build_result(chosen, candidate['matches'], candidate['config'], frame, candidate['draft']), chosen)
                 del st.session_state.box_candidates
                 st.rerun()
         result = st.session_state.get('box_result')
         render_run_status('box', draft, result)
         if result:
             match = result['matches']['targets']
-            show_matches(match['parsed'], match['matched'], match['missing'])
+            show_matches(match['parsed'], match['matched'], match['missing'], resolved=match.get('resolved'))
             st.caption(ui('Displayed genes: ', '实际展示基因：') + ', '.join(result['genes']))
             valid_data = result['plot_data'].dropna(subset=['crispr_score'])
             if valid_data.empty:
@@ -1760,6 +1915,7 @@ elif view == 'box':
                     st.info(ui('No valid scores in these groups: ', '这些基因在所选分组没有有效分数：') + ', '.join(absent))
                 fig = create_lineage_boxplot(valid_data, result['genes'], result['config']['sort'], result['config']['all_points'])
                 st.plotly_chart(fig, config=PLOT_CONFIG, width='stretch', theme=None)
+                render_score_contrast(result)
                 result_downloads(result, fig, 'box')
 
 elif view == 'multi':
@@ -1781,31 +1937,26 @@ elif view == 'multi':
         submitted = input_actions('multi')
     if submitted:
         bg_parsed, hl_parsed = parse_gene_text(bg_text), parse_gene_text(hl_text)
-        bg_matched, bg_missing = match_genes(gene_rankings, bg_parsed['genes'])
-        hl_matched, hl_missing = match_genes(gene_rankings, hl_parsed['genes'])
-        matches = {'background': {'parsed': bg_parsed, 'matched': bg_matched, 'missing': bg_missing},
-                   'highlight': {'parsed': hl_parsed, 'matched': hl_matched, 'missing': hl_missing}}
+        bg_matched, bg_missing, bg_resolved = resolve_gene_list(gene_rankings, bg_parsed['genes'], GENE_ALIASES)
+        hl_matched, hl_missing, hl_resolved = resolve_gene_list(gene_rankings, hl_parsed['genes'], GENE_ALIASES)
+        matches = {'background': {'parsed': bg_parsed, 'matched': bg_matched, 'missing': bg_missing, 'resolved': bg_resolved},
+                   'highlight': {'parsed': hl_parsed, 'matched': hl_matched, 'missing': hl_missing, 'resolved': hl_resolved}}
         if bg_matched or hl_matched:
             genes = list(dict.fromkeys(bg_matched + hl_matched))
-            st.session_state.multi_result = build_result(genes, matches, {'background': bg_matched, 'highlight': hl_matched,
-                                                                          'background_color': bg_color, 'highlight_color': hl_color}, draft=draft)
+            st.session_state.multi_result = attach_contrast(build_result(
+                genes, matches, {'background': bg_matched, 'highlight': hl_matched,
+                                 'background_color': bg_color, 'highlight_color': hl_color}, draft=draft), genes)
         else:
-            for key, title in [('background', t('bg_gene_set')), ('highlight', t('hl_gene_set'))]:
-                m = matches[key]
-                show_matches(m['parsed'], m['matched'], m['missing'], title)
             st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
     result = st.session_state.get('multi_result')
     render_run_status('multi', draft, result)
+    render_draft_feedback(bg_text, None, draft, result, t('bg_gene_set'))
+    render_draft_feedback(hl_text, None, draft, result, t('hl_gene_set'))
     if result:
         for key, title in [('background', t('bg_gene_set')), ('highlight', t('hl_gene_set'))]:
             match = result['matches'][key]
-            show_matches(match['parsed'], match['matched'], match['missing'], title)
-        cfg = result['config']
-        fig = create_multilayer_rank_plot(result['rankings'], cfg['background'], cfg['highlight'],
-                                          cfg['background_color'], cfg['highlight_color'],
-                                          essential_gene, nonessential_gene, n_cell_lines, show_labels)
-        centered_plot(fig)
-        result_downloads(result, fig, 'multi')
+            show_matches(match['parsed'], match['matched'], match['missing'], title, match.get('resolved'))
+        render_curve_result('multi')
 
 
 # ---- Gene × Drug correlation (temporarily hidden from the public UI) ----
@@ -1921,11 +2072,11 @@ if ENABLE_GENE_DRUG_UI:
                     if lin_key and restrict_lineage is None:
                         fig = create_lineage_scatter(
                             merged, corr_gene.upper(), drug_short + title_suffix,
-                            rho, p, point_size=point_size)
+                            rho, p, point_size=st.session_state.get('point_size', 4))
                     else:
                         fig = create_correlation_scatter(
                             merged, corr_gene.upper(), drug_short + title_suffix,
-                            rho, p, point_size=point_size)
+                            rho, p, point_size=st.session_state.get('point_size', 4))
                     centered_plot(fig)
 
                     if p is not None and p < 0.05 and rho > 0:

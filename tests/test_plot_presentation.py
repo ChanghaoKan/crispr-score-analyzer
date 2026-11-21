@@ -18,6 +18,7 @@ from figure_export import prepare_export_figure
 def plot_helpers():
     names = {
         'get_theme', 'ui', 'apply_theme_to_fig', '_rank_label_annotations',
+        '_ranking_fingerprint', '_cached_background_trace',
         'build_rank_figure', 'create_rank_plot', 'create_multilayer_rank_plot',
         'create_lineage_boxplot',
     }
@@ -101,6 +102,15 @@ def test_localized_legends_and_labels_off_retain_gene_hover(
     assert set(fig.data[-1].text) == {'E2F1', 'E2F3'}
     assert fig.layout.legend.font.size >= 12
     assert fig.layout.xaxis.tickfont.size >= 12
+
+
+def test_point_size_reuses_the_background_curve(plot_helpers, rankings):
+    small = plot_helpers['create_rank_plot'](rankings, ['E2F1'], point_size=3)
+    large = plot_helpers['create_rank_plot'](rankings, ['E2F1'], point_size=8)
+    assert list(small.data[0].x) == list(large.data[0].x)
+    assert small.data[-1].marker.size != large.data[-1].marker.size
+    added = plot_helpers['create_rank_plot'](rankings, ['E2F1', 'GENE1'], point_size=8)
+    assert len(added.data[0].x) == len(small.data[0].x) - 1
 
 
 def test_large_background_stays_one_webgl_trace_without_duplicate_genes(plot_helpers):

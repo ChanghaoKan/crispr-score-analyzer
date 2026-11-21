@@ -41,11 +41,13 @@ The built-in matrix is stored in the repository as `data/depmap_chronos.npz`. Op
 ## Usage
 
 1. Select **Built-in** or **Custom CSV** under **Data Source** in the sidebar. The upload control appears for custom data; map plain-symbol gene columns explicitly when using a custom matrix.
-2. Choose **Cancer types** under **Analysis scope**. An empty selection uses all available lineages. Figure settings follow the cohort controls; language and theme are under **Preferences**.
+2. Choose **Cancer types** under **Analysis scope**. An empty selection uses all available lineages. Language and theme are under **Preferences**. Reference genes, labels, and point size are under **Figure settings** next to a ranking chart, so those display changes do not reload the dataset.
 3. Choose **Gene ranking**, **Cancer-type comparison**, or **Gene-set annotation**, enter gene symbols, and click **Run analysis**. **Load example** and **Clear** help edit the input.
 4. Review the run's genes, cohort, and UTC time above the plot. A compact results table appears below the plot, beside **Export figure** and **Download results** controls.
 
-Gene-list and per-view analysis edits are drafts until Run is clicked. After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly.
+Gene-list and per-view analysis edits are drafts until Run is clicked. The input reports matched symbols, previous or alias symbols, and names that are not in the matrix before Run. Alias resolution uses HGNC previous symbols and aliases that point to exactly one approved symbol in the bundled matrix (`data/gene_aliases.json`). After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly. The background ranking curve is reused when only those display settings change.
+
+When one or more cancer types are selected, a result also shows each gene's selected mean minus its all-lineage mean. A negative difference is a lower score in the selected cancer types. The difference is descriptive. It is not a test of selectivity or significance.
 
 ### Gene ranking
 

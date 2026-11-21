@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 
 from analysis_core import (
-    analyze_dataset, builtin_provenance_path, find_lineage_column, get_lineage_frame,
-    lineage_summary, make_analysis_bundle, match_genes, parse_gene_text, parse_gene_upload,
-    read_builtin_matrix, read_score_csv,
+    analyze_dataset, builtin_provenance_path, cohort_mean_contrast, find_lineage_column,
+    get_lineage_frame, lineage_summary, make_analysis_bundle, match_genes, parse_gene_text,
+    parse_gene_upload, read_builtin_matrix, read_score_csv, resolve_gene_list,
 )
 
 
@@ -176,6 +176,46 @@ class LineageAndExportTests(unittest.TestCase):
         frame = get_lineage_frame(self.df.drop(columns="OncotreeLineage"), ["MYC"], self.ranks)
         self.assertEqual(frame["lineage"].tolist(), ["Unknown", "Unknown"])
         self.assertEqual(frame["crispr_score"].tolist(), [-1, -3])
+
+
+class GeneResolutionTests(unittest.TestCase):
+    def test_alias_resolves_only_when_the_approved_symbol_is_ranked(self):
+        ranks, _ = analyze_dataset(pd.DataFrame({"KMT2A (4297)": [-1.2], "EGFR (1956)": [-0.2]}))
+        aliases = {"MLL": "KMT2A", "ERBB1": "EGFR", "GONE": "NOT_IN_MATRIX"}
+        matched, missing, resolved = resolve_gene_list(ranks, ["MLL", "EGFR", "ERBB1", "GONE"], aliases)
+        self.assertEqual(matched, ["KMT2A", "EGFR"])
+        self.assertEqual(missing, ["GONE"])
+        self.assertEqual(resolved, [
+            {"input": "MLL", "gene": "KMT2A"},
+            {"input": "ERBB1", "gene": "EGFR"},
+        ])
+
+    def test_direct_symbol_wins_over_an_alias_of_the_same_text(self):
+        ranks, _ = analyze_dataset(pd.DataFrame({"TP53 (7157)": [-0.4]}))
+        matched, missing, resolved = resolve_gene_list(ranks, ["tp53"], {"TP53": "OTHER"})
+        self.assertEqual(matched, ["TP53"])
+        self.assertEqual(missing, [])
+        self.assertEqual(resolved, [])
+
+
+class CohortContrastTests(unittest.TestCase):
+    def test_difference_is_selected_mean_minus_all_lineage_mean(self):
+        panel, _ = analyze_dataset(pd.DataFrame({
+            "MYC (4609)": [-2.0, -1.0, 0.0],
+            "PTEN (5728)": [0.2, 0.2, 0.2],
+        }))
+        cohort, _ = analyze_dataset(pd.DataFrame({
+            "MYC (4609)": [-2.0, -1.0],
+            "PTEN (5728)": [0.2, 0.2],
+        }))
+        table = cohort_mean_contrast(["PTEN", "MYC"], cohort, panel)
+        self.assertEqual(table["gene"].tolist(), ["PTEN", "MYC"])
+        myc = table.set_index("gene").loc["MYC"]
+        self.assertAlmostEqual(myc["cohort_mean"], -1.5)
+        self.assertAlmostEqual(myc["panel_mean"], -1.0)
+        self.assertAlmostEqual(myc["difference"], -0.5)
+        self.assertEqual(int(myc["cohort_n"]), 2)
+        self.assertEqual(int(myc["panel_n"]), 3)
 
 
 class NumericMatrixTests(unittest.TestCase):

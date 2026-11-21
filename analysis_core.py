@@ -308,6 +308,65 @@ def match_genes(rankings: pd.DataFrame, genes: Iterable[str]):
     return matched, not_found
 
 
+def resolve_gene_list(rankings: pd.DataFrame, genes: Iterable[str], aliases: Mapping | None = None):
+    """Match current symbols, then unique previous or alias symbols.
+
+    ``aliases`` maps an uppercase alias to one uppercase approved symbol.
+    A direct symbol match wins. An alias is used only when that approved
+    symbol is in the ranking. The same approved symbol is returned once.
+    """
+    aliases = {str(key).upper(): str(value).upper() for key, value in (aliases or {}).items()}
+    lookup = dict(zip(rankings["gene_upper"], rankings["gene"]))
+    matched, missing, resolved, seen, matched_seen = [], [], [], set(), set()
+    for gene in genes:
+        key = str(gene).strip().upper()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        approved = key if key in lookup else aliases.get(key)
+        if approved in lookup:
+            canonical = lookup[approved]
+            if approved != key:
+                resolved.append({"input": key, "gene": canonical})
+            if canonical not in matched_seen:
+                matched.append(canonical)
+                matched_seen.add(canonical)
+        else:
+            missing.append(str(gene).strip())
+    return matched, missing, resolved
+
+
+def cohort_mean_contrast(genes: Iterable[str], cohort_rankings: pd.DataFrame, panel_rankings: pd.DataFrame) -> pd.DataFrame:
+    """Selected-scope mean minus the all-lineage mean for each requested gene.
+
+    The difference is descriptive. It is not a test of cancer-type selectivity.
+    """
+    columns = ["gene", "cohort_mean", "panel_mean", "difference", "cohort_n", "panel_n"]
+    cohort = cohort_rankings.set_index("gene", drop=False)
+    panel = panel_rankings.set_index("gene", drop=False)
+    rows = []
+    for gene in genes:
+        if gene not in cohort.index or gene not in panel.index:
+            continue
+        cohort_row = cohort.loc[gene]
+        panel_row = panel.loc[gene]
+        if isinstance(cohort_row, pd.DataFrame):
+            cohort_row = cohort_row.iloc[0]
+        if isinstance(panel_row, pd.DataFrame):
+            panel_row = panel_row.iloc[0]
+        cohort_mean = float(cohort_row["mean_score"])
+        panel_mean = float(panel_row["mean_score"])
+        rows.append({
+            "gene": gene,
+            "cohort_mean": cohort_mean,
+            "panel_mean": panel_mean,
+            "difference": cohort_mean - panel_mean,
+            "cohort_n": int(cohort_row["n_valid"]),
+            "panel_n": int(panel_row["n_valid"]),
+        })
+    return pd.DataFrame(rows, columns=columns)
+
+
 def find_lineage_column(df: pd.DataFrame):
     """Prefer exact coarse-lineage labels; never select a sub-lineage label."""
     lookup = {str(column).strip().casefold(): column for column in df.columns}
