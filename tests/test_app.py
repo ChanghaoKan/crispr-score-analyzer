@@ -3,11 +3,13 @@
 import csv
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
+import numpy as np
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
@@ -33,7 +35,7 @@ def score_csv(offset=0.0):
 
 
 def built_in_score_csv():
-    """Mirror the pinned public file: seven metadata columns, then plain symbols."""
+    """Plain-symbol upload used to require explicit column mapping."""
     content = io.StringIO()
     writer = csv.writer(content)
     writer.writerow([
@@ -44,6 +46,33 @@ def built_in_score_csv():
     for row in rows[1:]:
         writer.writerow([row[0], "Cell " + row[0], row[1], "Subtype", "Cancer", "Type6", "Type4", *row[2:]])
     return content.getvalue().encode("utf-8")
+
+
+def write_builtin_matrix(path: Path):
+    """Float64 fixture with the same scores as ``score_csv`` and DepMap-style headers."""
+    rows = list(csv.reader(io.StringIO(score_csv().decode("utf-8"))))
+    body = rows[1:]
+    genes = np.array([column for column in rows[0][2:]], dtype="U32")
+    scores = np.array([[float(value) for value in row[2:]] for row in body], dtype=np.float64)
+    np.savez_compressed(
+        path,
+        scores=scores,
+        genes=genes,
+        depmap_id=np.array([row[0] for row in body], dtype="U16"),
+        cell_line_display_name=np.array([f"Cell {row[0]}" for row in body], dtype="U32"),
+        lineage=np.array([row[1] for row in body], dtype="U16"),
+    )
+    provenance = {
+        "release": "DepMap Public 26Q3",
+        "score_type": "Chronos Gene Effect",
+        "source": "test-fixture",
+        "files": {"CRISPRGeneEffect.csv": {"sha256": "fixture", "md5": "fixture", "bytes": 0}},
+        "n_models": len(body),
+        "n_genes": len(genes),
+        "score_dtype": "float64",
+        "lineage_column": "lineage",
+    }
+    path.with_suffix(".provenance.json").write_text(json.dumps(provenance), encoding="utf-8")
 
 
 class Upload(io.BytesIO):
@@ -59,8 +88,10 @@ class AppSubmissionTests(unittest.TestCase):
         st.cache_resource.clear()
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.data_path = Path(self.tempdir.name) / "scores.csv"
-        self.data_path.write_bytes(built_in_score_csv())
+        self.matrix_path = Path(self.tempdir.name) / "matrix.npz"
+        write_builtin_matrix(self.matrix_path)
+        os.environ["CRISPR_BUILTIN_MATRIX"] = str(self.matrix_path)
+        self.addCleanup(lambda: os.environ.pop("CRISPR_BUILTIN_MATRIX", None))
         self.current_upload = None
         original_uploader = st.file_uploader
 
@@ -69,11 +100,8 @@ class AppSubmissionTests(unittest.TestCase):
                 return self.current_upload
             return original_uploader(*args, **kwargs)
 
-        hf_patch = patch("huggingface_hub.hf_hub_download", return_value=str(self.data_path))
         upload_patch = patch("streamlit.file_uploader", side_effect=upload_fixture)
-        hf_patch.start()
         upload_patch.start()
-        self.addCleanup(hf_patch.stop)
         self.addCleanup(upload_patch.stop)
         self.app = AppTest.from_file(str(APP_PATH), default_timeout=30).run()
         self.assert_healthy()

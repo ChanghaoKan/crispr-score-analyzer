@@ -1,0 +1,26 @@
+{
+  "release": "DepMap Public 26Q3",
+  "score_type": "Chronos Gene Effect",
+  "source": "https://depmap.org/portal/",
+  "retrieved": "2026-11-21",
+  "files": {
+    "CRISPRGeneEffect.csv": {
+      "bytes": 497139964,
+      "md5": "a0a87b48137996f620437604b8c2eb79",
+      "sha256": "1e0c492944a7297c0eda179081a1e81a1cfe41a97628facd7eddbdda1a7504ee"
+    },
+    "Model.csv": {
+      "bytes": 789805,
+      "md5": "a7423dbf345fcf5a822ab5fc7e854e5c",
+      "sha256": "65eb1895800e71a963a3ab56e5d08c8d006cb0d9e7aa68f7e34a3810a2a3cbc7"
+    }
+  },
+  "matrix_sha256": "ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67",
+  "n_models": 1361,
+  "n_genes": 18434,
+  "score_dtype": "float32",
+  "float32_max_abs_error_first_100_genes": 1.1905129371214684e-07,
+  "lineage_column": "OncotreeLineage",
+  "name_column": "CellLineName",
+  "terms": "DepMap portal terms cover this matrix. The MIT license covers only the application code."
+}

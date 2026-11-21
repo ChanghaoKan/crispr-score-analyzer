@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import re
@@ -10,6 +11,7 @@ import zipfile
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -146,6 +148,32 @@ def _numeric_values(series: pd.Series) -> tuple[pd.Series, dict]:
     return numeric.where(finite).astype(float), counts
 
 
+def _numeric_block_stats(df: pd.DataFrame, positions: list[int]):
+    """Finite-value counts and means for numeric columns, reduced in chunks.
+
+    Means are float64 sums of finite values. Infinite values are excluded from
+    the mean and counted separately, matching ``_numeric_values``.
+    """
+    width = len(positions)
+    means = np.full(width, np.nan, dtype=float)
+    n_valid = np.zeros(width, dtype=int)
+    n_missing = np.zeros(width, dtype=int)
+    n_infinite = np.zeros(width, dtype=int)
+    for start in range(0, width, 2048):
+        chunk = positions[start:start + 2048]
+        values = df.iloc[:, chunk].to_numpy(dtype=np.float64)
+        finite = np.isfinite(values)
+        valid = finite.sum(axis=0)
+        infinite = np.isinf(values).sum(axis=0)
+        summed = np.where(finite, values, 0.0).sum(axis=0)
+        stop = start + len(chunk)
+        n_valid[start:stop] = valid
+        n_infinite[start:stop] = infinite
+        n_missing[start:stop] = values.shape[0] - valid
+        np.divide(summed, valid, out=means[start:stop], where=valid > 0)
+    return means, n_valid, n_missing, n_infinite
+
+
 def analyze_dataset(df: pd.DataFrame, gene_columns: Iterable[str] | None = None):
     """Rank finite per-gene means, using schema or explicit column selection.
 
@@ -178,9 +206,27 @@ def analyze_dataset(df: pd.DataFrame, gene_columns: Iterable[str] | None = None)
             candidates.append((position, column, symbol, record))
 
     counts = Counter(symbol.upper() for _, _, symbol, _ in candidates)
+    use_fast = bool(candidates) and all(
+        pd.api.types.is_numeric_dtype(df.iloc[:, position].dtype)
+        for position, _, _, _ in candidates
+    )
+    if use_fast:
+        means, valid_counts, missing_counts, infinite_counts = _numeric_block_stats(
+            df, [position for position, _, _, _ in candidates]
+        )
     rows = []
-    for position, column, symbol, record in candidates:
-        numeric, value_counts = _numeric_values(df.iloc[:, position])
+    for index, (position, column, symbol, record) in enumerate(candidates):
+        if use_fast:
+            value_counts = {
+                "n_valid": int(valid_counts[index]),
+                "n_missing": int(missing_counts[index]),
+                "n_invalid": 0,
+                "n_infinite": int(infinite_counts[index]),
+            }
+            mean_score = float(means[index]) if value_counts["n_valid"] else np.nan
+        else:
+            numeric, value_counts = _numeric_values(df.iloc[:, position])
+            mean_score = float(numeric.mean()) if value_counts["n_valid"] else np.nan
         record.update(value_counts)
         if counts[symbol.upper()] > 1:
             record["reason"] = "ambiguous_gene_symbol"
@@ -190,7 +236,7 @@ def analyze_dataset(df: pd.DataFrame, gene_columns: Iterable[str] | None = None)
             record.update(status="included", reason="included")
             rows.append({
                 "gene_raw": column, "gene": symbol, "gene_upper": symbol.upper(),
-                "mean_score": float(numeric.mean()),
+                "mean_score": mean_score,
                 "n_valid": value_counts["n_valid"], "n_missing": value_counts["n_missing"],
                 "missing_fraction": value_counts["n_missing"] / len(df) if len(df) else np.nan,
             })
@@ -203,6 +249,47 @@ def analyze_dataset(df: pd.DataFrame, gene_columns: Iterable[str] | None = None)
         rankings["percentile"] = rankings["rank"] / len(rankings) * 100
         rankings = rankings[RANKING_COLUMNS]
     return rankings, pd.DataFrame(records, columns=DIAGNOSTIC_COLUMNS)
+
+
+def file_sha256(path) -> str:
+    """SHA-256 of a file, read in 1 MiB chunks."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def builtin_provenance_path(path) -> Path:
+    """Provenance JSON stored beside a bundled ``.npz`` matrix."""
+    return Path(path).with_suffix(".provenance.json")
+
+
+def read_builtin_matrix(path) -> pd.DataFrame:
+    """Load the bundled Chronos matrix and the model columns the app expects.
+
+    ``scores`` is float32 or float64 with NaN for unobserved values. Gene
+    labels keep the DepMap ``SYMBOL (Entrez ID)`` form so the normal column
+    rules apply. The returned frame is ``depmap_id``, ``cell_line_display_name``,
+    ``lineage``, then one column per gene.
+    """
+    with np.load(path, allow_pickle=False) as archive:
+        scores = np.array(archive["scores"], copy=True)
+        genes = [str(gene) for gene in archive["genes"].tolist()]
+        depmap_id = [str(value) for value in archive["depmap_id"].tolist()]
+        names = [str(value) for value in archive["cell_line_display_name"].tolist()]
+        lineage = [str(value) for value in archive["lineage"].tolist()]
+    if scores.ndim != 2 or scores.dtype not in (np.float32, np.float64):
+        raise ValueError("Built-in score matrix must be a float32 or float64 array")
+    if scores.shape != (len(depmap_id), len(genes)):
+        raise ValueError("Built-in score matrix does not match its model or gene labels")
+    if not (len(depmap_id) == len(names) == len(lineage)):
+        raise ValueError("Built-in model metadata lengths do not match")
+    frame = pd.DataFrame(scores, columns=pd.Index(genes, dtype="object"))
+    frame.insert(0, "lineage", pd.Series(lineage, dtype="string"))
+    frame.insert(0, "cell_line_display_name", pd.Series(names, dtype="string"))
+    frame.insert(0, "depmap_id", pd.Series(depmap_id, dtype="string"))
+    return frame
 
 
 def match_genes(rankings: pd.DataFrame, genes: Iterable[str]):

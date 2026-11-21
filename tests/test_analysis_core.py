@@ -9,8 +9,9 @@ import numpy as np
 import pandas as pd
 
 from analysis_core import (
-    analyze_dataset, find_lineage_column, get_lineage_frame, lineage_summary,
-    make_analysis_bundle, match_genes, parse_gene_text, parse_gene_upload, read_score_csv,
+    analyze_dataset, builtin_provenance_path, find_lineage_column, get_lineage_frame,
+    lineage_summary, make_analysis_bundle, match_genes, parse_gene_text, parse_gene_upload,
+    read_builtin_matrix, read_score_csv,
 )
 
 
@@ -175,6 +176,46 @@ class LineageAndExportTests(unittest.TestCase):
         frame = get_lineage_frame(self.df.drop(columns="OncotreeLineage"), ["MYC"], self.ranks)
         self.assertEqual(frame["lineage"].tolist(), ["Unknown", "Unknown"])
         self.assertEqual(frame["crispr_score"].tolist(), [-1, -3])
+
+
+class NumericMatrixTests(unittest.TestCase):
+    def test_fast_numeric_ranking_matches_object_columns(self):
+        raw = np.array([
+            [-1.25, 0.2],
+            [np.nan, 0.2],
+            [np.inf, 0.2],
+            [0.5, np.nan],
+        ])
+        genes = ["MYC (4609)", "TP53 (7157)"]
+        numeric = pd.DataFrame(raw, columns=genes)
+        text = pd.DataFrame({gene: pd.Series(raw[:, index], dtype=object) for index, gene in enumerate(genes)})
+        ranks_fast, diag_fast = analyze_dataset(numeric)
+        ranks_slow, diag_slow = analyze_dataset(text)
+        pd.testing.assert_series_equal(ranks_fast["mean_score"], ranks_slow["mean_score"])
+        pd.testing.assert_series_equal(ranks_fast["n_valid"].astype(int), ranks_slow["n_valid"].astype(int))
+        pd.testing.assert_series_equal(diag_fast["n_infinite"].astype(int), diag_slow["n_infinite"].astype(int))
+        pd.testing.assert_series_equal(diag_fast["n_missing"].astype(int), diag_slow["n_missing"].astype(int))
+        self.assertEqual(ranks_fast["gene"].tolist(), ["MYC", "TP53"])
+        self.assertEqual(float(ranks_fast.loc[ranks_fast["gene"] == "MYC", "mean_score"].iloc[0]), -0.375)
+
+    def test_builtin_matrix_roundtrip_uses_standard_gene_headers(self):
+        scores = np.array([[-1.5, 0.25], [-1.0, np.nan]], dtype=np.float32)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "matrix.npz"
+            np.savez_compressed(
+                path,
+                scores=scores,
+                genes=np.array(["MYC (4609)", "PTEN (5728)"], dtype="U32"),
+                depmap_id=np.array(["ACH-000001", "ACH-000002"], dtype="U16"),
+                cell_line_display_name=np.array(["Alpha", "Beta"], dtype="U16"),
+                lineage=np.array(["Liver", ""], dtype="U16"),
+            )
+            frame = read_builtin_matrix(path)
+        self.assertEqual(list(frame.columns[:3]), ["depmap_id", "cell_line_display_name", "lineage"])
+        ranks, _ = analyze_dataset(frame)
+        self.assertEqual(ranks["gene"].tolist(), ["MYC", "PTEN"])
+        self.assertEqual(find_lineage_column(frame), "lineage")
+        self.assertTrue(str(builtin_provenance_path("data/depmap_chronos.npz")).endswith("depmap_chronos.provenance.json"))
 
 
 if __name__ == "__main__":

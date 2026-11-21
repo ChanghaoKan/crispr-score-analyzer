@@ -11,6 +11,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import io
+import os
 import re
 import copy
 import hashlib
@@ -18,9 +19,11 @@ from html import escape
 import json
 from datetime import datetime, timezone
 from importlib.metadata import version
+from pathlib import Path
 from analysis_core import (analyze_dataset, parse_gene_text, parse_gene_upload,
                            match_genes, find_lineage_column, get_lineage_frame,
-                           lineage_summary, make_analysis_bundle, read_score_csv)
+                           lineage_summary, make_analysis_bundle, read_score_csv,
+                           read_builtin_matrix, file_sha256, builtin_provenance_path)
 from figure_export import export_fingerprint, render_figure_bytes, MAX_PNG_PIXELS
 
 # =============================================================================
@@ -34,13 +37,12 @@ st.set_page_config(
 )
 
 # =============================================================================
-# 数据源配置 (Hugging Face)
+# 内置矩阵。打开页面时从仓库读取，不再从 Hugging Face 下载 CSV。
+# 实验性的基因 × 药物文件仍放在同一个 HF 数据集里，公开界面不会加载它们。
 # =============================================================================
 HF_REPO_ID = "ChanghaoKan/crispr-depmap"
-HF_FILENAME = "CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv"
-HF_REVISION = "8400bf566411ed1df4e0784fdb9e97fdbaa371fd"
-USE_HUGGINGFACE = True
-DATA_VERSION = "DepMap Public 25Q3"
+BUILTIN_MATRIX = Path(__file__).resolve().parent / "data" / "depmap_chronos.npz"
+DATA_VERSION = "DepMap Public 26Q3"
 SCORE_TYPE = "Chronos Gene Effect"
 ESSENTIALITY_THRESHOLD = -0.5
 
@@ -140,7 +142,7 @@ TRANSLATIONS = {
         'download_hint': '💡 Click a button to generate the file. Recommend **PDF** for publications. Use **SVG** for Illustrator/Inkscape editing.',
         'no_data_warn': '⚠️ Please configure a data source or upload data',
         'loading_upload': 'Loading uploaded data...',
-        'loading_hf': 'Loading the reference dataset...',
+        'loading_hf': 'Loading the reference matrix...',
         'loaded': '✅ Loaded',
         'acknowledgements': 'Acknowledgements',
         'data_from': 'Data Source',
@@ -248,7 +250,7 @@ TRANSLATIONS = {
         'download_hint': '💡 点击按钮生成文件。论文投稿推荐 **PDF**（矢量图）。需要编辑选 **SVG**（可在 Illustrator/Inkscape 中修改）。',
         'no_data_warn': '⚠️ 请配置数据源或上传数据文件',
         'loading_upload': '正在加载上传的数据...',
-        'loading_hf': '正在加载参考数据集...',
+        'loading_hf': '正在读取参考矩阵...',
         'loaded': '✅ 已加载',
         'acknowledgements': '致谢',
         'data_from': '数据来源',
@@ -536,23 +538,26 @@ def inject_css():
 # =============================================================================
 # 数据加载
 # =============================================================================
+def builtin_matrix_path() -> Path:
+    override = os.environ.get("CRISPR_BUILTIN_MATRIX")
+    return Path(override) if override else BUILTIN_MATRIX
+
+
 @st.cache_resource(show_spinner=False)
-def download_from_huggingface(repo_id: str, filename: str, revision: str = HF_REVISION):
+def load_builtin_data(path: str):
+    """Read the bundled matrix once per process. The cache key is the file path."""
+    matrix = Path(path)
+    provenance_path = builtin_provenance_path(matrix)
+    if not matrix.is_file():
+        return None, False, f"Built-in matrix not found: {matrix.name}"
     try:
-        from huggingface_hub import hf_hub_download
-    except ImportError:
-        return None, False, "huggingface_hub not installed"
-    try:
-        path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type="dataset", revision=revision)
-        digest = hashlib.sha256()
-        with open(path, 'rb') as source:
-            for chunk in iter(lambda: source.read(1024 * 1024), b''):
-                digest.update(chunk)
-        df = read_score_csv(path)
-        df.attrs['sha256'] = digest.hexdigest()
-        return df, True, None
-    except Exception as e:
-        return None, False, f"HF error: {str(e)}"
+        frame = read_builtin_matrix(matrix)
+        provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return None, False, f"Cannot read the built-in matrix: {exc}"
+    frame.attrs["sha256"] = file_sha256(matrix)
+    frame.attrs["provenance"] = provenance
+    return frame, True, None
 
 
 @st.cache_resource(show_spinner=False, max_entries=3)
@@ -1518,12 +1523,13 @@ with st.sidebar:
     if source_mode == 'custom':
         uploaded_file = st.file_uploader(t('upload_csv'), type=['csv'], key='dataset_file')
     else:
-        st.caption(f'{DATA_VERSION} · {SCORE_TYPE}')
+        st.caption(ui('Reference matrix included with the app', '参考矩阵随应用提供'))
 
 crispr_data = None
 source_sha = None
+matrix_path = builtin_matrix_path()
 source_id = ('upload:' + hashlib.sha256(uploaded_file.getvalue()).hexdigest()
-             if uploaded_file is not None else ('hf:' + HF_REVISION if source_mode == 'builtin' else 'custom:empty'))
+             if uploaded_file is not None else ('builtin:' + str(matrix_path) if source_mode == 'builtin' else 'custom:empty'))
 if st.session_state.get('_source_id') != source_id:
     for key in list(st.session_state):
         if key in {'rank_result', 'box_result', 'multi_result', 'box_candidates', 'box_display_genes', 'gene_columns', 'custom_mapping', 'box_lineages'} or key.startswith('_export_'):
@@ -1542,7 +1548,7 @@ try:
         crispr_data = load_uploaded_data(source_sha, uploaded_bytes)
     else:
         with st.spinner(t('loading_hf')):
-            crispr_data, success, err = download_from_huggingface(HF_REPO_ID, HF_FILENAME)
+            crispr_data, success, err = load_builtin_data(str(matrix_path))
         if not success:
             st.error(err)
     if crispr_data is None or crispr_data.empty:
@@ -1556,12 +1562,12 @@ except (ValueError, UnicodeError, pd.errors.ParserError, pd.errors.EmptyDataErro
 
 df = crispr_data
 source_sha = source_sha or df.attrs.get('sha256')
+provenance = df.attrs.get('provenance') or {}
 lineage_col = find_lineage_column(df)
 gene_columns = None
-builtin_metadata = ['depmap_id', 'cell_line_display_name', 'lineage_1', 'lineage_2', 'lineage_3', 'lineage_6', 'lineage_4']
-if uploaded_file is None and list(df.columns[:7]) == builtin_metadata:
-    gene_columns = df.columns[7:].tolist()
 with st.sidebar:
+    if uploaded_file is None:
+        st.caption(f"{provenance.get('release', DATA_VERSION)} · {provenance.get('score_type', SCORE_TYPE)}")
     if uploaded_file is not None:
         with st.expander(ui('Gene column mapping', '基因列映射')):
             st.caption(ui('Automatically recognize SYMBOL (ENTREZ_ID). For plain symbols, explicitly select score columns. Metadata is never inferred from score ranges.',
@@ -1589,7 +1595,7 @@ with st.sidebar:
         point_size = st.slider(t('point_size'), 2, 8, 4, key='point_size')
 
 context = json.dumps({'sha256': source_sha, 'cohort': sorted(cohort),
-                      'gene_columns': gene_columns, 'source': uploaded_file.name if uploaded_file else HF_FILENAME}, sort_keys=True)
+                      'gene_columns': gene_columns, 'source': uploaded_file.name if uploaded_file else matrix_path.name}, sort_keys=True)
 context_hash = hashlib.sha256(context.encode()).hexdigest()
 if st.session_state.get('_analysis_context') != context_hash:
     for key in list(st.session_state):
@@ -1599,7 +1605,7 @@ if st.session_state.get('_analysis_context') != context_hash:
 
 gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_columns)
 n_cell_lines = len(df_scope)
-hero_version = t('custom_dataset') if uploaded_file is not None else DATA_VERSION
+hero_version = t('custom_dataset') if uploaded_file is not None else provenance.get('release', DATA_VERSION)
 st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
             f'<div class="hero-kicker">GENE DEPENDENCY EXPLORER</div>'
             f'<h1 class="main-header"><span class="brand-accent">CRISPR</span> Score Analyzer</h1>'
@@ -1630,17 +1636,19 @@ with st.sidebar.expander(ui('Data overview', '数据概况')):
     st.caption(ui('Lower score means stronger dependency. Rankings use means within the analysis scope; they do not establish cancer-type selectivity. The −0.5 line is a screening reference.',
                   '分数越低，依赖越强。排名使用分析范围内的平均分，本身不能证明癌种特异性。−0.5 是筛选参考线。'))
 render_preferences()
+source_files = (provenance.get('files') or {}) if uploaded_file is None else {}
 dataset_metadata = {
-    'data_source': uploaded_file.name if uploaded_file else HF_REPO_ID,
-    'data_file': uploaded_file.name if uploaded_file else HF_FILENAME,
-    'data_release': 'custom' if uploaded_file else DATA_VERSION,
-    'data_revision': None if uploaded_file else HF_REVISION,
-    'data_sha256': source_sha, 'cohort_lineages': cohort or ['ALL'],
+    'data_source': uploaded_file.name if uploaded_file else 'bundled matrix',
+    'data_file': uploaded_file.name if uploaded_file else matrix_path.name,
+    'data_release': 'custom' if uploaded_file else provenance.get('release', DATA_VERSION),
+    'data_revision': None if uploaded_file else (source_files.get('CRISPRGeneEffect.csv') or {}).get('sha256'),
+    'data_sha256': source_sha, 'source_files': source_files or None,
+    'cohort_lineages': cohort or ['ALL'],
     'lineage_column': lineage_col, 'gene_column_mapping': gene_columns,
     'cohort_rows': n_cell_lines, 'ranked_genes': len(gene_rankings),
     'mean_score_cutoff': ESSENTIALITY_THRESHOLD,
     'software': {name: version(name) for name in ['streamlit', 'pandas', 'numpy', 'plotly', 'kaleido', 'pillow']},
-    'analysis_schema': 2,
+    'analysis_schema': 3,
 }
 
 view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi'], default='rank',

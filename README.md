@@ -36,7 +36,7 @@ python -m streamlit run app.py
 
 On Windows, create the environment with `python -m venv .venv` and activate it using `.venv\Scripts\Activate.ps1` in PowerShell. Open the local URL printed by Streamlit, normally `http://localhost:8501`.
 
-The initial built-in dataset download requires an internet connection. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for on-demand CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
+The built-in matrix is stored in the repository as `data/depmap_chronos.npz`. Opening the app reads that file from disk. It does not download the score matrix from Hugging Face. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for on-demand CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
 
 ## Usage
 
@@ -67,16 +67,31 @@ Enter a background gene set and a highlight set, choose their colors under **Ann
 
 ### Built-in data
 
-The default is the curated **DepMap Public 25Q3 Chronos Gene Effect** matrix hosted in [ChanghaoKan/crispr-depmap](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap).
+The default is **DepMap Public 26Q3 Chronos Gene Effect**, bundled with the app as `data/depmap_chronos.npz`. `data/depmap_chronos.provenance.json` records the release, the source-file checksums, and the matrix checksum.
 
 | Setting | Value |
 |---|---|
-| File | `CRISPR_(DepMap_Public_25Q3+Score,_Chronos)_subsetted.csv` |
-| Pinned Hugging Face revision | `8400bf566411ed1df4e0784fdb9e97fdbaa371fd` |
-| Metadata columns, in order | `depmap_id`, `cell_line_display_name`, `lineage_1`, `lineage_2`, `lineage_3`, `lineage_6`, `lineage_4` |
-| Gene columns | Plain gene symbols following these seven metadata columns |
+| Served file | `data/depmap_chronos.npz` (88 MB) |
+| Matrix | 1,361 models × 18,434 genes |
+| Scores | float32 Chronos gene effect; missing observations are NaN |
+| Metadata columns, in order | `depmap_id`, `cell_line_display_name`, `lineage` |
+| Gene columns | `SYMBOL (Entrez ID)`, taken from `CRISPRGeneEffect.csv` |
+| Lineage | `OncotreeLineage` from the same release's `Model.csv` |
 
-The app explicitly maps this known schema only for the built-in file. It uses `lineage_1` for its cancer-type scope. Uploaded files do not inherit the built-in column assumptions. The number of ranked genes can vary after column validation or cohort-specific missingness.
+The three metadata columns are not gene scores. `lineage` is the cancer-type scope. Uploaded files do not inherit these column names. The number of ranked genes can vary after column validation or cohort-specific missingness.
+
+Hugging Face is not on the path that opens the app. The previous 412 MB CSV had to be downloaded and parsed before the first figure, which is what made startup slow. Switching that same CSV to another host would not fix it. The bundled float32 matrix is already on disk after deployment; on this machine, reading it and ranking every gene takes about 1.2 seconds. [ChanghaoKan/crispr-depmap](https://huggingface.co/datasets/ChanghaoKan/crispr-depmap) still holds the older 25Q3 subset and the experimental 26Q1 gene–drug files. The public interface does not load those files.
+
+Rebuild the bundle from an official portal download of the same release:
+
+```bash
+python scripts/build_builtin_matrix.py \
+  --effect data/raw/CRISPRGeneEffect.csv \
+  --model data/raw/Model.csv \
+  --release "DepMap Public 26Q3"
+```
+
+`data/raw/` is gitignored. DepMap's terms cover the bundled matrix; the MIT license covers the application code. Cite the release used for a study: DepMap, Broad (2026). DepMap Public 26Q3. https://depmap.org/portal/
 
 ### Custom score matrices
 
@@ -99,7 +114,7 @@ ACH-000002,Example B,Lung,-2.13,0.08
 
 The app validates columns and scores before ranking, and reports input errors where they occur. Cell-line identifiers, names and lineage metadata describe samples and are not part of the gene ranking. Full validation records are available as `diagnostics.csv` inside **Prepare analysis ZIP** under **Details & reproducibility**. If no gene columns can be analyzed, the error message provides a separate **Download validation report** button.
 
-The `position` field in the full CSV is the column's **zero-based position in the original CSV**, not its gene rank. For the built-in matrix, the seven metadata columns occupy positions 0–6, so `A1BG` starts at position 7.
+The `position` field in the full CSV is the column's **zero-based position in the original table**, not its gene rank. For the bundled matrix, the three metadata columns occupy positions 0–2, so the first gene starts at position 3.
 
 ### Gene lists
 
@@ -170,7 +185,9 @@ GitHub Actions runs the full suite on Python 3.12. Automated checks do not repla
 
 See [CITATION.cff](CITATION.cff) for the recorded software citation. It identifies the project concept DOI as [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602). Cite the archived software version used for a study, and record the commit when using changes that are not part of that release.
 
-Also cite the underlying DepMap release and relevant methodology. The repository records this foundational reference:
+Also cite the underlying DepMap release and relevant methodology. The bundled matrix is DepMap Public 26Q3. The repository records this foundational reference:
+
+> DepMap, Broad (2026). DepMap Public 26Q3. https://depmap.org/portal/
 
 > Tsherniak, A., et al. (2017). Defining a Cancer Dependency Map. *Cell*, 170, 564–576. [doi:10.1016/j.cell.2017.06.010](https://doi.org/10.1016/j.cell.2017.06.010).
 
