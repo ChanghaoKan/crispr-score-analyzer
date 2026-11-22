@@ -16,6 +16,7 @@ import csv
 import json
 import sys
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -54,7 +55,7 @@ def main():
     payload = {
         "source": "HGNC complete set",
         "source_url": "https://www.genenames.org/",
-        "retrieved": "2026-11-21",
+        "retrieved": date.today().isoformat(),
         "note": "Previous symbols and aliases that map to exactly one approved symbol present in the bundled DepMap matrix. Current DepMap symbols are not redirected.",
         "map": alias_map(args.hgnc, matrix_symbols(args.matrix)),
     }

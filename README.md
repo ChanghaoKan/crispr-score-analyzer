@@ -8,13 +8,15 @@ This README describes the source in this checkout. The hosted app may lag behind
 
 ## Features
 
-- Explicit **Run analysis / Run · 生成图表** controls, example and clear actions, input matching feedback, and a record of the last submitted analysis in each view.
-- Gene dependency rankings within all available cell lines or selected cancer lineages.
-- Cancer-type comparisons with valid sample counts, median or alphabetical ordering, and optional individual cell-line points.
-- Two-layer gene-set annotation with configurable colors and reference genes.
-- English and Chinese interfaces, light and dark themes, a card-based layout with a consistent product title, compact navigation, and readable result tables with localized headers.
+- Explicit **Run analysis / Run · 生成图表** controls, quick gene search, curated one-click presets, cross-view gene transfer, shareable URL parameters, input matching feedback, and a record of the last submitted analysis in each view.
+- Gene dependency rankings within all available cell lines, selected cancer lineages, or optional primary-disease subtypes.
+- Cancer-type comparisons with valid sample counts, median or alphabetical ordering, stacked or 2-column grids, single-axis multi-gene comparison, and optional individual cell-line points.
+- Two-layer gene-set annotation with configurable colors, reference genes (with alias resolution), and compact or wide canvas options.
+- Standalone **Co-dependency** module supporting both **genome-wide single-gene scans** across all ranked genes in the active sidebar scope (including single-lineage cohorts) and **multi-gene correlation matrices** (2–25 genes), each paired with interactive lineage-colored cell-line scatter plots, Pearson/Spearman switching, and figure/CSV exports.
+- Deep-dive tabs below ranking, comparison, and annotation results: **Lineage preference** (lollipop with Top/Bottom 6 focus or compact diverging heatmap, cohort highlighting, median difference, `% < -0.5`, and figure export) and **Top cell lines** (most/least dependent cell-line models with CSV export).
+- English and Chinese interfaces with instant top-of-sidebar language and light/dark theme controls, compact hero statistics, and scrollable result tables with localized headers.
 - Custom score-matrix uploads with explicit gene-column mapping and downloadable validation records.
-- PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, and provenance.
+- PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, `lineage_preference.csv`, diagnostics, and provenance.
 
 ## Quick start
 
@@ -38,30 +40,41 @@ The built-in matrix is stored in the repository as `data/depmap_chronos.npz`. Op
 
 ## Usage
 
-1. Select **Built-in** or **Custom CSV** under **Data Source** in the sidebar. The upload control appears for custom data; map plain-symbol gene columns explicitly when using a custom matrix.
-2. Choose **Cancer types** under **Analysis scope**. An empty selection uses all available lineages. Language and theme are under **Preferences**. Reference genes, labels, and point size are under **Figure settings** next to a ranking chart, so those display changes do not reload the dataset.
-3. Choose **Gene ranking**, **Cancer-type comparison**, or **Gene-set annotation**, enter gene symbols, and click **Run analysis**. **Load example** and **Clear** help edit the input.
-4. Review the run's genes, cohort, and UTC time above the plot. A compact results table appears below the plot, beside **Export figure** and **Download results** controls.
+1. Switch **Language / 语言** and **Theme** directly at the top of the sidebar, then select **Built-in** or **Custom CSV** under **Data Source**. The upload control appears for custom data; map plain-symbol gene columns explicitly when using a custom matrix.
+2. Choose **Cancer types** (and optional **Disease / subtype** when present in the dataset) under **Analysis scope**. An empty selection uses all available lineages. Reference genes, labels, point size, and canvas aspect ratio are under **Figure settings** next to a ranking chart, so those display changes do not reload the dataset.
+3. Choose **Gene ranking**, **Cancer-type comparison**, **Gene-set annotation**, or **Co-dependency**, enter gene symbols (or pick them via **+ Search genes** / one-click presets), and click **Run analysis**. **Load example** and **Clear** help edit the input.
+4. Review the run's genes, cohort, and UTC time above the plot, or click **Compare lineages →** / **Locate in ranking →** / **Co-dependency →** to move genes seamlessly across views, or **Share URL** to write `?view=...&genes=...&cohort=...` into the browser address bar. A compact results table appears right below the primary plot beside **Export figure** and **Download results** controls, followed by deep-dive tabs.
 
-Gene-list and per-view analysis edits are drafts until Run is clicked. The input reports matched symbols, previous or alias symbols, and names that are not in the matrix before Run. Alias resolution uses HGNC previous symbols and aliases that point to exactly one approved symbol in the bundled matrix (`data/gene_aliases.json`). After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly. The background ranking curve is reused when only those display settings change.
+Gene-list and per-view analysis edits are drafts until Run is clicked. The input reports matched symbols, previous or alias symbols, and names that are not in the matrix before Run. Alias resolution uses HGNC previous symbols and aliases that point to exactly one approved symbol in the bundled matrix (`data/gene_aliases.json`). After leaving an edited input, the app indicates when it differs from the displayed analysis. Each view retains its last successful result within the current session; an unmatched submission leaves that result available. Running one view does not submit another view's inputs. Changing the dataset, gene-column mapping, or sidebar cohort clears previous results and requires another Run. Presentation settings, such as reference genes and label visibility, update the saved result's display directly and persist across tab switches. The background ranking curve is reused when only those display settings change.
 
-A result gives each gene its own lollipop of every cancer type, on that gene's own scale. A point left of zero means that type's mean is lower than the gene's all-type mean, so dependency is stronger there. The number printed beside the point is that difference, and the stronger types are at the top. Types with fewer than five cell lines are left off the figure. The full rows, including small types, are stored in the analysis ZIP. The difference is descriptive. It is not a test of selectivity or significance.
+The **Lineage preference** tab compares each cancer type against each gene's full-dataset average (independent of the sidebar cohort filter, with active sidebar lineages outlined/starred). Switch between per-gene **Lollipop** charts (with a **Top & bottom 6** vs **All types** toggle) and a compact diverging **Heatmap** (selected automatically when more than six genes are shown). Hover displays mean difference, median difference, fraction of cell lines below `-0.5`, and valid sample counts. Types with fewer than five cell lines are left off the figure, while all rows are saved in `lineage_preference.csv` and `metadata.json` inside the analysis ZIP. All preference values are descriptive and are not a test of selectivity or significance.
+
+The **Top cell lines** tab lists the most dependent (lowest score) and least dependent (highest score) cell lines per gene in the active scope for wet-lab model selection.
 
 ### Gene ranking
 
-Locate matched genes within the selected cohort's mean-score ranking. Hover over a point for the gene, mean score, rank, rank percentile, and valid sample count. Reference A and Reference B are configurable visual anchors.
+Locate matched genes within the selected cohort's mean-score ranking. Hover over a point for the gene, mean score, rank, rank percentile, and valid sample count. Reference A and Reference B are configurable visual anchors (supporting HGNC alias resolution and optional clearing).
 
-Ranking charts use a compact, centered 4:3 layout (640 × 480 px), with transparent gene labels and leader lines that keep the underlying score curve visible. Charts shrink to fit narrower screens. Gene-set annotation uses the same presentation, and figure exports default to these dimensions.
+Ranking charts default to a centered 4:3 layout (640 × 480 px) and also support a wide 16:10 canvas (840 × 500 px), with transparent gene labels and leader lines that keep the underlying score curve visible. Zoom, pan, and reset-axes controls remain available in the chart toolbar. Charts shrink to fit narrower screens. Gene-set annotation uses the same presentation, and figure exports default to these dimensions.
 
 ### Cancer-type comparison
 
-Choose genes, then open **Comparison options** to optionally restrict the displayed lineages within the sidebar cohort and select median-score or alphabetical ordering. Each group shows its valid `n`. Enable **Show all cell lines** to display every observation; point hover includes the cell-line name and identifier when available.
+Choose genes, then open **Comparison options** to optionally restrict the displayed lineages within the sidebar cohort, choose median-score or alphabetical ordering, switch between **By cancer type** and **Compare genes together** (single shared axis), or lay out multiple genes in **1 column** or **2 columns**. Each group shows its valid `n`. Enable **Show all cell lines** to display every observation; point hover includes the cell-line name and identifier when available.
 
 If more than eight genes match, choose up to eight explicitly before generating the plot. The complete submitted input remains recorded in the analysis metadata. The accompanying gene ranking uses the sidebar cohort; group summaries and plotted observations use the boxplot's additional lineage selection.
 
 ### Gene-set annotation
 
 Enter a background gene set and a highlight set, choose their colors under **Annotation colors**, and click **Run analysis**. Both lists receive matching feedback. Highlight genes take precedence when the sets overlap. This view uses the same cohort ranking as the gene-ranking view; it does not run a gene-set enrichment test.
+
+### Co-dependency
+
+Explore pairwise CRISPR dependency correlations across the cell lines in the active sidebar scope using either **Pearson r** or **Spearman ρ**:
+
+- **Genome-wide scan (1 gene):** Correlates a single query gene against every other ranked gene (~18,433 genes on the bundled matrix) using exact pairwise-complete observations. Because the scan respects the sidebar cancer-type and subtype filters, you can discover lineage-restricted co-dependencies within a specific cancer type as well as pan-cancer partners. Displays a diverging lollipop of top positive and negative partners, an interactive lineage-colored **cell-line scatter plot** with OLS trendline for any selected partner, top-50 positive/negative tables, one-click transfer of top partners to a correlation matrix or other views, and full-genome CSV / vector figure exports.
+- **Multi-gene matrix (2–25 genes):** Computes a pairwise correlation heatmap for a custom gene panel alongside an interactive Gene X vs Gene Y cell-line scatter plot, with figure and CSV exports.
+
+All co-dependency correlations are descriptive and may reflect shared pathways, lineage specificity, or common-essentiality structure rather than direct genetic interaction.
 
 ## Data and input formats
 
@@ -106,7 +119,7 @@ ACH-000002,Example B,Lung,-2.13,0.08
 - Automatic detection requires `SYMBOL (numeric Entrez ID)`, such as `MYC (4609)`. Numeric metadata is not automatically treated as a gene.
 - For plain-symbol headers such as `MYC`, open **Gene column mapping** in the sidebar, enable **Select columns manually**, and select the score columns. Other descriptive headers must first be renamed to valid symbols.
 - Include a cell-line identifier such as `ModelID`, `depmap_id`, or `cell_line`. Include `cell_line_display_name` or `CellLineName` for readable point labels. Without an identifier, row indices are used.
-- Include `lineage`, `OncotreeLineage`, or another recognized lineage column for cohort filtering and boxplots. Missing labels become `Unknown`; ranking remains available when lineage metadata is absent.
+- Include `lineage`, `OncotreeLineage`, or another recognized lineage column for cohort filtering and boxplots. Optional `OncotreePrimaryDisease` / `primary_disease` columns also enable subtype filtering. Missing labels become `Unknown`; ranking remains available when lineage metadata is absent.
 - All columns sharing an ambiguous gene symbol, ignoring case, are excluded. Repeated recognized metadata headers are rejected. The analysis ZIP includes column inclusion/exclusion reasons in `diagnostics.csv`.
 - Ensure each cell line occurs once. The app does not deduplicate repeated observations, so repeated rows would contribute repeatedly to means and group counts.
 
@@ -118,7 +131,7 @@ The `position` field in the full CSV is the column's **zero-based position in th
 
 ### Gene lists
 
-Gene-list input is separate from score-matrix upload. Use gene symbols, such as `MYC`, rather than matrix headers such as `MYC (4609)`.
+Gene-list input is separate from score-matrix upload. Use gene symbols such as `MYC`; pasted DepMap-style headers such as `MYC (4609)` are also automatically stripped of their numeric Entrez suffix.
 
 Paste symbols separated by whitespace, newlines, tabs, commas, or semicolons; Chinese commas and semicolons are also accepted. Matching is case-insensitive. Duplicate inputs are removed while preserving their first occurrence, and unmatched genes are shown for correction.
 
@@ -139,11 +152,11 @@ Ranks depend on both the selected cell lines and the analyzable gene columns. A 
 
 ## Exports
 
-Open **Export figure** beside the results heading, click **PDF**, **PNG**, or **SVG**, then download the resulting file. Use **Figure size** within this panel to change dimensions. Exports use a white page background and transparent text labels regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
+Open **Export figure** beside the results heading (or inside the Lineage preference / Co-dependency tabs), click **PDF**, **PNG**, or **SVG**, then download the resulting file. Use **Figure size** within this panel to change dimensions. Exports use a white page background, white marker halos, and transparent text labels regardless of the interface theme. Cached bytes are tied to the figure content, format, and dimensions, so a changed result does not reuse an earlier figure.
 
 | Format | Behavior |
 |---|---|
-| PDF / SVG | Full vector export for the three supported analysis views; interactive WebGL ranking points are converted to vector traces. |
+| PDF / SVG | Full vector export for all supported analysis views; interactive WebGL ranking points are converted to vector traces. |
 | PNG | Raster export at 3× the selected width and height, with embedded 300-DPI metadata. |
 
 For example, an export size of 1,000 × 600 produces a 3,000 × 1,800-pixel PNG. DPI metadata does not increase pixel resolution. PNG output is capped at **24 million pixels**; reduce dimensions or choose PDF/SVG for larger figures.
@@ -157,6 +170,7 @@ Open **Details & reproducibility** for missing-value counts, cancer-type summari
 | `selected_results.csv` | Selected matched genes with raw column names, symbols, means, ranks, percentiles, and valid/missing counts. |
 | `full_rankings.csv` | Complete ranking for the current dataset, column mapping, and sidebar cohort. |
 | `plot_data.csv` | Finite observations with `gene`, `lineage`, `crispr_score`, `cell_line`, and `cell_line_name`; boxplot lineage restrictions are applied. |
+| `lineage_preference.csv` | Per-lineage mean/median differences, all-lineage averages, `% < -0.5` dependent fraction, and valid counts (when lineage metadata is available). |
 | `metadata.json` | Data source, release, pinned revision, file SHA-256, cohort, column mapping, input matching, parameters, timestamp, software versions, ranking method, and display/export settings. |
 | `diagnostics.csv` | Column inclusion/exclusion status and reason, with valid, missing, invalid, and infinite counts for recognized candidate columns. |
 

@@ -10,6 +10,7 @@ DepMap's own terms cover the matrix. The MIT license covers the application code
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import hashlib
 import json
 import sys
@@ -71,20 +72,25 @@ def build(effect_csv: Path, model_csv: Path, out: Path, release: str) -> dict:
     names = names.astype("string").fillna("").str.strip()
     names = names.mask(names.eq(""), pd.Series(ids.tolist(), index=names.index, dtype="string"))
     lineage = meta["OncotreeLineage"].astype("string").fillna("").str.strip()
+    arrays = {
+        "scores": np.ascontiguousarray(scores, dtype=np.float32),
+        "genes": np.array(genes, dtype=str),
+        "depmap_id": np.array(ids.tolist(), dtype=str),
+        "cell_line_display_name": np.array(names.tolist(), dtype=str),
+        "lineage": np.array(lineage.tolist(), dtype=str),
+    }
+    disease_col = None
+    if "OncotreePrimaryDisease" in meta.columns:
+        disease_col = "OncotreePrimaryDisease"
+        disease = meta[disease_col].astype("string").fillna("").str.strip()
+        arrays["primary_disease"] = np.array(disease.tolist(), dtype=str)
     out.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        out,
-        scores=np.ascontiguousarray(scores, dtype=np.float32),
-        genes=np.array(genes, dtype="U128"),
-        depmap_id=np.array(ids.tolist(), dtype="U32"),
-        cell_line_display_name=np.array(names.tolist(), dtype="U128"),
-        lineage=np.array(lineage.tolist(), dtype="U64"),
-    )
+    np.savez_compressed(out, **arrays)
     provenance = {
         "release": release,
         "score_type": "Chronos Gene Effect",
         "source": "https://depmap.org/portal/",
-        "retrieved": "2026-11-21",
+        "retrieved": date.today().isoformat(),
         "files": {
             "CRISPRGeneEffect.csv": effect_info,
             "Model.csv": model_info,
@@ -95,6 +101,7 @@ def build(effect_csv: Path, model_csv: Path, out: Path, release: str) -> dict:
         "score_dtype": "float32",
         "float32_max_abs_error_first_100_genes": max_abs_error,
         "lineage_column": "OncotreeLineage",
+        "disease_column": disease_col,
         "name_column": "CellLineName" if "CellLineName" in model.columns else "ModelID",
         "terms": "DepMap portal terms cover this matrix. The MIT license covers only the application code.",
     }

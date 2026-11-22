@@ -90,9 +90,18 @@ def read_score_csv(source) -> pd.DataFrame:
         stream.close()
 
 
+_ENTREZ_SUFFIX_PATTERN = re.compile(r"(?<=[^\s,，;；])\s+\([0-9]+\)(?=$|[\s,，;；])")
+
+
 def parse_gene_text(text: str) -> dict:
-    """Split common pasted-list delimiters and deduplicate case-insensitively."""
-    tokens = [token.upper() for token in re.split(r"[\s,，;；]+", str(text or "").strip()) if token]
+    """Split common pasted-list delimiters and deduplicate case-insensitively.
+
+    Also strips DepMap-style space-separated Entrez suffixes such as
+    ``MYC (4609)`` while leaving inline parenthesized aliases like ``CYSLT(1)``
+    intact.
+    """
+    cleaned = _ENTREZ_SUFFIX_PATTERN.sub("", str(text or "").strip())
+    tokens = [token.upper() for token in re.split(r"[\s,，;；]+", cleaned) if token]
     genes, duplicates, seen = [], [], set()
     for token in tokens:
         if token in seen:
@@ -159,14 +168,21 @@ def _numeric_block_stats(df: pd.DataFrame, positions: list[int]):
     n_valid = np.zeros(width, dtype=int)
     n_missing = np.zeros(width, dtype=int)
     n_infinite = np.zeros(width, dtype=int)
+    contiguous = width > 0 and positions[-1] - positions[0] + 1 == width and all(
+        positions[i] + 1 == positions[i + 1] for i in range(width - 1)
+    )
     for start in range(0, width, 2048):
-        chunk = positions[start:start + 2048]
-        values = df.iloc[:, chunk].to_numpy(dtype=np.float64)
+        stop = min(start + 2048, width)
+        if contiguous:
+            col_start = positions[start]
+            values = df.iloc[:, col_start:col_start + (stop - start)].to_numpy(dtype=np.float64)
+        else:
+            chunk = positions[start:stop]
+            values = df.iloc[:, chunk].to_numpy(dtype=np.float64)
         finite = np.isfinite(values)
         valid = finite.sum(axis=0)
         infinite = np.isinf(values).sum(axis=0)
         summed = np.where(finite, values, 0.0).sum(axis=0)
-        stop = start + len(chunk)
         n_valid[start:stop] = valid
         n_infinite[start:stop] = infinite
         n_missing[start:stop] = values.shape[0] - valid
@@ -189,66 +205,110 @@ def analyze_dataset(df: pd.DataFrame, gene_columns: Iterable[str] | None = None)
         if missing:
             raise ValueError("Selected gene columns not found: " + ", ".join(sorted(map(str, missing))))
 
-    candidates, records = [], []
+    n_cols = len(df.columns)
+    diag_column = list(df.columns)
+    diag_position = list(range(n_cols))
+    diag_gene = [""] * n_cols
+    diag_status = ["excluded"] * n_cols
+    diag_reason = ["non_gene_schema"] * n_cols
+    diag_valid: list = [None] * n_cols
+    diag_missing: list = [None] * n_cols
+    diag_invalid: list = [None] * n_cols
+    diag_infinite: list = [None] * n_cols
+
+    candidates = []
     for position, column in enumerate(df.columns):
         raw = str(column).strip()
         match = GENE_COLUMN_PATTERN.fullmatch(raw)
         explicit = selected is not None and column in selected
         symbol = match.group(1) if match else raw if explicit and SYMBOL_PATTERN.fullmatch(raw) else None
-        eligible = bool(symbol) and (selected is None or explicit)
-        record = {
-            "column": column, "position": position, "gene": symbol or "",
-            "status": "excluded", "reason": "not_selected" if selected is not None and not explicit else "non_gene_schema",
-            "n_valid": None, "n_missing": None, "n_invalid": None, "n_infinite": None,
-        }
-        records.append(record)
-        if eligible:
-            candidates.append((position, column, symbol, record))
+        if symbol:
+            diag_gene[position] = symbol
+        if selected is not None and not explicit:
+            diag_reason[position] = "not_selected"
+        if symbol and (selected is None or explicit):
+            candidates.append((position, column, symbol))
 
-    counts = Counter(symbol.upper() for _, _, symbol, _ in candidates)
-    use_fast = bool(candidates) and all(
-        pd.api.types.is_numeric_dtype(df.iloc[:, position].dtype)
-        for position, _, _, _ in candidates
-    )
-    if use_fast:
-        means, valid_counts, missing_counts, infinite_counts = _numeric_block_stats(
-            df, [position for position, _, _, _ in candidates]
+    counts = Counter(symbol.upper() for _, _, symbol in candidates)
+    candidate_positions = [position for position, _, _ in candidates]
+    if candidates:
+        unique_dtypes = set(df.dtypes.iloc[candidate_positions])
+        use_fast = all(
+            pd.api.types.is_numeric_dtype(dt) and not pd.api.types.is_bool_dtype(dt)
+            for dt in unique_dtypes
         )
-    rows = []
-    for index, (position, column, symbol, record) in enumerate(candidates):
+    else:
+        use_fast = False
+
+    if use_fast:
+        means, valid_counts, missing_counts, infinite_counts = _numeric_block_stats(df, candidate_positions)
+
+    n_rows = len(df)
+    row_raw, row_gene, row_upper = [], [], []
+    row_mean, row_valid, row_missing, row_missing_frac = [], [], [], []
+    for index, (position, column, symbol) in enumerate(candidates):
         if use_fast:
-            value_counts = {
-                "n_valid": int(valid_counts[index]),
-                "n_missing": int(missing_counts[index]),
-                "n_invalid": 0,
-                "n_infinite": int(infinite_counts[index]),
-            }
-            mean_score = float(means[index]) if value_counts["n_valid"] else np.nan
+            n_val = int(valid_counts[index])
+            n_mis = int(missing_counts[index])
+            n_inv = 0
+            n_inf = int(infinite_counts[index])
+            mean_score = float(means[index]) if n_val else np.nan
         else:
             numeric, value_counts = _numeric_values(df.iloc[:, position])
-            mean_score = float(numeric.mean()) if value_counts["n_valid"] else np.nan
-        record.update(value_counts)
-        if counts[symbol.upper()] > 1:
-            record["reason"] = "ambiguous_gene_symbol"
-        elif not value_counts["n_valid"]:
-            record["reason"] = "no_finite_values"
+            n_val = value_counts["n_valid"]
+            n_mis = value_counts["n_missing"]
+            n_inv = value_counts["n_invalid"]
+            n_inf = value_counts["n_infinite"]
+            mean_score = float(numeric.mean()) if n_val else np.nan
+        diag_valid[position] = n_val
+        diag_missing[position] = n_mis
+        diag_invalid[position] = n_inv
+        diag_infinite[position] = n_inf
+        symbol_upper = symbol.upper()
+        if counts[symbol_upper] > 1:
+            diag_reason[position] = "ambiguous_gene_symbol"
+        elif not n_val:
+            diag_reason[position] = "no_finite_values"
         else:
-            record.update(status="included", reason="included")
-            rows.append({
-                "gene_raw": column, "gene": symbol, "gene_upper": symbol.upper(),
-                "mean_score": mean_score,
-                "n_valid": value_counts["n_valid"], "n_missing": value_counts["n_missing"],
-                "missing_fraction": value_counts["n_missing"] / len(df) if len(df) else np.nan,
-            })
-    rankings = pd.DataFrame(rows)
-    if rankings.empty:
+            diag_status[position] = "included"
+            diag_reason[position] = "included"
+            row_raw.append(column)
+            row_gene.append(symbol)
+            row_upper.append(symbol_upper)
+            row_mean.append(mean_score)
+            row_valid.append(n_val)
+            row_missing.append(n_mis)
+            row_missing_frac.append(n_mis / n_rows if n_rows else np.nan)
+
+    diagnostics = pd.DataFrame({
+        "column": diag_column,
+        "position": diag_position,
+        "gene": diag_gene,
+        "status": diag_status,
+        "reason": diag_reason,
+        "n_valid": diag_valid,
+        "n_missing": diag_missing,
+        "n_invalid": diag_invalid,
+        "n_infinite": diag_infinite,
+    }, columns=DIAGNOSTIC_COLUMNS)
+
+    if not row_gene:
         rankings = pd.DataFrame(columns=RANKING_COLUMNS)
     else:
+        rankings = pd.DataFrame({
+            "gene_raw": row_raw,
+            "gene": row_gene,
+            "gene_upper": row_upper,
+            "mean_score": row_mean,
+            "n_valid": row_valid,
+            "n_missing": row_missing,
+            "missing_fraction": row_missing_frac,
+        })
         rankings = rankings.sort_values("mean_score", kind="stable").reset_index(drop=True)
         rankings["rank"] = np.arange(1, len(rankings) + 1)
         rankings["percentile"] = rankings["rank"] / len(rankings) * 100
         rankings = rankings[RANKING_COLUMNS]
-    return rankings, pd.DataFrame(records, columns=DIAGNOSTIC_COLUMNS)
+    return rankings, diagnostics
 
 
 def file_sha256(path) -> str:
@@ -271,25 +331,36 @@ def read_builtin_matrix(path) -> pd.DataFrame:
     ``scores`` is float32 or float64 with NaN for unobserved values. Gene
     labels keep the DepMap ``SYMBOL (Entrez ID)`` form so the normal column
     rules apply. The returned frame is ``depmap_id``, ``cell_line_display_name``,
-    ``lineage``, then one column per gene.
+    ``lineage``, optional ``primary_disease`` when bundled, then one column per gene.
     """
     with np.load(path, allow_pickle=False) as archive:
-        scores = np.array(archive["scores"], copy=True)
-        genes = [str(gene) for gene in archive["genes"].tolist()]
-        depmap_id = [str(value) for value in archive["depmap_id"].tolist()]
-        names = [str(value) for value in archive["cell_line_display_name"].tolist()]
-        lineage = [str(value) for value in archive["lineage"].tolist()]
+        scores = np.asarray(archive["scores"])
+        genes = archive["genes"].tolist()
+        depmap_id = archive["depmap_id"].tolist()
+        names = archive["cell_line_display_name"].tolist()
+        lineage = archive["lineage"].tolist()
+        primary_disease = (
+            archive["primary_disease"].tolist()
+            if "primary_disease" in archive.files else None
+        )
     if scores.ndim != 2 or scores.dtype not in (np.float32, np.float64):
         raise ValueError("Built-in score matrix must be a float32 or float64 array")
     if scores.shape != (len(depmap_id), len(genes)):
         raise ValueError("Built-in score matrix does not match its model or gene labels")
     if not (len(depmap_id) == len(names) == len(lineage)):
         raise ValueError("Built-in model metadata lengths do not match")
-    frame = pd.DataFrame(scores, columns=pd.Index(genes, dtype="object"))
-    frame.insert(0, "lineage", pd.Series(lineage, dtype="string"))
-    frame.insert(0, "cell_line_display_name", pd.Series(names, dtype="string"))
-    frame.insert(0, "depmap_id", pd.Series(depmap_id, dtype="string"))
-    return frame
+    if primary_disease is not None and len(primary_disease) != len(depmap_id):
+        raise ValueError("Built-in primary_disease metadata length does not match")
+    meta_dict = {
+        "depmap_id": pd.Series(depmap_id, dtype="string"),
+        "cell_line_display_name": pd.Series(names, dtype="string"),
+        "lineage": pd.Series(lineage, dtype="string"),
+    }
+    if primary_disease is not None:
+        meta_dict["primary_disease"] = pd.Series(primary_disease, dtype="string")
+    meta_df = pd.DataFrame(meta_dict)
+    score_df = pd.DataFrame(scores, columns=pd.Index([str(gene) for gene in genes], dtype="object"))
+    return pd.concat([meta_df, score_df], axis=1, copy=False)
 
 
 def match_genes(rankings: pd.DataFrame, genes: Iterable[str]):
@@ -367,21 +438,40 @@ def cohort_mean_contrast(genes: Iterable[str], cohort_rankings: pd.DataFrame, pa
     return pd.DataFrame(rows, columns=columns)
 
 
-def lineage_preference(frame: pd.DataFrame) -> pd.DataFrame:
-    """Per cancer type, mean score minus that gene's all-lineage mean.
+def lineage_preference(frame: pd.DataFrame, threshold: float = -0.5) -> pd.DataFrame:
+    """Per cancer type, mean/median score minus that gene's all-lineage average.
 
     ``frame`` is long-form finite scores with ``gene``, ``lineage`` and
     ``crispr_score``. A negative difference is a lower score in that type.
-    The difference is descriptive and is not a selectivity test.
+    ``dependent_fraction`` reports the share of finite cell lines below
+    ``threshold``. All metrics are descriptive and not a selectivity test.
     """
-    summary = lineage_summary(frame)
-    columns = ["gene", "lineage", "n_valid", "mean", "panel_mean", "difference"]
-    if summary.empty:
+    columns = [
+        "gene", "lineage", "n_valid", "mean", "panel_mean", "difference",
+        "median", "panel_median", "median_difference", "dependent_fraction",
+    ]
+    if frame.empty:
         return pd.DataFrame(columns=columns)
-    panel = frame.groupby("gene", sort=False)["crispr_score"].mean()
-    summary["panel_mean"] = summary["gene"].map(panel).astype(float)
-    summary["difference"] = summary["mean"] - summary["panel_mean"]
-    return summary[columns]
+    valid = frame.copy()
+    valid["crispr_score"], _ = _numeric_values(valid["crispr_score"])
+    valid = valid.dropna(subset=["crispr_score"])
+    if valid.empty:
+        return pd.DataFrame(columns=columns)
+    valid["lineage"] = valid["lineage"].astype("string").str.strip().replace("", pd.NA).fillna("Unknown")
+    valid["_dep"] = valid["crispr_score"] < threshold
+    grouped = valid.groupby(["gene", "lineage"], sort=False, observed=True).agg(
+        n_valid=("crispr_score", "count"),
+        mean=("crispr_score", "mean"),
+        median=("crispr_score", "median"),
+        dependent_fraction=("_dep", "mean"),
+    ).reset_index()
+    panel_mean = valid.groupby("gene", sort=False)["crispr_score"].mean()
+    panel_median = valid.groupby("gene", sort=False)["crispr_score"].median()
+    grouped["panel_mean"] = grouped["gene"].map(panel_mean).astype(float)
+    grouped["difference"] = grouped["mean"] - grouped["panel_mean"]
+    grouped["panel_median"] = grouped["gene"].map(panel_median).astype(float)
+    grouped["median_difference"] = grouped["median"] - grouped["panel_median"]
+    return grouped[columns]
 
 
 def find_lineage_column(df: pd.DataFrame):
@@ -391,6 +481,18 @@ def find_lineage_column(df: pd.DataFrame):
         if name in lookup:
             return lookup[name]
     return next((column for column in df.columns if "lineage" in str(column).casefold() and "sub" not in str(column).casefold()), None)
+
+
+def find_disease_column(df: pd.DataFrame):
+    """Find an optional primary-disease or subtype metadata column if present."""
+    lookup = {str(column).strip().casefold(): column for column in df.columns}
+    for name in (
+        "primary_disease", "oncotreeprimarydisease", "oncotree_primary_disease",
+        "oncotreesubtype", "oncotree_subtype", "disease",
+    ):
+        if name in lookup:
+            return lookup[name]
+    return None
 
 
 def _cell_line_ids(df: pd.DataFrame) -> pd.Series:
@@ -447,6 +549,61 @@ def lineage_summary(frame: pd.DataFrame) -> pd.DataFrame:
     ).reset_index()[SUMMARY_COLUMNS]
 
 
+TOP_CELL_LINE_COLUMNS = [
+    "gene", "direction", "rank_in_group", "cell_line_name",
+    "cell_line", "lineage", "crispr_score",
+]
+
+
+def top_cell_lines(frame: pd.DataFrame, genes: Iterable[str] | None = None, top_n: int = 10) -> pd.DataFrame:
+    """Return the most and least dependent cell lines per gene for wet-lab follow-up."""
+    if frame.empty or top_n <= 0:
+        return pd.DataFrame(columns=TOP_CELL_LINE_COLUMNS)
+    valid = frame.copy()
+    valid["crispr_score"], _ = _numeric_values(valid["crispr_score"])
+    valid = valid.dropna(subset=["crispr_score"])
+    if valid.empty:
+        return pd.DataFrame(columns=TOP_CELL_LINE_COLUMNS)
+    ordered_genes = list(dict.fromkeys(genes)) if genes is not None else list(dict.fromkeys(valid["gene"]))
+    parts = []
+    for gene in ordered_genes:
+        sub = valid[valid["gene"] == gene]
+        if sub.empty:
+            continue
+        most = sub.sort_values(["crispr_score", "cell_line_name"], ascending=[True, True]).head(top_n).copy()
+        most["direction"] = "most_dependent"
+        most["rank_in_group"] = np.arange(1, len(most) + 1)
+        least = sub.sort_values(["crispr_score", "cell_line_name"], ascending=[False, True]).head(top_n).copy()
+        least["direction"] = "least_dependent"
+        least["rank_in_group"] = np.arange(1, len(least) + 1)
+        parts.extend((most, least))
+    if not parts:
+        return pd.DataFrame(columns=TOP_CELL_LINE_COLUMNS)
+    return pd.concat(parts, ignore_index=True)[TOP_CELL_LINE_COLUMNS]
+
+
+def gene_correlation_matrix(df: pd.DataFrame, genes: Iterable[str], rankings: pd.DataFrame,
+                            method: str = "pearson") -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute pairwise gene co-dependency correlation and shared valid sample counts."""
+    method = str(method).lower()
+    if method not in {"pearson", "spearman"}:
+        raise ValueError("Correlation method must be 'pearson' or 'spearman'")
+    matched, _ = match_genes(rankings, genes)
+    if len(matched) < 2:
+        empty = pd.DataFrame(index=matched, columns=matched, dtype=float)
+        return empty, empty.astype(int)
+    lookup = rankings.set_index("gene_upper")["gene_raw"].to_dict()
+    cols = {}
+    for gene in matched:
+        numeric, _ = _numeric_values(df[lookup[gene.upper()]])
+        cols[gene] = numeric.to_numpy(dtype=float)
+    matrix = pd.DataFrame(cols)
+    corr = matrix.corr(method=method)
+    finite_mask = matrix.notna().to_numpy(dtype=int)
+    pair_counts = pd.DataFrame(finite_mask.T @ finite_mask, index=matched, columns=matched, dtype=int)
+    return corr, pair_counts
+
+
 def _json_default(value):
     if isinstance(value, (np.integer, np.floating, np.bool_)):
         return value.item()
@@ -486,6 +643,12 @@ def make_analysis_bundle(rankings: pd.DataFrame, selected_genes: Iterable[str], 
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, frame in (("selected_results.csv", selected), ("full_rankings.csv", rankings), ("plot_data.csv", plot_data)):
             archive.writestr(name, frame.to_csv(index=False).encode("utf-8-sig"))
+        preference_rows = provenance.get("lineage_preference")
+        if isinstance(preference_rows, list) and preference_rows:
+            archive.writestr(
+                "lineage_preference.csv",
+                pd.DataFrame(preference_rows).to_csv(index=False).encode("utf-8-sig"),
+            )
         archive.writestr("metadata.json", json.dumps(provenance, ensure_ascii=False, indent=2, default=_json_default))
         if diagnostics is not None:
             archive.writestr("diagnostics.csv", pd.DataFrame(diagnostics).to_csv(index=False).encode("utf-8-sig"))

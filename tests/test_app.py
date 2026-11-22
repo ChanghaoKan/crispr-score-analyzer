@@ -284,7 +284,7 @@ class AppSubmissionTests(unittest.TestCase):
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["input_signature"], original["input_signature"])
         self.assertEqual(len(self.app.warning), 0)
-        for view, key in [("rank", "rank_run"), ("box", "box_run"), ("multi", "multi_run")]:
+        for view, key in [("rank", "rank_run"), ("box", "box_run"), ("multi", "multi_run"), ("codep", "codep_run")]:
             self.switch_view(view)
             self.assertIn("生成", self.app.button(key=key).label)
         self.app.selectbox(key="lang_select").set_value("en").run()
@@ -389,6 +389,107 @@ class AppSubmissionTests(unittest.TestCase):
         self.assertEqual(set(unknown["lineage"]), {"Unknown"})
         self.assertEqual(set(unknown["cell_line"]), {"ACH-000002"})
         self.assertEqual(unknown.groupby("gene").size().to_dict(), {"MYC": 1, "PTEN": 1})
+
+    def test_cross_view_transfer_and_share_url(self):
+        self.run_rank("MYC\nPTEN")
+        self.app.button(key="rank_share_url").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.query_params["view"], "rank")
+        self.assertEqual(self.app.query_params["genes"], "MYC,PTEN")
+
+        self.app.button(key="rank_send_box").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "box")
+        self.assertIsNotNone(self.result("box_result"))
+        self.assertEqual(self.result("box_result")["genes"], ["MYC", "PTEN"])
+
+        self.app.button(key="box_send_rank").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "rank")
+        self.assertEqual(self.result("rank_result")["genes"], ["MYC", "PTEN"])
+
+    def test_figure_settings_persist_across_tabs_and_empty_reference_is_not_overwritten(self):
+        self.run_rank("E2F1")
+        self.app.text_input(key="reference_a").set_value("").run()
+        self.app.slider(key="point_size").set_value(7).run()
+        self.assert_healthy()
+        self.switch_view("box")
+        self.switch_view("rank")
+        self.assertEqual(self.app.text_input(key="reference_a").value, "")
+        self.assertEqual(self.app.slider(key="point_size").value, 7)
+
+    def test_multi_view_computes_preference_for_highlight_genes_only(self):
+        self.switch_view("multi")
+        self.app.text_area(key="multi_bg").set_value("\n".join(GENES[:10]))
+        self.app.text_area(key="multi_hl").set_value("PLK1\nAURKA")
+        self.app.button(key="multi_run").click().run()
+        self.assert_healthy()
+        pref = self.result("multi_result")["preference"]
+        self.assertEqual(set(pref["gene"]), {"PLK1", "AURKA"})
+
+    def test_box_export_height_resets_on_new_submission(self):
+        self.switch_view("box")
+        self.app.text_area(key="box_genes").set_value("MYC")
+        self.app.button(key="box_run").click().run()
+        self.assert_healthy()
+        self.app.session_state["box_height"] = 450
+        self.app.text_area(key="box_genes").set_value("MYC\nPTEN\nE2F1\nE2F2")
+        self.app.button(key="box_run").click().run()
+        self.assert_healthy()
+        self.assertGreater(self.app.number_input(key="box_height").value, 1000)
+
+    def test_codependency_scan_and_matrix_modes(self):
+        self.switch_view("codep")
+        self.app.text_input(key="codep_query").set_value("MYC")
+        self.app.button(key="codep_run").click().run()
+        self.assert_healthy()
+        scan_result = self.result("codep_result")
+        self.assertIsNotNone(scan_result)
+        self.assertEqual(scan_result["mode"], "scan")
+        self.assertEqual(scan_result["query_gene"], "MYC")
+        self.assertEqual(len(scan_result["scan_df"]), len(GENES) - 1)
+        self.assertGreaterEqual(len(self.app.get("plotly_chart")), 2)
+
+        self.app.segmented_control(key="codep_mode").set_value("matrix").run()
+        self.assert_healthy()
+        self.app.text_area(key="codep_genes").set_value("MYC\nPTEN\nE2F1")
+        self.app.button(key="codep_run").click().run()
+        self.assert_healthy()
+        matrix_result = self.result("codep_result")
+        self.assertEqual(matrix_result["mode"], "matrix")
+        self.assertEqual(matrix_result["genes"], ["MYC", "PTEN", "E2F1"])
+        self.assertEqual(matrix_result["corr"].shape, (3, 3))
+        self.assertGreaterEqual(len(self.app.get("plotly_chart")), 2)
+
+        self.app.button(key="codep_share_url").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.query_params["view"], "codep")
+        self.assertEqual(self.app.query_params["genes"], "MYC,PTEN,E2F1")
+
+        self.app.multiselect(key="cohort").set_value(["Liver"]).run()
+        self.assert_healthy()
+        self.assertIsNone(self.result("codep_result"))
+
+    def test_cross_view_transfer_to_codependency(self):
+        self.run_rank("MYC")
+        self.app.button(key="rank_send_codep").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "codep")
+        self.assertEqual(self.result("codep_result")["mode"], "scan")
+        self.assertEqual(self.result("codep_result")["query_gene"], "MYC")
+
+        self.switch_view("rank")
+        self.run_rank("MYC\nPTEN\nE2F1")
+        self.app.button(key="rank_send_codep").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "codep")
+        self.assertEqual(self.result("codep_result")["mode"], "matrix")
+        self.assertEqual(self.result("codep_result")["genes"], ["MYC", "PTEN", "E2F1"])
+
+        self.app.button(key="codep_send_box").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "box")
+        self.assertEqual(self.result("box_result")["genes"], ["MYC", "PTEN", "E2F1"])
 
 
 if __name__ == "__main__":

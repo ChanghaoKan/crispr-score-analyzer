@@ -155,3 +155,13 @@ def test_zip_is_prepared_on_demand_and_invalidated_for_new_analysis_or_dimension
         first = ui.downloads['rank_zip']
         ui.clicked.clear()
     assert len(bundles) == 3
+
+
+def test_cleared_reference_genes_are_not_replaced_by_defaults(presentation):
+    ui, render, result, fig, bundles = presentation
+    ui.session_state.update(reference_a='', reference_b='PTEN', show_labels=True, point_size=4)
+    ui.clicked = {'rank_zip_btn'}
+    render(result, fig, 'rank')
+    assert len(bundles) == 1
+    assert bundles[0]['display']['reference_genes'] == ['PTEN']
+

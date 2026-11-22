@@ -246,3 +246,72 @@ def test_app_download_cache_replaces_bytes_when_plot_or_dimensions_change(figure
     assert state.session_state["_export_rank_pdf"]["bytes"] not in {first_bytes, second_bytes}
     assert set(state.session_state) == {"_export_rank_pdf", "_export_box_pdf"}
     assert state.session_state["_export_box_pdf"]["bytes"] == b"other-view"
+
+
+def test_dark_mode_marker_halo_resets_to_white_while_highlight_ring_persists():
+    fig = go.Figure([
+        go.Scatter(
+            x=[1, 2], y=[-1.2, -0.3], mode="markers",
+            marker=dict(color="#0072B2", size=10, line=dict(width=1, color="#182430")),
+            name="Target",
+        ),
+        go.Scatter(
+            x=[1], y=[-1.2], mode="markers",
+            marker=dict(color="#2f6fad", size=14, line=dict(width=2.5, color="#245f96")),
+            name="Ringed",
+        ),
+        go.Heatmap(
+            z=[[0.1, -0.4], [-0.2, 0.3]], x=["MYC", "PTEN"], y=["Liver", "Lung"],
+            colorbar=dict(title="Diff", tickfont=dict(color="white")),
+        ),
+    ])
+    fig.update_layout(plot_bgcolor="#182430", paper_bgcolor="#182430")
+    exported = prepare_export_figure(fig)
+    assert exported.data[0].marker.line.color == "white"
+    assert exported.data[1].marker.line.color == "#245f96"
+    assert exported.data[2].colorbar.tickfont.color == "#1a1a1a"
+    assert exported.data[2].colorbar.title.font.color == "#1a1a1a"
+
+
+def test_download_buttons_skip_fingerprinting_when_no_cached_exports(figure):
+    calls = []
+
+    class Block:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def number_input(self, label, minimum, maximum, value, step, key):
+            return value
+
+    class IdleStreamlit:
+        session_state = {}
+
+        def columns(self, count):
+            return [Block() for _ in range(count)]
+
+        def caption(self, *args):
+            pass
+
+        def button(self, label, key, **kwargs):
+            return False
+
+        def expander(self, label, **kwargs):
+            return Block()
+
+    namespace = {
+        "st": IdleStreamlit(),
+        "ui": lambda en, zh: en,
+        "export_fingerprint": lambda *args, **kwargs: calls.append(args) or "sig",
+        "MAX_PNG_PIXELS": MAX_PNG_PIXELS,
+        "render_figure_bytes": lambda *args, **kwargs: b"",
+    }
+    source = (Path(__file__).resolve().parents[1] / "app.py").read_text()
+    function = next(node for node in ast.parse(source).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "render_download_buttons")
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "app.py", "exec"), namespace)
+    namespace["render_download_buttons"](figure, "rank", "rank")
+    assert calls == []
+

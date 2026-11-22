@@ -48,6 +48,7 @@ def export_fingerprint(fig, format, width=1000, height=600, scale=3):
 def prepare_export_figure(fig, full_vector=True):
     """Copy a figure onto white paper, optionally converting WebGL scatter traces."""
     payload = copy.deepcopy(fig.to_plotly_json())
+    orig_plot_bg = payload.get("layout", {}).get("plot_bgcolor")
     if full_vector:
         trace_groups = [payload.get("data", [])]
         trace_groups.extend(frame.get("data", []) for frame in payload.get("frames", []))
@@ -86,7 +87,14 @@ def prepare_export_figure(fig, full_vector=True):
             trace.marker.color = "rgba(150,150,150,0.55)"
         if trace.type == "box":
             trace.line.color = "#3f4b55"
-        if hasattr(trace, "textfont"):
+        if (orig_plot_bg and hasattr(trace, "marker") and trace.marker
+                and getattr(trace.marker, "line", None)
+                and trace.marker.line.color == orig_plot_bg):
+            trace.marker.line.color = "white"
+        if trace.type == "heatmap" and getattr(trace, "colorbar", None):
+            trace.colorbar.tickfont = dict(color=_INK)
+            trace.colorbar.title.font = dict(color=_INK)
+        if hasattr(trace, "textfont") and trace.type != "heatmap":
             trace.textfont.color = _INK
     return export_fig
 

@@ -22,6 +22,7 @@ def plot_helpers():
         'build_rank_figure', 'create_rank_plot', 'create_multilayer_rank_plot',
         'create_lineage_boxplot',
         '_preference_scale', '_add_preference_lollipop', 'create_preference_plot',
+        'create_preference_heatmap', 'create_correlation_heatmap',
     }
     constants = {'THEMES', 'PLOT_COLORS', 'FONT_FAMILY', 'ESSENTIALITY_THRESHOLD', 'PREFERENCE_MIN_N'}
     tree = ast.parse((Path(__file__).resolve().parents[1] / 'app.py').read_text())
@@ -30,7 +31,7 @@ def plot_helpers():
              or (isinstance(node, ast.Assign)
                  and any(isinstance(target, ast.Name) and target.id in constants
                          for target in node.targets))]
-    namespace = {'go': go, 'np': np, 'escape': escape, 'make_subplots': make_subplots,
+    namespace = {'go': go, 'np': np, 'pd': pd, 'escape': escape, 'make_subplots': make_subplots,
                  'st': SimpleNamespace(session_state={'lang': 'en', 'theme': 'light'})}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), 'app.py', 'exec'), namespace)
     return namespace
@@ -170,3 +171,49 @@ def test_preference_plot_is_a_labeled_lollipop_per_gene(plot_helpers):
     marker_text = [trace.text for trace in fig.data if trace.mode == 'markers+text']
     assert marker_text[0] == ('+0.40', '-0.40')
     assert 'more dependent' in fig.layout.xaxis.title.text
+
+
+def test_preference_top_k_and_heatmap_highlight_active_cohort(plot_helpers):
+    rows = []
+    for idx in range(16):
+        diff = -0.8 + idx * 0.1
+        rows.append({
+            'gene': 'MYC', 'lineage': f'Type{idx:02d}', 'n_valid': 10,
+            'mean': -1.0 + diff, 'panel_mean': -1.0, 'difference': diff,
+            'median_difference': diff * 0.9, 'dependent_fraction': 0.8 if diff < 0 else 0.1,
+        })
+    table = pd.DataFrame(rows)
+    lollipop = plot_helpers['create_preference_plot'](table, highlight_lineages=['Type07'], top_k=3)
+    assert lollipop is not None
+    # 3 lowest + 3 highest + 1 highlighted middle lineage = 7 categories.
+    assert len(lollipop.layout.yaxis.categoryarray) == 7
+    assert 'Type07' in lollipop.layout.yaxis.categoryarray
+    marker_trace = [t for t in lollipop.data if t.mode == 'markers+text'][0]
+    assert 'Median difference' in marker_trace.hovertemplate
+
+    heatmap = plot_helpers['create_preference_heatmap'](table, highlight_lineages=['Type07'])
+    assert heatmap is not None
+    assert heatmap.data[0].type == 'heatmap'
+    assert '★ Type07' in list(heatmap.data[0].y)
+
+
+def test_correlation_heatmap_and_boxplot_modes(plot_helpers):
+    corr = pd.DataFrame([[1.0, 0.82], [0.82, 1.0]], index=['MYC', 'MAX'], columns=['MYC', 'MAX'])
+    counts = pd.DataFrame([[100, 98], [98, 100]], index=['MYC', 'MAX'], columns=['MYC', 'MAX'])
+    hfig = plot_helpers['create_correlation_heatmap'](corr, counts, method='spearman')
+    assert hfig.data[0].type == 'heatmap'
+    assert 'Spearman' in hfig.data[0].hovertemplate
+
+    scores = pd.DataFrame({
+        'gene': ['E2F1'] * 4 + ['E2F2'] * 4,
+        'lineage': ['Liver', 'Liver', 'Lung', 'Lung'] * 2,
+        'crispr_score': [-1.6, -1.2, -0.3, 0.1, -0.8, -0.6, 0.2, 0.4],
+        'cell_line': ['ACH-1', 'ACH-2', 'ACH-3', 'ACH-4'] * 2,
+        'cell_line_name': ['A', 'B', 'C', 'D'] * 2,
+    })
+    grid_fig = plot_helpers['create_lineage_boxplot'](scores, ['E2F1', 'E2F2'], columns=2)
+    assert grid_fig.layout.xaxis2 is not None
+    by_gene = plot_helpers['create_lineage_boxplot'](scores, ['E2F1', 'E2F2'], compare_mode='by_gene')
+    assert len(by_gene.data) == 2
+    assert 'E2F1 (n=4)' in by_gene.layout.yaxis.categoryarray
+

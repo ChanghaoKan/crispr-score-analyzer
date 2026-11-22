@@ -9,9 +9,10 @@ import numpy as np
 import pandas as pd
 
 from analysis_core import (
-    analyze_dataset, builtin_provenance_path, cohort_mean_contrast, find_lineage_column,
-    get_lineage_frame, lineage_preference, lineage_summary, make_analysis_bundle, match_genes,
-    parse_gene_text, parse_gene_upload, read_builtin_matrix, read_score_csv, resolve_gene_list,
+    analyze_dataset, builtin_provenance_path, cohort_mean_contrast, find_disease_column,
+    find_lineage_column, gene_correlation_matrix, get_lineage_frame, lineage_preference,
+    lineage_summary, make_analysis_bundle, match_genes, parse_gene_text, parse_gene_upload,
+    read_builtin_matrix, read_score_csv, resolve_gene_list, top_cell_lines,
 )
 
 
@@ -270,6 +271,81 @@ class NumericMatrixTests(unittest.TestCase):
         self.assertEqual(ranks["gene"].tolist(), ["MYC", "PTEN"])
         self.assertEqual(find_lineage_column(frame), "lineage")
         self.assertTrue(str(builtin_provenance_path("data/depmap_chronos.npz")).endswith("depmap_chronos.provenance.json"))
+
+    def test_parse_gene_text_strips_depmap_entrez_suffix_without_breaking_inline_aliases(self):
+        parsed = parse_gene_text("MYC (4609), TP53 (7157)\nCYSLT(1)\tB(2)GCN")
+        self.assertEqual(parsed["genes"], ["MYC", "TP53", "CYSLT(1)", "B(2)GCN"])
+
+    def test_lineage_preference_reports_median_difference_and_dependent_fraction(self):
+        frame = pd.DataFrame({
+            "gene": ["MYC"] * 4,
+            "lineage": ["Liver", "Liver", "Lung", "Lung"],
+            "crispr_score": [-2.0, -1.0, -0.6, 0.2],
+        })
+        table = lineage_preference(frame, threshold=-0.5).set_index("lineage")
+        self.assertAlmostEqual(float(table.loc["Liver", "median"]), -1.5)
+        self.assertAlmostEqual(float(table.loc["Liver", "panel_median"]), -0.8)
+        self.assertAlmostEqual(float(table.loc["Liver", "median_difference"]), -0.7)
+        self.assertAlmostEqual(float(table.loc["Liver", "dependent_fraction"]), 1.0)
+        self.assertAlmostEqual(float(table.loc["Lung", "dependent_fraction"]), 0.5)
+
+    def test_top_cell_lines_and_gene_correlation_matrix(self):
+        df = pd.DataFrame({
+            "ModelID": ["ACH-1", "ACH-2", "ACH-3", "ACH-4"],
+            "cell_line_display_name": ["CellA", "CellB", "CellC", "CellD"],
+            "OncotreeLineage": ["Liver", "Liver", "Lung", "Lung"],
+            "OncotreePrimaryDisease": ["HCC", "HCC", "NSCLC", "SCLC"],
+            "MYC (4609)": [-2.0, -1.0, 0.0, 1.0],
+            "MAX (4149)": [-1.8, -0.9, 0.1, 0.9],
+            "PTEN (5728)": [1.0, 0.5, -0.5, -1.0],
+        })
+        self.assertEqual(find_disease_column(df), "OncotreePrimaryDisease")
+        ranks, _ = analyze_dataset(df)
+        long_frame = get_lineage_frame(df, ["MYC"], ranks)
+        top = top_cell_lines(long_frame, ["MYC"], top_n=2)
+        most = top[top["direction"] == "most_dependent"]
+        least = top[top["direction"] == "least_dependent"]
+        self.assertEqual(most["cell_line_name"].tolist(), ["CellA", "CellB"])
+        self.assertEqual(least["cell_line_name"].tolist(), ["CellD", "CellC"])
+        corr, counts = gene_correlation_matrix(df, ["MYC", "MAX", "PTEN"], ranks, method="pearson")
+        self.assertGreater(float(corr.loc["MYC", "MAX"]), 0.99)
+        self.assertLess(float(corr.loc["MYC", "PTEN"]), -0.98)
+        self.assertEqual(int(counts.loc["MYC", "MAX"]), 4)
+
+    def test_bundle_includes_lineage_preference_csv_when_present_in_metadata(self):
+        df = pd.DataFrame({
+            "ModelID": ["ACH-1", "ACH-2"],
+            "lineage": ["Liver", "Lung"],
+            "MYC (4609)": [-2.0, -0.2],
+        })
+        ranks, diag = analyze_dataset(df)
+        plot = get_lineage_frame(df, ["MYC"], ranks)
+        pref = lineage_preference(plot)
+        bundle = make_analysis_bundle(
+            ranks, ["MYC"], plot, {"lineage_preference": pref.to_dict(orient="records")}, diag
+        )
+        with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
+            self.assertIn("lineage_preference.csv", archive.namelist())
+            pref_csv = pd.read_csv(archive.open("lineage_preference.csv"))
+            self.assertEqual(set(pref_csv["lineage"]), {"Liver", "Lung"})
+            self.assertIn("dependent_fraction", pref_csv.columns)
+
+    def test_builtin_matrix_roundtrip_with_optional_primary_disease(self):
+        scores = np.array([[-1.5, 0.25], [-1.0, 0.1]], dtype=np.float32)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "matrix.npz"
+            np.savez_compressed(
+                path,
+                scores=scores,
+                genes=np.array(["MYC (4609)", "PTEN (5728)"], dtype=str),
+                depmap_id=np.array(["ACH-000001", "ACH-000002"], dtype=str),
+                cell_line_display_name=np.array(["Alpha", "Beta"], dtype=str),
+                lineage=np.array(["Lung", "Lung"], dtype=str),
+                primary_disease=np.array(["NSCLC", "SCLC"], dtype=str),
+            )
+            frame = read_builtin_matrix(path)
+        self.assertEqual(find_disease_column(frame), "primary_disease")
+        self.assertEqual(frame["primary_disease"].tolist(), ["NSCLC", "SCLC"])
 
 
 if __name__ == "__main__":
