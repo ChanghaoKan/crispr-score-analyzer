@@ -183,9 +183,9 @@ GitHub Actions runs the full suite on Python 3.12. Automated checks do not repla
 
 ## Citation
 
-This repository is CRISPR Score Analyzer 1.1.0 (2026-11-21), with DepMap Public 26Q3 bundled in the app. Record that version and the data release with an analysis from the current app.
+Cite CRISPR Score Analyzer 1.1.0, deposited 2026-11-21: [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595). The concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602) resolves to that version. The Zenodo record and the code in this repository are both MIT. Record DepMap Public 26Q3 with an analysis from the current app. The source archive on Zenodo does not include the bundled matrix.
 
-The archived software deposit is version 1.0.0, published 2026-04-16: [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603). The concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602) still resolves to that deposit. Its Zenodo license is CC-BY-4.0. The code in this repository is MIT. [CITATION.cff](CITATION.cff) cites the deposit as the preferred citation and records 1.1.0 as the version of this checkout. A newer Zenodo version has not been deposited.
+The 2026-04-16 snapshot remains version 1.0.0: [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603). That record's Zenodo license is CC-BY-4.0.
 
 Also cite the underlying DepMap release and relevant methodology. The bundled matrix is DepMap Public 26Q3. The repository records this foundational reference:
 

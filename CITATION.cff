@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "Cite the Zenodo deposit in preferred-citation for the archived software. This repository is version 1.1.0 (2026-11-21) and is not that deposit. Record 1.1.0 and the DepMap release with an analysis from the current app. The concept DOI 10.5281/zenodo.19607602 still resolves to version 1.0.0."
+message: "If you use this software, please cite version 1.1.0. The concept DOI resolves to that version. Record DepMap Public 26Q3 with an analysis from the current app."
 title: "CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality"
 authors:
   - family-names: Kan
@@ -7,11 +7,14 @@ authors:
     affiliation: "Shenzhen Bay Laboratory"
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.19607603
-    description: "Version DOI for the archived 1.0.0 deposit (2026-04-16). Its Zenodo license is CC-BY-4.0."
+    value: 10.5281/zenodo.24424595
+    description: "Version DOI for CRISPR Score Analyzer 1.1.0, deposited 2026-11-21. MIT."
   - type: doi
     value: 10.5281/zenodo.19607602
-    description: "Concept DOI. As of 2026-11-21 it resolves to version 1.0.0."
+    description: "Concept DOI. It resolves to version 1.1.0."
+  - type: doi
+    value: 10.5281/zenodo.19607603
+    description: "Version DOI for the 1.0.0 deposit (2026-04-16). Its Zenodo license is CC-BY-4.0."
 repository-code: "https://github.com/ChanghaoKan/crispr-score-analyzer"
 url: "https://crispr-score-analyzer-szbl-denglab.streamlit.app/"
 version: "1.1.0"
@@ -31,11 +34,11 @@ preferred-citation:
       given-names: Changhao
       affiliation: "Shenzhen Bay Laboratory"
   year: 2026
-  date-released: "2026-04-16"
-  version: "1.0.0"
-  doi: "10.5281/zenodo.19607603"
-  url: "https://doi.org/10.5281/zenodo.19607603"
-  license: CC-BY-4.0
+  date-released: "2026-11-21"
+  version: "1.1.0"
+  doi: "10.5281/zenodo.24424595"
+  url: "https://doi.org/10.5281/zenodo.24424595"
+  license: MIT
 references:
   - type: article
     authors:

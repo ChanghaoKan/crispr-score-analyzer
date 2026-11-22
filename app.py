@@ -46,16 +46,20 @@ ESSENTIALITY_THRESHOLD = -0.5
 
 # =============================================================================
 # Citation / DOI
-# 运行中的软件是 1.1.0。Zenodo 上最新的存档仍是 2026-04-16 的 1.0.0。
+# 1.1.0 的版本 DOI 是 10.5281/zenodo.24424595。概念 DOI 指向这一版。
+# 2026-04-16 的 1.0.0 仍可引用，许可证是当时记录上的 CC-BY-4.0。
 # =============================================================================
 TOOL_VERSION = "1.1.0"
 TOOL_RELEASED = "2026-11-21"
 TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
 ZENODO_CONCEPT_DOI = "10.5281/zenodo.19607602"
-ZENODO_VERSION_DOI = "10.5281/zenodo.19607603"
-ZENODO_VERSION = "1.0.0"
-ZENODO_RELEASED = "2026-04-16"
+ZENODO_VERSION_DOI = "10.5281/zenodo.24424595"
+ZENODO_VERSION = "1.1.0"
+ZENODO_RELEASED = "2026-11-21"
+ZENODO_PREVIOUS_DOI = "10.5281/zenodo.19607603"
+ZENODO_PREVIOUS_VERSION = "1.0.0"
+ZENODO_PREVIOUS_RELEASED = "2026-04-16"
 GITHUB_URL = "https://github.com/ChanghaoKan/crispr-score-analyzer"
 
 # =============================================================================
@@ -829,17 +833,14 @@ def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=
 # Citation 渲染
 # =============================================================================
 def build_citations():
-    """Separate the running app from the Zenodo deposit.
-
-    The version DOI is the 1.0.0 snapshot from 2026-04-16. This checkout is 1.1.0.
-    """
-    running = (
-        f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({TOOL_VERSION}, {TOOL_RELEASED}) "
-        f"[Software]. {GITHUB_URL}. Data: {DATA_VERSION}."
-    )
-    archived = (
+    """Cite the 1.1.0 Zenodo deposit. Keep the April 2026 snapshot addressable."""
+    current = (
         f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({ZENODO_VERSION}) "
         f"[Software]. Zenodo. https://doi.org/{ZENODO_VERSION_DOI}"
+    )
+    previous = (
+        f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({ZENODO_PREVIOUS_VERSION}) "
+        f"[Software]. Zenodo. https://doi.org/{ZENODO_PREVIOUS_DOI}"
     )
     bibtex = f"""@software{{kan_2026_crispr_score_analyzer,
   author  = {{{TOOL_AUTHORS}}},
@@ -849,29 +850,26 @@ def build_citations():
   doi     = {{{ZENODO_VERSION_DOI}}},
   url     = {{https://doi.org/{ZENODO_VERSION_DOI}}}
 }}"""
-    return running, archived, bibtex
+    return current, previous, bibtex
 
 
 def render_citation_section():
-    running, archived, bibtex = build_citations()
+    current, previous, bibtex = build_citations()
 
     st.markdown(f"### {t('citation')}")
-    st.markdown(f"**{ui('This deployment', '当前部署')}**")
-    st.markdown(f'<div class="cite-box">{escape(running)}</div>', unsafe_allow_html=True)
-    st.caption(ui(
-        "Record this version and the data release with an analysis from the current app.",
-        "记录当前网页上的分析时，写上这个版本和数据版本。"))
-    st.markdown(f"**{ui('Archived software', '已归档版本')} (APA)**")
+    st.markdown(f"**{ui('This version', '这一版')} (APA)**")
     st.markdown(
         f'<a href="https://doi.org/{ZENODO_VERSION_DOI}" target="_blank" class="doi-badge">'
         f'DOI: {ZENODO_VERSION_DOI}</a>',
         unsafe_allow_html=True)
-    st.markdown(f'<div class="cite-box">{escape(archived)}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cite-box">{escape(current)}</div>', unsafe_allow_html=True)
     st.caption(ui(
-        f"Deposited {ZENODO_RELEASED}. Concept DOI {ZENODO_CONCEPT_DOI} still resolves to version {ZENODO_VERSION}. "
-        "That Zenodo record is CC-BY-4.0. The code in this repository is MIT.",
-        f"存档日期 {ZENODO_RELEASED}。概念 DOI {ZENODO_CONCEPT_DOI} 目前仍指向 {ZENODO_VERSION}。"
-        "Zenodo 记录是 CC-BY-4.0，本仓库代码是 MIT。"))
+        f"Deposited {ZENODO_RELEASED}. Concept DOI {ZENODO_CONCEPT_DOI} resolves to version {ZENODO_VERSION}. "
+        f"This record and the repository code are MIT. Record {DATA_VERSION} with an analysis. "
+        f"The {ZENODO_PREVIOUS_RELEASED} snapshot remains {previous}. Its Zenodo license is CC-BY-4.0.",
+        f"存档日期 {ZENODO_RELEASED}。概念 DOI {ZENODO_CONCEPT_DOI} 指向 {ZENODO_VERSION}。"
+        f"这条记录和仓库代码都是 MIT。分析请同时写上 {DATA_VERSION}。"
+        f"{ZENODO_PREVIOUS_RELEASED} 的快照仍是 {previous}，当时的 Zenodo 许可证是 CC-BY-4.0。"))
 
     st.markdown("**BibTeX:**")
     st.code(bibtex, language="bibtex")
@@ -1528,6 +1526,7 @@ dataset_metadata = {
     'tool_released': TOOL_RELEASED,
     'zenodo_version': ZENODO_VERSION,
     'zenodo_version_doi': ZENODO_VERSION_DOI,
+    'zenodo_concept_doi': ZENODO_CONCEPT_DOI,
     'software': {name: version(name) for name in ['streamlit', 'pandas', 'numpy', 'plotly', 'kaleido', 'pillow']},
     'analysis_schema': 4,
 }
