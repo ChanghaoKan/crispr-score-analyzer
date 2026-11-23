@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite CRISPR Score Analyzer 1.2.0 (or the Zenodo concept DOI 10.5281/zenodo.19607602, which resolves to the latest archived version). Record DepMap Public 26Q3 with an analysis from the current app."
+message: "If you use this software, please cite version 1.2.0 (10.5281/zenodo.24458535). The concept DOI (10.5281/zenodo.19607602) resolves to that version. Record DepMap Public 26Q3 with an analysis from the current app."
 title: "CRISPR Score Analyzer: an interactive, cohort-scoped browser platform for DepMap gene essentiality and co-dependency analysis"
 authors:
   - family-names: Kan
@@ -8,8 +8,11 @@ authors:
     orcid: "https://orcid.org/0009-0000-4014-5923"
 identifiers:
   - type: doi
+    value: 10.5281/zenodo.24458535
+    description: "Version DOI for CRISPR Score Analyzer 1.2.0, deposited 2026-11-23. MIT."
+  - type: doi
     value: 10.5281/zenodo.19607602
-    description: "Concept DOI resolving to the latest Zenodo archived version of CRISPR Score Analyzer."
+    description: "Concept DOI. It resolves to version 1.2.0."
   - type: doi
     value: 10.5281/zenodo.24424595
     description: "Version DOI for CRISPR Score Analyzer 1.1.0, deposited 2026-11-21. MIT."
@@ -39,8 +42,8 @@ preferred-citation:
   year: 2026
   date-released: "2026-11-23"
   version: "1.2.0"
-  doi: "10.5281/zenodo.19607602"
-  url: "https://doi.org/10.5281/zenodo.19607602"
+  doi: "10.5281/zenodo.24458535"
+  url: "https://doi.org/10.5281/zenodo.24458535"
   license: MIT
 references:
   - type: article

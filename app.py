@@ -49,17 +49,18 @@ ESSENTIALITY_THRESHOLD = -0.5
 
 # =============================================================================
 # Citation / DOI
-# 1.1.0 的版本 DOI 是 10.5281/zenodo.24424595。概念 DOI 指向这一版。
-# 2026-04-16 的 1.0.0 仍可引用，许可证是当时记录上的 CC-BY-4.0。
+# 1.2.0 的版本 DOI 是 10.5281/zenodo.24458535。概念 DOI 指向这一版。
+# 2026-11-21 的 1.1.0 (10.5281/zenodo.24424595, MIT) 与 2026-04-16 的 1.0.0
+# (10.5281/zenodo.19607603, CC-BY-4.0) 仍可按各自版本 DOI 引用。
 # =============================================================================
 TOOL_VERSION = "1.2.0"
 TOOL_RELEASED = "2026-11-23"
 TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
 ZENODO_CONCEPT_DOI = "10.5281/zenodo.19607602"
-ZENODO_VERSION_DOI = "10.5281/zenodo.24424595"
-ZENODO_VERSION = "1.1.0"
-ZENODO_RELEASED = "2026-11-21"
+ZENODO_VERSION_DOI = "10.5281/zenodo.24458535"
+ZENODO_VERSION = "1.2.0"
+ZENODO_RELEASED = "2026-11-23"
 ZENODO_PREVIOUS_DOI = "10.5281/zenodo.19607603"
 ZENODO_PREVIOUS_VERSION = "1.0.0"
 ZENODO_PREVIOUS_RELEASED = "2026-04-16"
@@ -964,7 +965,7 @@ def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=
 # Citation 渲染
 # =============================================================================
 def build_citations():
-    """Cite the 1.1.0 Zenodo deposit. Keep the April 2026 snapshot addressable."""
+    """Cite the 1.2.0 Zenodo deposit. Keep the April 2026 snapshot addressable."""
     current = (
         f"{TOOL_AUTHORS} ({TOOL_YEAR}). CRISPR Score Analyzer ({ZENODO_VERSION}) "
         f"[Software]. Zenodo. https://doi.org/{ZENODO_VERSION_DOI}"
@@ -975,7 +976,7 @@ def build_citations():
     )
     bibtex = f"""@software{{kan_2026_crispr_score_analyzer,
   author  = {{{TOOL_AUTHORS}}},
-  title   = {{CRISPR Score Analyzer: An interactive platform for DepMap gene essentiality}},
+  title   = {{CRISPR Score Analyzer: an interactive, cohort-scoped browser platform for DepMap gene essentiality and co-dependency analysis}},
   year    = {{{TOOL_YEAR}}},
   version = {{{ZENODO_VERSION}}},
   doi     = {{{ZENODO_VERSION_DOI}}},

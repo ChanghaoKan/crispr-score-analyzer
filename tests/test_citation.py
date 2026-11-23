@@ -1,10 +1,10 @@
-"""The current app cites the 1.1.0 Zenodo deposit, not the April 2026 snapshot."""
+"""The current app cites the 1.2.0 Zenodo deposit, not the April 2026 snapshot."""
 
 import ast
 from pathlib import Path
 
 
-def test_citation_uses_the_1_1_0_zenodo_deposit():
+def test_citation_uses_the_1_2_0_zenodo_deposit():
     names = {"build_citations"}
     constants = {
         "TOOL_VERSION", "TOOL_RELEASED", "TOOL_AUTHORS", "TOOL_YEAR", "DATA_VERSION",
@@ -21,10 +21,11 @@ def test_citation_uses_the_1_1_0_zenodo_deposit():
     namespace = {}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), "app.py", "exec"), namespace)
     current, previous, bibtex = namespace["build_citations"]()
-    assert current.startswith("Kan, C. (2026). CRISPR Score Analyzer (1.1.0)")
-    assert "10.5281/zenodo.24424595" in current
+    assert current.startswith("Kan, C. (2026). CRISPR Score Analyzer (1.2.0)")
+    assert "10.5281/zenodo.24458535" in current
     assert "1.0.0" in previous
     assert "10.5281/zenodo.19607603" in previous
-    assert "version = {1.1.0}" in bibtex
-    assert "10.5281/zenodo.24424595" in bibtex
+    assert "version = {1.2.0}" in bibtex
+    assert "10.5281/zenodo.24458535" in bibtex
     assert "19607603" not in bibtex
+    assert "24424595" not in bibtex

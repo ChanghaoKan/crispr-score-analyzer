@@ -197,9 +197,9 @@ GitHub Actions runs the full suite on Python 3.12. Automated checks do not repla
 
 ## Citation
 
-Cite **CRISPR Score Analyzer v1.2.0** ([GitHub release](https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0); [preprint manuscript](preprint/manuscript.pdf)) via the Zenodo concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602), which resolves to the latest Zenodo archive (currently version 1.1.0, deposited 2026-11-21: [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595)). The source archive and the code in this repository are both MIT, and `.gitattributes` excludes the bundled matrix from release source archives. Record DepMap Public 26Q3 with an analysis from the current app.
+Cite **CRISPR Score Analyzer 1.2.0**, deposited 2026-11-23: [10.5281/zenodo.24458535](https://doi.org/10.5281/zenodo.24458535) ([GitHub release `v1.2.0`](https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0); [preprint manuscript](preprint/manuscript.pdf)). The concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602) resolves to version 1.2.0. The Zenodo source archive and the code in this repository are both MIT, and `.gitattributes` excludes the bundled DepMap matrix from release source archives. Record DepMap Public 26Q3 with an analysis from the current app.
 
-The 2026-04-16 snapshot remains version 1.0.0: [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603). That record's Zenodo license is CC-BY-4.0.
+Earlier archived versions remain addressable: version 1.1.0 (2026-11-21, MIT) at [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595), and version 1.0.0 (2026-04-16, CC-BY-4.0) at [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603).
 
 Also cite the underlying DepMap release and relevant methodology. The bundled matrix is DepMap Public 26Q3. The repository records this foundational reference:
 
