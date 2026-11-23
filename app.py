@@ -105,7 +105,7 @@ TRANSLATIONS = {
         'data_from': 'Data Source',
         'dev_with': 'Development Assistance',
         'ai_dev': 'AI assistance with code, interface design, testing and documentation',
-        'citation': '📚 How to Cite',
+        'citation': 'How to Cite',
     },
     'zh': {
         'app_title': 'CRISPR Score Analyzer',
@@ -143,7 +143,7 @@ TRANSLATIONS = {
         'data_from': '数据来源',
         'dev_with': '开发协助',
         'ai_dev': 'AI 辅助代码开发、界面设计、测试与文档整理',
-        'citation': '📚 引用方式',
+        'citation': '引用方式',
     }
 }
 
@@ -185,44 +185,56 @@ if st.session_state.get('theme') not in {'light', 'dark'}:
 # =============================================================================
 THEMES = {
     'light': {
-        'bg': '#faf9f6',
-        'bg_secondary': '#f3f1ec',
+        'bg': '#f5f5f7',
+        'bg_secondary': '#fbfbfd',
         'bg_card': '#ffffff',
-        'text': '#182028',
-        'text_muted': '#67717b',
-        'border': '#e7e3db',
-        'accent': '#1b4d78',
-        'accent_hover': '#163f63',
-        'success': '#1e7b5a',
-        'danger': '#b84a3c',
-        'shadow': '0 1px 3px rgba(20, 30, 42, 0.03)',
-        'shadow_hover': '0 8px 24px rgba(20, 30, 42, 0.07)',
+        'bg_field': '#f5f5f7',
+        'seg_track': 'rgba(118, 118, 128, 0.12)',
+        'seg_active': '#ffffff',
+        'text': '#1d1d1f',
+        'text_muted': '#6e6e73',
+        'border': '#e5e5ea',
+        'hairline': 'rgba(0, 0, 0, 0.06)',
+        'accent': '#0071e3',
+        'accent_hover': '#0077ed',
+        'accent_text': '#ffffff',
+        'success': '#248a3d',
+        'warning': '#ff9f0a',
+        'danger': '#d70015',
+        'shadow': '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.025)',
+        'shadow_pill': '0 1px 3px rgba(0, 0, 0, 0.09), 0 1px 1px rgba(0, 0, 0, 0.04)',
         'plot_bg': '#ffffff',
-        'plot_text': '#182028',
-        'plot_axis': '#36414d',
-        'plot_reference': 'rgba(54,65,77,0.28)',
-        'plot_grid': 'rgba(54,65,77,0.06)',
-        'plot_scatter_bg': 'rgba(116,126,136,0.22)',
+        'plot_text': '#1d1d1f',
+        'plot_axis': '#424245',
+        'plot_reference': 'rgba(29,29,31,0.24)',
+        'plot_grid': 'rgba(29,29,31,0.06)',
+        'plot_scatter_bg': 'rgba(110,110,115,0.22)',
     },
     'dark': {
-        'bg': '#0d1218',
-        'bg_secondary': '#111821',
-        'bg_card': '#151e29',
-        'text': '#eaeff4',
-        'text_muted': '#8f9eae',
-        'border': '#243140',
-        'accent': '#7bb0e3',
-        'accent_hover': '#96c2ec',
-        'success': '#55c39a',
-        'danger': '#e5806d',
-        'shadow': '0 8px 24px rgba(0,0,0,0.22)',
-        'shadow_hover': '0 12px 30px rgba(0,0,0,0.32)',
-        'plot_bg': '#151e29',
-        'plot_text': '#eaeff4',
-        'plot_axis': '#aab8c7',
-        'plot_reference': 'rgba(170,184,199,0.28)',
+        'bg': '#000000',
+        'bg_secondary': '#111113',
+        'bg_card': '#1c1c1e',
+        'bg_field': '#111113',
+        'seg_track': 'rgba(118, 118, 128, 0.24)',
+        'seg_active': '#2c2c2e',
+        'text': '#f5f5f7',
+        'text_muted': '#8e8e93',
+        'border': '#2c2c2e',
+        'hairline': 'rgba(255, 255, 255, 0.09)',
+        'accent': '#0a84ff',
+        'accent_hover': '#409cff',
+        'accent_text': '#ffffff',
+        'success': '#30d158',
+        'warning': '#ffd60a',
+        'danger': '#ff453a',
+        'shadow': '0 2px 10px rgba(0, 0, 0, 0.45)',
+        'shadow_pill': '0 1px 3px rgba(0, 0, 0, 0.42)',
+        'plot_bg': '#1c1c1e',
+        'plot_text': '#f5f5f7',
+        'plot_axis': '#aeaeb2',
+        'plot_reference': 'rgba(245,245,247,0.24)',
         'plot_grid': 'rgba(255,255,255,0.07)',
-        'plot_scatter_bg': 'rgba(186,200,214,0.38)',
+        'plot_scatter_bg': 'rgba(174,174,178,0.34)',
     }
 }
 
@@ -236,73 +248,80 @@ def inject_css():
     st.markdown(f"""
     <style>
         html, body, [class*="css"] {{
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-                         "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                         "Inter", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }}
         .stApp {{ background: {th['bg']}; color: {th['text']}; }}
         [data-testid="stMainBlockContainer"] {{
-            max-width: 1240px; padding: 0.9rem 2.2rem 2.2rem;
+            max-width: 1200px; padding: 1.05rem 2.2rem 2.6rem;
         }}
         [data-testid="stVerticalBlock"] {{ gap: 0.72rem; }}
         section[data-testid="stSidebar"] {{
-            background: {th['bg_secondary']}; border-right: 1px solid {th['border']};
+            background: {th['bg_secondary']}; border-right: 1px solid {th['hairline']};
         }}
         [data-testid="stSidebarUserContent"] {{ padding-top: 1rem; }}
         h1, h2, h3, h4, h5, label {{ color: {th['text']} !important; }}
-        h2 {{ font-size: 1.08rem !important; font-weight: 650 !important; letter-spacing: -0.01em; }}
-        h3 {{ font-size: 1.02rem !important; font-weight: 650 !important; letter-spacing: -0.01em; padding-bottom: 0.15rem !important; }}
-        h4 {{ font-size: 0.96rem !important; font-weight: 620 !important; letter-spacing: -0.01em; }}
-        p, .stCaption {{ line-height: 1.55; }}
-        [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; font-size: 0.81rem; }}
+        h2 {{ font-size: 1.04rem !important; font-weight: 620 !important; letter-spacing: -0.015em; }}
+        h3 {{ font-size: 1.0rem !important; font-weight: 620 !important; letter-spacing: -0.015em; padding-bottom: 0.1rem !important; }}
+        h4 {{ font-size: 0.94rem !important; font-weight: 600 !important; letter-spacing: -0.01em; }}
+        p, .stCaption {{ line-height: 1.5; }}
+        [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; font-size: 0.8rem; }}
         .hero-shell {{
             display: flex; align-items: flex-end; justify-content: space-between;
-            flex-wrap: wrap; gap: 0.9rem 1.5rem;
-            padding: 0.2rem 0 0.85rem; margin-bottom: 0.15rem;
-            border-bottom: 1px solid {th['border']};
+            flex-wrap: wrap; gap: 0.8rem 1.5rem;
+            padding: 0.15rem 0 0.55rem; margin-bottom: 0.05rem;
         }}
         .hero-kicker {{
-            font-size: 0.64rem; font-weight: 650; letter-spacing: 0.16em;
-            text-transform: uppercase; color: {th['text_muted']}; margin: 0 0 0.25rem;
+            font-size: 0.66rem; font-weight: 650; letter-spacing: 0.12em;
+            text-transform: uppercase; color: {th['accent']}; margin: 0 0 0.22rem;
         }}
         .main-header {{
-            font-size: clamp(1.42rem, 2.2vw, 1.82rem) !important;
-            font-weight: 700; letter-spacing: -0.035em; line-height: 1.12;
+            font-size: clamp(1.5rem, 2.3vw, 1.92rem) !important;
+            font-weight: 680; letter-spacing: -0.032em; line-height: 1.1;
             margin: 0 !important; padding: 0 !important;
+            color: {th['text']} !important;
         }}
-        .brand-accent {{ color: {th['accent']}; }}
-        .sub-header {{ margin: 0.3rem 0 0; color: {th['text_muted']}; font-size: 0.84rem; }}
+        .hero-shell [data-testid="stHeaderActionElements"],
+        .hero-shell h1 a {{ display: none !important; }}
+        .sub-header {{ margin: 0.28rem 0 0; color: {th['text_muted']}; font-size: 0.86rem; font-weight: 420; }}
         .hero-stats {{
-            display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.55rem 1.05rem;
+            display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem 0.95rem;
             font-variant-numeric: tabular-nums;
         }}
         .hero-metric {{
-            display: inline-flex; align-items: baseline; gap: 0.32rem;
-            font-size: 0.77rem; color: {th['text_muted']};
+            display: inline-flex; align-items: baseline; gap: 0.3rem;
+            font-size: 0.78rem; color: {th['text_muted']};
         }}
         .hero-metric strong {{
-            color: {th['text']}; font-size: 0.96rem; font-weight: 680;
+            color: {th['text']}; font-size: 0.94rem; font-weight: 640;
         }}
         .hero-sep {{ color: {th['border']}; font-size: 0.85rem; user-select: none; }}
         .hero-version {{
-            flex-shrink: 0; border: 1px solid {th['border']}; border-radius: 999px;
+            flex-shrink: 0; border: 1px solid {th['hairline']}; border-radius: 999px;
             color: {th['text_muted']}; background: {th['bg_card']};
-            font-size: 0.72rem; font-weight: 560; padding: 0.24rem 0.68rem;
-            letter-spacing: 0.01em;
+            font-size: 0.72rem; font-weight: 540; padding: 0.22rem 0.68rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }}
         .scope-note {{
-            font-size: 0.78rem; color: {th['accent']}; padding: 0.05rem 0.1rem;
+            font-size: 0.79rem; color: {th['accent']}; padding: 0.02rem 0.1rem;
             font-weight: 560; overflow-wrap: anywhere;
         }}
+        .input-title {{
+            font-size: 0.84rem; font-weight: 620; color: {th['text']};
+            letter-spacing: -0.01em; line-height: 1.3;
+        }}
+        .section-gap {{ height: 0.45rem; }}
         .st-key-rank_input, .st-key-box_input, .st-key-multi_input, .st-key-codep_input {{
-            background: {th['bg_card']}; border: 1px solid {th['border']};
-            border-radius: 12px; padding: 0.85rem 1.05rem; box-shadow: {th['shadow']};
+            background: {th['bg_card']}; border: 1px solid {th['hairline']};
+            border-radius: 14px; padding: 0.95rem 1.15rem; box-shadow: {th['shadow']};
         }}
         .status-strip {{
             display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-            padding: 0.48rem 0.75rem; margin: 0.05rem 0;
-            background: {th['bg_card']}; border: 1px solid {th['border']};
-            border-radius: 8px;
+            padding: 0.5rem 0.82rem; margin: 0.02rem 0;
+            background: {th['bg_card']}; border: 1px solid {th['hairline']};
+            border-radius: 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
             color: {th['text_muted']}; font-size: 0.8rem;
             font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
         }}
@@ -310,137 +329,179 @@ def inject_css():
             width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
             background: {th['success']};
         }}
-        .status-strip strong {{ color: {th['text']}; font-weight: 630; }}
-        .status-time {{ opacity: 0.72; font-size: 0.74rem; margin-left: auto; }}
+        .status-dot.pending {{
+            background: {th['warning']};
+            box-shadow: 0 0 0 3px {th['warning']}2e;
+        }}
+        .status-strip strong {{ color: {th['text']}; font-weight: 590; }}
+        .status-pending {{
+            color: {th['warning']}; font-size: 0.75rem; font-weight: 600;
+            letter-spacing: 0.005em;
+        }}
+        .status-time {{ opacity: 0.68; font-size: 0.73rem; margin-left: auto; }}
         .ready-note {{
-            padding: 0.65rem 0.2rem; color: {th['text_muted']};
-            font-size: 0.84rem; letter-spacing: 0.005em;
-        }}
-        .match-strip {{
-            display: flex; align-items: center; flex-wrap: wrap; gap: 0.34rem;
-            padding: 0.12rem 0.05rem;
-        }}
-        .match-label {{
-            font-size: 0.75rem; font-weight: 600; color: {th['text_muted']};
-            margin-right: 0.22rem; letter-spacing: 0.01em;
-            font-variant-numeric: tabular-nums;
-        }}
-        .gene-tag {{
-            display: inline-block;
-            font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
-            color: {th['accent']}; background: {th['accent']}0c;
-            border: 1px solid {th['accent']}24; border-radius: 5px;
-            padding: 0.1rem 0.44rem; font-size: 0.75rem; font-weight: 560;
-            letter-spacing: 0.01em;
+            padding: 0.55rem 0.2rem; color: {th['text_muted']};
+            font-size: 0.83rem; letter-spacing: 0.005em;
         }}
         [data-testid="stButtonGroup"] {{ margin: 0.05rem 0 0.1rem; }}
-        [data-testid="stButtonGroup"] button {{
-            min-height: 2.3rem; font-weight: 580; font-size: 0.86rem;
-            letter-spacing: -0.005em;
+        [data-testid="stButtonGroup"] > div {{
+            background: {th['seg_track']}; padding: 3px; border-radius: 11px;
+            gap: 2px !important;
         }}
-        [data-testid="stButtonGroup"] button[aria-checked="true"],
-        [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
-            background: {th['accent']}14; color: {th['accent']}; border-color: {th['accent']};
-            font-weight: 650;
+        [data-testid="stButtonGroup"] button {{
+            min-height: 2.15rem; font-weight: 540; font-size: 0.84rem;
+            letter-spacing: -0.008em; border-radius: 8px !important;
+            border: 1px solid transparent !important;
+            background-color: transparent !important;
+            color: {th['text_muted']} !important;
+            transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+        }}
+        [data-testid="stButtonGroup"] button:hover {{
+            color: {th['text']} !important;
+        }}
+        .stApp [data-testid="stButtonGroup"] button[aria-checked="true"],
+        .stApp [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
+            background-color: {th['seg_active']} !important;
+            color: {th['text']} !important;
+            border-color: {th['hairline']} !important;
+            box-shadow: {th['shadow_pill']};
+            font-weight: 610;
         }}
         [data-testid="stVerticalBlockBorderWrapper"] {{
-            border-color: {th['border']} !important; border-radius: 10px !important;
+            border-color: {th['hairline']} !important; border-radius: 14px !important;
         }}
         [data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {th['bg_card']}; }}
         [data-testid="stPlotlyChart"] {{
-            background: {th['plot_bg']}; border: 1px solid {th['border']};
-            border-radius: 10px; overflow: hidden;
+            background: {th['plot_bg']}; border: 1px solid {th['hairline']};
+            border-radius: 14px; overflow: hidden; box-shadow: {th['shadow']};
         }}
-        button {{ border-radius: 7px !important; transition: border-color 0.15s ease, background-color 0.15s ease; }}
+        button {{ border-radius: 9px !important; transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease; }}
         .stButton button, .stDownloadButton button, [data-testid="stPopover"] button {{
-            min-height: 2.2rem; font-weight: 580; font-size: 0.85rem;
+            min-height: 2.15rem; font-weight: 540; font-size: 0.83rem;
         }}
-        button[kind="primary"] {{ background: {th['accent']}; border-color: {th['accent']}; color: {th['bg_card']}; font-weight: 620; }}
-        button[kind="primary"]:hover {{ background: {th['accent_hover']}; border-color: {th['accent_hover']}; }}
+        button[kind="primary"] {{
+            min-height: 2.38rem !important;
+            background: {th['accent']} !important; border-color: {th['accent']} !important;
+            color: {th['accent_text']} !important; font-weight: 600 !important;
+            letter-spacing: -0.005em;
+        }}
+        button[kind="primary"]:hover {{
+            background: {th['accent_hover']} !important; border-color: {th['accent_hover']} !important;
+        }}
+        .stTextArea [data-baseweb="textarea"],
+        .stTextArea [data-baseweb="base-input"],
+        .stTextInput [data-baseweb="input"],
+        .stTextInput [data-baseweb="base-input"],
+        .stNumberInput [data-baseweb="input"],
+        .stNumberInput [data-baseweb="base-input"] {{
+            background: {th['bg_field']} !important;
+            border-color: {th['border']} !important;
+            border-radius: 10px !important;
+        }}
+        .stTextArea [data-baseweb="textarea"]:focus-within,
+        .stTextInput [data-baseweb="input"]:focus-within,
+        .stNumberInput [data-baseweb="input"]:focus-within {{
+            background: {th['bg_card']} !important;
+            border-color: {th['accent']} !important;
+            box-shadow: 0 0 0 3px {th['accent']}24 !important;
+        }}
         .stTextInput input, .stTextArea textarea, .stNumberInput input {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
+            background: {th['bg_field']} !important; color: {th['text']} !important;
             -webkit-text-fill-color: {th['text']} !important;
-            border-color: {th['border']} !important; line-height: 1.55;
-            font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
-            font-size: 0.86rem !important;
+            border-color: transparent !important; border-radius: 10px !important;
+            line-height: 1.55;
+            font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
+            font-size: 0.85rem !important;
+        }}
+        .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {{
+            background: {th['bg_card']} !important;
+        }}
+        [data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child {{
+            background-color: {th['seg_track']};
+            border: 1px solid {th['border']};
         }}
         .stSelectbox [role="group"], .stMultiSelect [role="group"],
         .stSelectbox div[data-baseweb="select"] > div,
         .stMultiSelect div[data-baseweb="select"] > div {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']} !important; border-radius: 8px !important;
+            border: 1px solid {th['border']} !important; border-radius: 10px !important;
         }}
         .stSelectbox input[role="combobox"], .stMultiSelect input[role="combobox"] {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
+            background: transparent !important; color: {th['text']} !important;
             -webkit-text-fill-color: {th['text']} !important; caret-color: {th['text']};
         }}
         .stSelectbox button[aria-label="Open"], .stMultiSelect button[aria-label="Open"] {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
+            background: transparent !important; color: {th['text']} !important;
             border: none !important;
         }}
         .stSelectbox div[data-baseweb="select"] span {{ color: {th['text']}; }}
         div[data-baseweb="popover"], div[role="listbox"],
         div:has(> [role="listbox"]) {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']} !important;
+            border: 1px solid {th['border']} !important; border-radius: 12px !important;
         }}
         [role="option"] {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
         }}
         [role="option"][aria-selected="true"], [role="option"][data-focused="true"] {{
-            background: {th['accent']}2b !important;
+            background: {th['accent']}22 !important;
         }}
         [data-testid="stFileUploaderDropzone"] {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
-            border-color: {th['border']} !important;
+            background: {th['bg_field']} !important; color: {th['text']} !important;
+            border-color: {th['border']} !important; border-radius: 10px !important;
         }}
         [data-testid="stCode"] pre {{
-            background: {th['bg_secondary']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']};
+            background: {th['bg_field']} !important; color: {th['text']} !important;
+            border: 1px solid {th['hairline']}; border-radius: 10px;
         }}
         .stMarkdown :not(pre) > code {{
-            background: {th['bg_secondary']} !important; color: {th['accent']} !important;
-            border: 1px solid {th['border']}; border-radius: 5px; padding: 0.1rem 0.35rem;
-            font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+            background: {th['bg_field']} !important; color: {th['accent']} !important;
+            border: 1px solid {th['hairline']}; border-radius: 6px; padding: 0.08rem 0.36rem;
+            font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
             font-size: 0.85em;
         }}
         [data-testid="stTooltipIcon"] svg {{
             color: {th['text_muted']} !important; stroke: {th['text_muted']} !important;
         }}
-        [data-testid="stTabs"] button {{ color: {th['text_muted']} !important; font-weight: 580; font-size: 0.87rem; }}
-        [data-testid="stTabs"] button[aria-selected="true"] {{ color: {th['accent']} !important; font-weight: 650; }}
-        [data-testid="stExpander"] summary {{ background: {th['bg_card']}; font-weight: 560; font-size: 0.87rem; }}
-        [data-testid="stDataFrame"] {{ border-radius: 8px; overflow: hidden; border: 1px solid {th['border']}; }}
+        [data-testid="stTabs"] button {{ color: {th['text_muted']} !important; font-weight: 560; font-size: 0.86rem; }}
+        [data-testid="stTabs"] button[aria-selected="true"] {{ color: {th['accent']} !important; font-weight: 620; }}
+        [data-testid="stExpander"] {{
+            border-color: {th['hairline']} !important; border-radius: 12px !important;
+            background: {th['bg_card']};
+        }}
+        [data-testid="stExpander"] summary {{ background: transparent; font-weight: 560; font-size: 0.85rem; }}
+        [data-testid="stDataFrame"] {{ border-radius: 12px; overflow: hidden; border: 1px solid {th['hairline']}; }}
         .theme-grid-wrap {{
             overflow: auto; max-height: 420px;
-            border: 1px solid {th['border']}; border-radius: 8px;
+            border: 1px solid {th['hairline']}; border-radius: 12px;
         }}
         .theme-grid {{
             width: 100%; border-collapse: collapse; background: {th['bg_card']};
-            color: {th['text']}; font-size: 0.88rem; font-variant-numeric: tabular-nums;
+            color: {th['text']}; font-size: 0.87rem; font-variant-numeric: tabular-nums;
         }}
-        .theme-grid th, .theme-grid td {{ padding: 0.48rem 0.78rem; border-bottom: 1px solid {th['border']}; text-align: right; white-space: nowrap; }}
+        .theme-grid th, .theme-grid td {{ padding: 0.5rem 0.82rem; border-bottom: 1px solid {th['hairline']}; text-align: right; white-space: nowrap; }}
         .theme-grid th:first-child, .theme-grid td:first-child {{ text-align: left; font-weight: 560; }}
         .theme-grid th {{
             position: sticky; top: 0; z-index: 1;
-            color: {th['text_muted']}; font-weight: 620; font-size: 0.78rem;
-            letter-spacing: 0.02em; background: {th['bg_secondary']};
+            color: {th['text_muted']}; font-weight: 600; font-size: 0.77rem;
+            letter-spacing: 0.015em; background: {th['bg_secondary']};
         }}
-        .theme-grid tbody tr:hover {{ background: {th['accent']}0f; }}
+        .theme-grid tbody tr:hover {{ background: {th['accent']}12; }}
         .theme-grid tr:last-child td {{ border-bottom: none; }}
-        .footer-card {{ padding: 1rem; background: {th['bg_card']}; border: 1px solid {th['border']}; border-radius: 8px; }}
+        .footer-card {{ padding: 1.05rem 1.15rem; background: {th['bg_card']}; border: 1px solid {th['hairline']}; border-radius: 12px; }}
         .footer-card h4 {{ margin: 0 0 0.5rem; }}
-        .footer-card p {{ color: {th['text_muted']}; margin: 0; font-size: 0.85rem; }}
-        .footer-card a {{ color: {th['accent']}; }}
+        .footer-card p {{ color: {th['text_muted']}; margin: 0; font-size: 0.84rem; }}
+        .footer-card a {{ color: {th['accent']}; text-decoration: none; }}
+        .footer-card a:hover {{ text-decoration: underline; }}
         .cite-box {{
-            padding: 1rem; border-left: 3px solid {th['accent']}; background: {th['bg_card']};
-            font-size: 0.85rem; overflow-wrap: anywhere;
+            padding: 0.95rem 1.05rem; border-left: 3px solid {th['accent']}; background: {th['bg_field']};
+            border-radius: 0 10px 10px 0; font-size: 0.84rem; overflow-wrap: anywhere;
         }}
-        .doi-badge {{ font-size: 0.8rem; margin-left: 0.5rem; color: {th['accent']}; }}
+        .doi-badge {{ font-size: 0.8rem; margin-left: 0.5rem; color: {th['accent']}; text-decoration: none; }}
         #MainMenu, footer, [data-testid="stAppDeployButton"] {{ visibility: hidden; display: none; }}
         header[data-testid="stHeader"] {{ background: transparent; }}
         button:focus-visible, input:focus-visible, textarea:focus-visible {{
-            outline: 2px solid {th['accent']}88 !important; outline-offset: 2px !important;
+            outline: 2px solid {th['accent']}99 !important; outline-offset: 2px !important;
         }}
         :is(.stApp, [data-testid="stPopoverBody"]) button {{
             background-color: {th['bg_card']}; color: {th['text']} !important;
@@ -451,15 +512,10 @@ def inject_css():
         }}
         :is(.stApp, [data-testid="stPopoverBody"]) button p, :is(.stApp, [data-testid="stPopoverBody"]) button span {{ color: inherit !important; }}
         :is(.stApp, [data-testid="stPopoverBody"]) button[kind="primary"] {{
-            background-color: {th['accent']}; color: {th['bg_card']} !important;
-            border-color: {th['accent']};
+            background-color: {th['accent']} !important; color: {th['accent_text']} !important;
+            border-color: {th['accent']} !important;
         }}
-        :is(.stApp, [data-testid="stPopoverBody"]) button[kind="primary"]:hover {{ background-color: {th['accent_hover']}; }}
-        .stApp [data-testid="stButtonGroup"] button[aria-checked="true"],
-        .stApp [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
-            background-color: {th['accent']}18; color: {th['accent']} !important;
-            border-color: {th['accent']};
-        }}
+        :is(.stApp, [data-testid="stPopoverBody"]) button[kind="primary"]:hover {{ background-color: {th['accent_hover']} !important; }}
         :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary,
         :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary p,
         :is(.stApp, [data-testid="stPopoverBody"]) [data-testid="stExpander"] summary span {{ color: {th['text']} !important; }}
@@ -472,10 +528,11 @@ def inject_css():
         .stApp [data-testid="stAlert"],
         .stApp [data-testid="stAlert"] > div,
         .stApp [data-testid="stAlert"] [data-baseweb="notification"] {{
-            background-color: {th['bg_secondary']} !important;
+            background-color: {th['bg_card']} !important;
             color: {th['text']} !important;
-            border: 1px solid {th['border']} !important;
+            border: 1px solid {th['hairline']} !important;
             border-left: 3px solid {th['accent']} !important;
+            border-radius: 10px !important;
         }}
         .stApp [data-testid="stAlert"] p,
         .stApp [data-testid="stAlert"] span,
@@ -483,18 +540,19 @@ def inject_css():
             color: {th['text']} !important;
             fill: {th['text']} !important;
         }}
-        .theme-grid .score-low {{ color: #9ecbf2; font-weight: 700; }}
-        .theme-grid .score-mid {{ color: #d5e4f2; font-weight: 650; }}
-        .theme-grid .score-high {{ color: #f0c7b8; font-weight: 650; }}
+        .theme-grid .score-low {{ color: #64b5ff; font-weight: 680; }}
+        .theme-grid .score-mid {{ color: #cfe3f8; font-weight: 600; }}
+        .theme-grid .score-high {{ color: #ffb0a3; font-weight: 600; }}
         [data-testid="stPopoverBody"] {{
             background: {th['bg_card']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']};
+            border: 1px solid {th['border']} !important; border-radius: 12px !important;
+            box-shadow: {th['shadow']} !important;
         }}
         [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"],
         [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] p {{ color: {th['text_muted']} !important; }}
         @media (max-width: 900px) {{
             [data-testid="stMainBlockContainer"] {{ padding: 0.75rem 0.9rem 2rem; }}
-            .hero-shell {{ align-items: flex-start; gap: 0.6rem; padding: 0.15rem 0 0.7rem; }}
+            .hero-shell {{ align-items: flex-start; gap: 0.55rem; padding: 0.1rem 0 0.45rem; }}
             .status-time {{ margin-left: 0; }}
         }}
         @media (prefers-reduced-motion: reduce) {{
@@ -550,14 +608,14 @@ def compute_codependency_scan(df_hash: str, _df: pd.DataFrame, query_gene: str, 
 # 绘图配置
 # =============================================================================
 PLOT_COLORS = {
-    # Refined colorblind-safe editorial ink palette (Okabe–Ito inspired)
-    'essential': '#c4583b',
-    'nonessential': '#1d8a68',
-    'interest': '#1b5e91',
-    'threshold': '#9aa4ae',
-    'boxplot_fill': '#4a88b8',
+    # Crisp, colorblind-conscious Apple-calibrated scientific palette
+    'essential': '#d94f3d',
+    'nonessential': '#248a3d',
+    'interest': '#0071e3',
+    'threshold': '#86868b',
+    'boxplot_fill': '#0071e3',
 }
-FONT_FAMILY = "Inter, Helvetica Neue, Arial, sans-serif"
+FONT_FAMILY = "-apple-system, BlinkMacSystemFont, Inter, Helvetica Neue, Arial, sans-serif"
 
 PLOT_CONFIG = {
     'displaylogo': False,
@@ -770,7 +828,7 @@ def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
         ),
         title=dict(text=ui(f'{n_cell_lines:,} cell lines  ·  −0.5 reference',
                            f'{n_cell_lines:,} 个细胞系  ·  −0.5 参考线'),
-                   font=dict(size=12.5), x=0, xanchor='left'),
+                   font=dict(size=12.5), xref='paper', x=0, xanchor='left'),
         legend=dict(orientation='h', yanchor='top', y=-0.16, xanchor='center', x=0.5,
                     font=dict(size=12), itemsizing='constant'),
         width=width, height=height, margin=margin)
@@ -779,14 +837,15 @@ def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
 
 def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', nonessential_gene='PTEN',
                      n_cell_lines=0, show_labels=True, point_size=4, width=640, height=480):
+    interest_color = get_theme()['accent']
     return build_rank_figure(gene_rank_df,
-                            [{'genes': genes_of_interest, 'labels': show_labels, 'color': PLOT_COLORS['interest'],
+                            [{'genes': genes_of_interest, 'labels': show_labels, 'color': interest_color,
                               'name': ui('Genes of interest', '目标基因')}],
                             [essential_gene, nonessential_gene], n_cell_lines, point_size,
                             show_reference_labels=show_labels, width=width, height=height)
 
 
-def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, bg_color='#8FA5B8', hl_color='#1B5E91',
+def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, bg_color='#8E8E93', hl_color='#0071E3',
                                essential_gene='MYC', nonessential_gene='PTEN', n_cell_lines=0, show_labels=True,
                                point_size=None, width=640, height=480):
     bg_only = [g for g in background_genes if g not in highlight_genes]
@@ -814,10 +873,10 @@ def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=
 
     def box_palette(median_val):
         if median_val < ESSENTIALITY_THRESHOLD:
-            return ('#7bb0e3', 'rgba(123,176,227,0.22)') if is_dark else ('#1b5e91', 'rgba(27,94,145,0.20)')
+            return ('#0a84ff', 'rgba(10,132,255,0.22)') if is_dark else ('#0071e3', 'rgba(0,113,227,0.18)')
         if median_val < 0:
-            return ('#5c93c4', 'rgba(92,147,196,0.16)') if is_dark else ('#4a82ae', 'rgba(74,130,174,0.15)')
-        return ('#8b9aa8', 'rgba(139,154,168,0.14)') if is_dark else ('#7a8694', 'rgba(122,134,148,0.12)')
+            return ('#5aa9ff', 'rgba(90,169,255,0.15)') if is_dark else ('#4e95dc', 'rgba(78,149,220,0.14)')
+        return ('#8e8e93', 'rgba(142,142,147,0.14)') if is_dark else ('#86868b', 'rgba(134,134,139,0.12)')
 
     if compare_mode == 'by_gene':
         fig = go.Figure()
@@ -1015,16 +1074,15 @@ def _append_selected_genes(target_key, picker_key):
     st.session_state[picker_key] = []
 
 
-def render_gene_quick_add(prefix, target_key, label=None):
+def render_gene_quick_add(prefix, target_key, label=None, icon=':material/search:'):
     """Optional autocomplete helper to search symbols and append to the text area."""
     if gene_rankings.empty:
         return
-    options = sorted(gene_rankings['gene'].tolist())
     picker_key = f'{prefix}_{target_key}_picker'
-    with st.popover(label or ui('+ Search genes', '+ 搜索添加基因')):
+    with st.popover(label or ui('Search', '搜索'), icon=icon):
         st.multiselect(
             ui('Search approved symbols', '搜索基因符号'),
-            options,
+            all_gene_options,
             key=picker_key,
             placeholder=ui('Type to search (e.g. SOX10, KRAS)…', '输入关键词搜索（如 SOX10、KRAS）…'),
         )
@@ -1037,47 +1095,27 @@ def render_gene_quick_add(prefix, target_key, label=None):
         )
 
 
-def _set_selected_gene(target_key, picker_key):
-    chosen = st.session_state.get(picker_key)
-    if chosen:
-        st.session_state[target_key] = str(chosen)
-    st.session_state.pop(picker_key, None)
-
-
-def render_single_gene_picker(prefix, target_key, label=None):
-    """Optional autocomplete helper to pick a single approved gene symbol."""
-    if gene_rankings.empty:
-        return
-    options = sorted(gene_rankings['gene'].tolist())
-    picker_key = f'{prefix}_{target_key}_picker'
-    with st.popover(label or ui('Search gene', '搜索选择基因'), width='stretch'):
-        st.selectbox(
-            ui('Search approved symbol', '搜索基因符号'),
-            options,
-            index=None,
-            key=picker_key,
-            placeholder=ui('Type to search (e.g. BRAF, SOX10)…', '输入关键词搜索（如 BRAF、SOX10）…'),
-        )
-        st.button(
-            ui('Use selected gene', '填入该基因'),
-            key=f'{picker_key}_apply',
-            on_click=_set_selected_gene,
-            args=(target_key, picker_key),
-            width='stretch',
-        )
-
-
-def read_gene_input(prefix, default, method):
+def read_gene_input(prefix, default, method, placeholder=None):
     if method == 'text':
         key = f'{prefix}_genes'
         st.session_state.setdefault(key, default)
-        value = st.text_area(t('gene_list'), height=88, key=key,
-                             help=ui('Separate with newlines, spaces, tabs, commas or semicolons. DepMap headers like "MYC (4609)" are also accepted.',
-                                     '支持换行、空格、制表符、中英文逗号和分号，也兼容直接粘贴 "MYC (4609)" 格式。'))
+        value = st.text_area(
+            t('gene_list'), height=68, key=key,
+            label_visibility='collapsed',
+            placeholder=placeholder or ui(
+                'Enter gene symbols (e.g. KRAS, SOX10, BRAF) — separated by newlines, spaces, or commas',
+                '输入基因符号（如 KRAS、SOX10、BRAF）— 支持换行、空格或逗号分隔',
+            ),
+            help=ui('Separate with newlines, spaces, tabs, commas or semicolons. DepMap headers like "MYC (4609)" are also accepted.',
+                    '支持换行、空格、制表符、中英文逗号和分号，也兼容直接粘贴 "MYC (4609)" 格式。'),
+        )
         return value, None
-    file = st.file_uploader(t('input_file'), type=['csv', 'txt', 'tsv'], key=f'{prefix}_file',
-                            help=ui('First column; a gene/symbol header is optional.',
-                                    '读取第一列；可有 gene/symbol 表头，也可无表头。'))
+    file = st.file_uploader(
+        t('input_file'), type=['csv', 'txt', 'tsv'], key=f'{prefix}_file',
+        label_visibility='collapsed',
+        help=ui('First column; a gene/symbol header is optional.',
+                '读取第一列；可有 gene/symbol 表头，也可无表头。'),
+    )
     return '', file
 
 
@@ -1085,22 +1123,17 @@ def parse_input(text, file):
     return parse_gene_upload(file.getvalue(), file.name) if file else parse_gene_text(text)
 
 
-def show_matches(parsed, matched, missing, title=None, resolved=None):
-    resolved = list(resolved or [])
-    duplicates = parsed.get('duplicates') or []
-    label = f"{title} · {len(matched)}" if title else ui(f"Matched · {len(matched)}", f"已匹配 · {len(matched)}")
-    if matched:
-        tags = "".join(f'<span class="gene-tag">{escape(g)}</span>' for g in matched)
-        st.markdown(
-            f'<div class="match-strip"><span class="match-label">{escape(label)}</span>{tags}</div>',
-            unsafe_allow_html=True,
-        )
-    elif title:
-        st.markdown(
-            f'<div class="match-strip"><span class="match-label">{escape(title)}</span></div>',
-            unsafe_allow_html=True,
-        )
+def _has_match_issues(parsed, missing, resolved=None) -> bool:
+    return bool(missing or (parsed or {}).get('duplicates') or resolved)
 
+
+def show_matches(parsed, matched, missing, title=None, resolved=None):
+    """Apple-minimalist exception-only feedback: stay silent when every gene matches cleanly."""
+    resolved = list(resolved or [])
+    duplicates = (parsed or {}).get('duplicates') or []
+    if not missing and not duplicates and not resolved:
+        return
+    prefix_text = f"{title} · " if title else ""
     notes_en, notes_zh = [], []
     if resolved:
         notes_en.append(f"alias resolved {len(resolved)}")
@@ -1111,8 +1144,7 @@ def show_matches(parsed, matched, missing, title=None, resolved=None):
     if duplicates:
         notes_en.append(f"duplicates removed {len(duplicates)}")
         notes_zh.append(f"去重 {len(duplicates)}")
-    if notes_en:
-        st.caption(ui(" · ".join(notes_en), " · ".join(notes_zh)))
+    st.caption(prefix_text + ui(" · ".join(notes_en), " · ".join(notes_zh)))
     if resolved:
         st.caption(ui("Previous or alias symbols: ", "旧符号或别名：")
                    + ", ".join(f"{item['input']} → {item['gene']}" for item in resolved))
@@ -1215,12 +1247,13 @@ def result_downloads(result, fig, prefix):
     with title_col:
         st.markdown(f"### {ui('Results', '分析结果')}")
     with figure_col:
-        with st.popover(ui('Export figure', '导出图形'), width='stretch'):
+        with st.popover(ui('Export figure', '导出图形'), icon=':material/image:', width='stretch'):
             render_download_buttons(fig, prefix, prefix, height=int(fig.layout.height or 600))
     with data_col:
         st.download_button(ui('Download results', '下载结果'),
                            selected.drop(columns=['gene_upper'], errors='ignore').to_csv(index=False),
                            f'{prefix}_selected_results.csv', 'text/csv', key=f'{prefix}_csv',
+                           icon=':material/download:',
                            help=ui('CSV with original field names and full numeric precision.',
                                    'CSV 保留规范字段名与原始数值精度。'),
                            on_click='ignore', width='stretch')
@@ -1320,8 +1353,8 @@ PREFERENCE_MAX_LOLLIPOP_GENES = 6
 def _preference_scale():
     """Blue is a lower score than the gene's own all-lineage mean."""
     if st.session_state.get("theme") == "dark":
-        return [[0.0, "#5598db"], [0.5, "#1d2836"], [1.0, "#d67458"]]
-    return [[0.0, "#1b5e91"], [0.5, "#f7f4ef"], [1.0, "#c4583b"]]
+        return [[0.0, "#0a84ff"], [0.5, "#2c2c2e"], [1.0, "#ff6961"]]
+    return [[0.0, "#0071e3"], [0.5, "#f5f5f7"], [1.0, "#d94f3d"]]
 
 
 def create_preference_plot(table, highlight_lineages=None, top_k=None):
@@ -1376,8 +1409,8 @@ def _add_preference_lollipop(fig, gene_rows, gene, row, highlight_set=None):
     order = part["lineage"].tolist()
     diffs = part["difference"].to_numpy(dtype=float)
     limit = float(np.nanmax(np.abs(diffs))) or 0.1
-    dep_col = "#5598db" if is_dark else "#1b5e91"
-    res_col = "#d67458" if is_dark else "#c4583b"
+    dep_col = "#0a84ff" if is_dark else "#0071e3"
+    res_col = "#ff6961" if is_dark else "#d94f3d"
     stems = {dep_col: ([], []), res_col: ([], [])}
     for lineage, diff in zip(order, diffs):
         xs, ys = stems[dep_col if diff < 0 else res_col]
@@ -1434,7 +1467,7 @@ def _add_preference_lollipop(fig, gene_rows, gene, row, highlight_set=None):
         showlegend=False,
     ), row=row, col=1)
     fig.add_vline(x=0, line_width=1.4, line_color=th["plot_axis"], row=row, col=1)
-    quiet_grid = "rgba(182,195,207,0.12)" if is_dark else "rgba(54,65,77,0.08)"
+    quiet_grid = "rgba(255,255,255,0.08)" if is_dark else "rgba(29,29,31,0.06)"
     fig.update_yaxes(
         automargin=True, categoryorder="array", categoryarray=order,
         showgrid=True, gridcolor=quiet_grid, gridwidth=1, row=row, col=1,
@@ -1521,9 +1554,9 @@ def create_correlation_heatmap(corr: pd.DataFrame, counts: pd.DataFrame, method:
     metric_label = ui("Pearson r", "Pearson r") if method == "pearson" else ui("Spearman ρ", "Spearman ρ")
     is_dark = st.session_state.get("theme") == "dark"
     colorscale = (
-        [[0.0, "#d67458"], [0.5, "#1d2836"], [1.0, "#5598db"]]
+        [[0.0, "#ff6961"], [0.5, "#2c2c2e"], [1.0, "#0a84ff"]]
         if is_dark else
-        [[0.0, "#c4583b"], [0.5, "#f7f4ef"], [1.0, "#1b5e91"]]
+        [[0.0, "#d94f3d"], [0.5, "#f5f5f7"], [1.0, "#0071e3"]]
     )
     cell = 56 if len(genes) <= 8 else (44 if len(genes) <= 14 else 30)
     height = max(360, len(genes) * cell + 115)
@@ -1629,7 +1662,7 @@ def render_lineage_preference(result, prefix="pref"):
     )
     with ctrl3:
         if figure is not None:
-            with st.popover(ui("Export figure", "导出图形"), width="stretch"):
+            with st.popover(ui("Export figure", "导出图形"), icon=":material/image:", width="stretch"):
                 render_download_buttons(
                     figure, f"{prefix}_lineage_preference", f"{prefix}_pref",
                     height=int(figure.layout.height or 600),
@@ -1665,7 +1698,7 @@ def render_top_cell_lines(result, prefix):
             ui("Download CSV", "下载 CSV"),
             lambda frame=summary: frame.to_csv(index=False).encode("utf-8-sig"),
             f"{prefix}_{gene}_top_cell_lines.csv", "text/csv",
-            key=f"{prefix}_top_csv", on_click="ignore", width="stretch",
+            key=f"{prefix}_top_csv", icon=":material/download:", on_click="ignore", width="stretch",
         )
     col_cfg = {
         "rank_in_group": st.column_config.NumberColumn("#", format="%d"),
@@ -1721,7 +1754,7 @@ def render_pair_scatter_panel(gene_x: str, gene_y: str, rankings: pd.DataFrame, 
     with h1:
         st.markdown(f"#### {ui('Cell-line scatter', '细胞系相关性散点图')} · `{gene_x}` vs `{gene_y}`")
     with h2:
-        with st.popover(ui("Export figure", "导出图形"), width="stretch"):
+        with st.popover(ui("Export figure", "导出图形"), icon=":material/image:", width="stretch"):
             render_download_buttons(
                 fig, f"{key_prefix}_{gene_x}_vs_{gene_y}", f"{key_prefix}_scatter",
                 height=int(fig.layout.height or 520),
@@ -1731,7 +1764,7 @@ def render_pair_scatter_panel(gene_x: str, gene_y: str, rankings: pd.DataFrame, 
             ui("Scatter CSV", "散点数据 CSV"),
             lambda frame=scatter_df: frame.to_csv(index=False).encode("utf-8-sig"),
             f"{key_prefix}_{gene_x}_vs_{gene_y}.csv", "text/csv",
-            key=f"{key_prefix}_scatter_csv", on_click="ignore", width="stretch",
+            key=f"{key_prefix}_scatter_csv", icon=":material/download:", on_click="ignore", width="stretch",
         )
     centered_plot(fig)
 
@@ -1769,7 +1802,7 @@ def render_codependency_result():
         )
         with c2:
             if fig is not None:
-                with st.popover(ui("Export figure", "导出图形"), width="stretch"):
+                with st.popover(ui("Export figure", "导出图形"), icon=":material/image:", width="stretch"):
                     render_download_buttons(
                         fig, f"codep_{query}_{method}_top{top_n}", "codep_scan",
                         height=int(fig.layout.height or 600),
@@ -1779,7 +1812,7 @@ def render_codependency_result():
                 ui("Download full scan CSV", "下载全基因组 CSV"),
                 lambda frame=scan_df: frame.to_csv(index=False).encode("utf-8-sig"),
                 f"codep_{query}_{method}_genomewide.csv", "text/csv",
-                key="codep_scan_csv", on_click="ignore", width="stretch",
+                key="codep_scan_csv", icon=":material/download:", on_click="ignore", width="stretch",
             )
         st.caption(ui(
             f"Genome-wide {metric_label} scan against {query} across cell lines in the active sidebar scope. "
@@ -1798,7 +1831,7 @@ def render_codependency_result():
         if st.session_state.get("codep_scan_partner") not in partner_options:
             st.session_state["codep_scan_partner"] = partner_options[0]
 
-        st.markdown("---")
+        st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
         p_col, m_col = st.columns([2.2, 1.1], vertical_alignment="bottom")
         with p_col:
             partner = st.selectbox(
@@ -1808,16 +1841,16 @@ def render_codependency_result():
         with m_col:
             top_partners = [query] + (pos_df["gene"].head(5).tolist() if not pos_df.empty else scan_df["gene"].head(5).tolist())
             if len(top_partners) >= 2 and st.button(
-                ui(f"Matrix of top {len(top_partners)} →", f"用 Top {len(top_partners)} 生成矩阵 →"),
-                key="codep_scan_to_matrix", width="stretch",
+                ui(f"Matrix of top {len(top_partners)}", f"用 Top {len(top_partners)} 生成矩阵"),
+                key="codep_scan_to_matrix", icon=":material/grid_on:", width="stretch",
             ):
                 st.session_state["codep_mode"] = "matrix"
-                st.session_state["codep_genes"] = "\n".join(top_partners)
+                st.session_state["codep_genes"] = ", ".join(top_partners)
                 st.session_state["_autorun_view"] = "codep"
                 st.rerun()
         render_pair_scatter_panel(query, partner, rankings, "codep_scan")
 
-        st.markdown("---")
+        st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
         col_cfg = {
             "gene": st.column_config.TextColumn(ui("Gene", "基因")),
             "correlation": st.column_config.NumberColumn(metric_label, format="%.3f"),
@@ -1851,7 +1884,7 @@ def render_codependency_result():
     with h1:
         st.markdown(f"### {ui('Pairwise co-dependency matrix', '多基因共依赖相关性矩阵')} · {metric_label}")
     with h2:
-        with st.popover(ui("Export figure", "导出图形"), width="stretch"):
+        with st.popover(ui("Export figure", "导出图形"), icon=":material/image:", width="stretch"):
             render_download_buttons(
                 fig, f"codep_matrix_{method}", "codep_matrix",
                 height=int(fig.layout.height or 500),
@@ -1861,7 +1894,7 @@ def render_codependency_result():
             ui("Matrix CSV", "相关性矩阵 CSV"),
             lambda frame=corr: frame.to_csv().encode("utf-8-sig"),
             f"codep_matrix_{method}.csv", "text/csv",
-            key="codep_matrix_csv", on_click="ignore", width="stretch",
+            key="codep_matrix_csv", icon=":material/download:", on_click="ignore", width="stretch",
         )
     st.caption(ui(
         "Pairwise dependency correlation across cell lines in the active sidebar scope. High positive correlation often reflects shared complexes or pathways; correlations are descriptive.",
@@ -1885,7 +1918,7 @@ def render_codependency_result():
             g for g in genes if g != st.session_state["codep_pair_x"]
         )
 
-    st.markdown("---")
+    st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
     px1, px2 = st.columns(2)
     with px1:
         gene_x = st.selectbox(ui("Gene X (horizontal axis)", "基因 X（横轴）"), genes, key="codep_pair_x")
@@ -1933,7 +1966,7 @@ def figure_controls(rankings=None):
     st.session_state.setdefault("reference_b", "PTEN")
     st.session_state.setdefault("show_labels", True)
     st.session_state.setdefault("point_size", 4)
-    with st.expander(ui("Figure settings", "图形设置"), expanded=False):
+    with st.expander(ui("Figure settings", "图形设置"), expanded=False, icon=":material/tune:"):
         c1, c2 = st.columns(2)
         with c1:
             raw_a = st.text_input(t("essential"), key="reference_a").strip().upper()
@@ -2003,26 +2036,27 @@ def apply_input_preset(prefix, clear=False):
     if prefix == 'codep':
         mode = st.session_state.get('codep_mode', 'scan')
         if mode == 'scan':
-            st.session_state['codep_query'] = '' if clear else 'MDM2'
+            st.session_state['codep_query'] = None if clear else 'MDM2'
         else:
-            st.session_state['codep_genes'] = '' if clear else 'TP53\nCHEK2\nMDM2\nMDM4\nPPM1D\nUSP7'
+            st.session_state['codep_genes'] = '' if clear else 'TP53, CHEK2, MDM2, MDM4, PPM1D, USP7'
         return
     presets = {
-        'rank': {'genes': 'KRAS\nSOX10\nBRAF\nESR1\nTP53'},
-        'box': {'genes': 'SOX10\nESR1'},
-        'multi': {'bg': 'CDK1\nCDK2\nCDK4\nCDK6\nCCNB1\nCCND1\nCCNE1', 'hl': 'PLK1\nAURKA'},
+        'rank': {'genes': 'KRAS, SOX10, BRAF, ESR1, TP53'},
+        'box': {'genes': 'SOX10, ESR1'},
+        'multi': {'bg': 'CDK1, CDK2, CDK4, CDK6, CCNB1, CCND1, CCNE1', 'hl': 'PLK1, AURKA'},
     }
     for key, value in presets[prefix].items():
         st.session_state[f'{prefix}_{key}'] = '' if clear else value
-    if prefix != 'multi':
-        st.session_state[f'{prefix}_method'] = 'text'
+    if prefix in {'rank', 'box'}:
+        st.session_state[f'{prefix}_upload_mode'] = False
     if prefix == 'box':
         st.session_state.pop('box_candidates', None)
 
 
 def apply_curated_preset(prefix, genes_text):
     st.session_state[f'{prefix}_genes'] = genes_text
-    st.session_state[f'{prefix}_method'] = 'text'
+    if prefix in {'rank', 'box'}:
+        st.session_state[f'{prefix}_upload_mode'] = False
     if prefix == 'box':
         st.session_state.pop('box_candidates', None)
     st.session_state['_autorun_view'] = prefix
@@ -2043,8 +2077,8 @@ def apply_codep_preset(mode, text):
 def send_genes_to_view(target_view, genes):
     chosen = list(dict.fromkeys(genes))
     if target_view == 'box':
-        st.session_state['box_genes'] = '\n'.join(chosen[:8])
-        st.session_state['box_method'] = 'text'
+        st.session_state['box_genes'] = ', '.join(chosen[:8])
+        st.session_state['box_upload_mode'] = False
         st.session_state.pop('box_candidates', None)
     elif target_view == 'codep':
         if len(chosen) == 1:
@@ -2052,10 +2086,10 @@ def send_genes_to_view(target_view, genes):
             st.session_state['codep_query'] = chosen[0]
         else:
             st.session_state['codep_mode'] = 'matrix'
-            st.session_state['codep_genes'] = '\n'.join(chosen[:25])
+            st.session_state['codep_genes'] = ', '.join(chosen[:25])
     else:
-        st.session_state['rank_genes'] = '\n'.join(chosen)
-        st.session_state['rank_method'] = 'text'
+        st.session_state['rank_genes'] = ', '.join(chosen)
+        st.session_state['rank_upload_mode'] = False
     st.session_state['analysis_tab'] = target_view
     st.session_state['_autorun_view'] = target_view
 
@@ -2074,18 +2108,15 @@ def sync_share_url(view_name, genes, active_cohort, extra=None):
     st.session_state['_share_copied_view'] = view_name
 
 
-def input_actions(prefix):
-    run_col, example_col, clear_col = st.columns([2, 1, 1])
-    with run_col:
-        submitted = st.button(ui('Run analysis', 'Run · 生成图表'), type='primary',
-                              key=f'{prefix}_run', width='stretch')
-    with example_col:
-        st.button(ui('Load example', '载入示例'), key=f'{prefix}_example', width='stretch',
-                  on_click=apply_input_preset, args=(prefix,))
-    with clear_col:
-        st.button(ui('Clear', '清空输入'), key=f'{prefix}_clear', width='stretch',
-                  on_click=apply_input_preset, args=(prefix, True))
-    return submitted
+def render_primary_action(prefix, is_dirty=False):
+    """Single dominant Apple-blue primary CTA that quietly morphs when edits are pending."""
+    if is_dirty:
+        label = ui('Update chart', '更新图表')
+        icon = ':material/refresh:'
+    else:
+        label = ui('Run analysis', '生成图表')
+        icon = None
+    return st.button(label, type='primary', key=f'{prefix}_run', icon=icon, width='stretch')
 
 
 def _reset_view_substate(prefix):
@@ -2101,134 +2132,142 @@ def _reset_view_substate(prefix):
         del st.session_state[key]
 
 
-def render_curated_presets(prefix):
-    """One-click biological showcase presets that populate and run immediately."""
+def render_examples_popover(prefix, mode=None):
+    """Single sleek Examples menu replacing redundant Load example + inline preset rows."""
     available = set(gene_rankings['gene_upper'])
-    presets = [
-        (
-            f'{prefix}_preset_lineage',
-            ui('Lineage drivers', '谱系驱动基因'),
-            'SOX10\nIRF4\nESR1\nFOXA1',
-            {'SOX10', 'IRF4', 'ESR1', 'FOXA1'},
-            'SOX10 · IRF4 · ESR1 · FOXA1',
-        ),
-        (
-            f'{prefix}_preset_oncogene',
-            ui('Oncogene addiction', '癌基因成瘾'),
-            'KRAS\nBRAF\nEGFR\nERBB2',
-            {'KRAS', 'BRAF', 'EGFR', 'ERBB2'},
-            'KRAS · BRAF · EGFR · ERBB2',
-        ),
-        (
-            f'{prefix}_preset_repair',
-            ui('DNA repair', 'DNA 修复通路'),
-            'BRCA1\nBRCA2\nATR\nPARG',
-            {'BRCA1', 'BRCA2', 'ATR', 'PARG'},
-            'BRCA1 · BRCA2 · ATR · PARG',
-        ),
-    ]
-    visible = [item for item in presets if item[3] <= available]
-    if not visible:
-        return
-    cols = st.columns([0.75] + [1.15] * len(visible), vertical_alignment='center')
-    with cols[0]:
-        st.caption(ui('Examples', '精选示例'))
-    for col, (key, label, genes_text, _, tip) in zip(cols[1:], visible):
-        with col:
-            st.button(label, key=key, width='stretch', help=tip,
-                      on_click=apply_curated_preset, args=(prefix, genes_text))
-
-
-def render_multi_presets():
-    """Curated pathway-layer presets for Gene-set annotation."""
-    available = set(gene_rankings['gene_upper'])
-    presets = [
-        (
-            'multi_preset_cycle',
-            ui('Cell cycle · Mitotic', '细胞周期 · 有丝分裂'),
-            'CDK1\nCDK2\nCDK4\nCDK6\nCCNB1\nCCND1\nCCNE1',
-            'PLK1\nAURKA',
-            {'CDK1', 'CDK2', 'CDK4', 'CDK6', 'CCNB1', 'CCND1', 'CCNE1', 'PLK1', 'AURKA'},
-            'Background: CDKs & Cyclins · Highlight: PLK1, AURKA',
-        ),
-        (
-            'multi_preset_mapk',
-            ui('RTK / MAPK · BRAF axis', 'RTK / MAPK · BRAF 轴'),
-            'EGFR\nERBB2\nKRAS\nNRAS\nRAF1\nMAP2K1\nMAPK1',
-            'BRAF\nDUSP4',
-            {'EGFR', 'ERBB2', 'KRAS', 'NRAS', 'RAF1', 'MAP2K1', 'MAPK1', 'BRAF', 'DUSP4'},
-            'Background: RTK-RAS-MAPK · Highlight: BRAF, DUSP4',
-        ),
-    ]
-    visible = [item for item in presets if item[4] <= available]
-    if not visible:
-        return
-    cols = st.columns([0.75] + [1.3] * len(visible), vertical_alignment='center')
-    with cols[0]:
-        st.caption(ui('Examples', '精选示例'))
-    for col, (key, label, bg_t, hl_t, _, tip) in zip(cols[1:], visible):
-        with col:
-            st.button(label, key=key, width='stretch', help=tip,
-                      on_click=apply_multi_preset, args=(bg_t, hl_t))
-
-
-def render_codep_presets(mode):
-    """One-click biological presets for the Co-dependency module."""
-    available = set(gene_rankings['gene_upper'])
-    if mode == 'scan':
-        presets = [
-            ('codep_preset_mdm2', ui('MDM2 · p53 axis', 'MDM2 · p53 拮抗轴'), 'MDM2', {'MDM2'},
-             ui('Symmetric positive (PPM1D/MDM4/USP7) & negative (TP53/CDKN1A) partners', '正相关（PPM1D/MDM4）与负相关（TP53/CDKN1A）高度对称')),
-            ('codep_preset_braf', ui('BRAF · MAPK', 'BRAF · MAPK 通路'), 'BRAF', {'BRAF'},
-             ui('MAPK signaling & melanoma lineage partners (MAPK1, SOX10, MITF)', 'MAPK 信号与黑色素瘤谱系共依赖（MAPK1、SOX10、MITF）')),
-            ('codep_preset_brca1', ui('BRCA1 · HR repair', 'BRCA1 · 同源重组'), 'BRCA1', {'BRCA1'},
-             ui('Homologous recombination & DNA damage response partners', '同源重组与 DNA 损伤修复共依赖网络')),
-        ]
-    else:
-        presets = [
+    if prefix in {'rank', 'box'}:
+        lead = (
             (
-                'codep_preset_p53',
-                ui('p53 · MDM2 axis', 'p53 · MDM2 调控轴'),
-                'TP53\nCHEK2\nMDM2\nMDM4\nPPM1D\nUSP7',
-                {'TP53', 'CHEK2', 'MDM2', 'MDM4', 'PPM1D', 'USP7'},
-                'TP53 · CHEK2 vs MDM2 · MDM4 · PPM1D · USP7',
+                'rank_preset_iconic',
+                ui('Iconic cancer panel', '经典癌症依赖谱'),
+                'KRAS, SOX10, BRAF, ESR1, TP53',
+                {'KRAS', 'SOX10', 'BRAF', 'ESR1', 'TP53'},
+                'KRAS · SOX10 · BRAF · ESR1 · TP53',
+            )
+            if prefix == 'rank'
+            else (
+                'box_preset_contrast',
+                ui('Melanoma vs Breast', '黑色素瘤 vs 乳腺癌'),
+                'SOX10, ESR1',
+                {'SOX10', 'ESR1'},
+                'SOX10 · ESR1',
+            )
+        )
+        items = [
+            lead,
+            (
+                f'{prefix}_preset_lineage',
+                ui('Lineage drivers', '谱系驱动基因'),
+                'SOX10, IRF4, ESR1, FOXA1',
+                {'SOX10', 'IRF4', 'ESR1', 'FOXA1'},
+                'SOX10 · IRF4 · ESR1 · FOXA1',
             ),
             (
-                'codep_preset_mapk',
-                ui('MAPK · Melanoma', 'MAPK · 黑色素瘤网络'),
-                'BRAF\nMAPK1\nMAP2K1\nSOX10\nMITF',
-                {'BRAF', 'MAPK1', 'MAP2K1', 'SOX10', 'MITF'},
-                'BRAF · MAPK1 · MAP2K1 · SOX10 · MITF',
+                f'{prefix}_preset_oncogene',
+                ui('Oncogene addiction', '癌基因成瘾'),
+                'KRAS, BRAF, EGFR, ERBB2',
+                {'KRAS', 'BRAF', 'EGFR', 'ERBB2'},
+                'KRAS · BRAF · EGFR · ERBB2',
             ),
             (
-                'codep_preset_repair_m',
-                ui('DNA repair', 'DNA 修复复合体'),
-                'BRCA1\nBRCA2\nATR\nPARG',
+                f'{prefix}_preset_repair',
+                ui('DNA repair', 'DNA 修复通路'),
+                'BRCA1, BRCA2, ATR, PARG',
                 {'BRCA1', 'BRCA2', 'ATR', 'PARG'},
                 'BRCA1 · BRCA2 · ATR · PARG',
             ),
         ]
-    visible = [item for item in presets if item[3] <= available]
-    if not visible:
+        visible = [item for item in items if item[3] <= available]
+        if not visible:
+            return
+        with st.popover(ui('Examples', '示例'), icon=':material/auto_awesome:'):
+            st.caption(ui('Select an example to load and plot immediately.', '点击任一示例即可载入并立即绘图。'))
+            for key, label, genes_text, _, tip in visible:
+                st.button(label, key=key, width='stretch', help=tip,
+                          on_click=apply_curated_preset, args=(prefix, genes_text))
         return
-    cols = st.columns([0.75] + [1.15] * len(visible), vertical_alignment='center')
-    with cols[0]:
-        st.caption(ui('Examples', '精选示例'))
-    for col, (key, label, text, _, tip) in zip(cols[1:], visible):
-        with col:
-            st.button(label, key=key, width='stretch', help=tip,
-                      on_click=apply_codep_preset, args=(mode, text))
+
+    if prefix == 'multi':
+        items = [
+            (
+                'multi_preset_cycle',
+                ui('Cell cycle · Mitotic', '细胞周期 · 有丝分裂'),
+                'CDK1, CDK2, CDK4, CDK6, CCNB1, CCND1, CCNE1',
+                'PLK1, AURKA',
+                {'CDK1', 'CDK2', 'CDK4', 'CDK6', 'CCNB1', 'CCND1', 'CCNE1', 'PLK1', 'AURKA'},
+                'Background: CDKs & Cyclins · Highlight: PLK1, AURKA',
+            ),
+            (
+                'multi_preset_mapk',
+                ui('RTK / MAPK · BRAF axis', 'RTK / MAPK · BRAF 轴'),
+                'EGFR, ERBB2, KRAS, NRAS, RAF1, MAP2K1, MAPK1',
+                'BRAF, DUSP4',
+                {'EGFR', 'ERBB2', 'KRAS', 'NRAS', 'RAF1', 'MAP2K1', 'MAPK1', 'BRAF', 'DUSP4'},
+                'Background: RTK-RAS-MAPK · Highlight: BRAF, DUSP4',
+            ),
+        ]
+        visible = [item for item in items if item[4] <= available]
+        if not visible:
+            return
+        with st.popover(ui('Examples', '示例'), icon=':material/auto_awesome:'):
+            st.caption(ui('Select a pathway preset to load and plot immediately.', '点击任一通路示例即可载入并立即绘图。'))
+            for key, label, bg_t, hl_t, _, tip in visible:
+                st.button(label, key=key, width='stretch', help=tip,
+                          on_click=apply_multi_preset, args=(bg_t, hl_t))
+        return
+
+    if prefix == 'codep':
+        if mode == 'scan':
+            items = [
+                ('codep_preset_mdm2', ui('MDM2 · p53 axis', 'MDM2 · p53 拮抗轴'), 'MDM2', {'MDM2'},
+                 ui('Symmetric positive (PPM1D/MDM4/USP7) & negative (TP53/CDKN1A) partners', '正相关（PPM1D/MDM4）与负相关（TP53/CDKN1A）高度对称')),
+                ('codep_preset_braf', ui('BRAF · MAPK', 'BRAF · MAPK 通路'), 'BRAF', {'BRAF'},
+                 ui('MAPK signaling & melanoma lineage partners (MAPK1, SOX10, MITF)', 'MAPK 信号与黑色素瘤谱系共依赖（MAPK1、SOX10、MITF）')),
+                ('codep_preset_brca1', ui('BRCA1 · HR repair', 'BRCA1 · 同源重组'), 'BRCA1', {'BRCA1'},
+                 ui('Homologous recombination & DNA damage response partners', '同源重组与 DNA 损伤修复共依赖网络')),
+            ]
+        else:
+            items = [
+                (
+                    'codep_preset_p53',
+                    ui('p53 · MDM2 axis', 'p53 · MDM2 调控轴'),
+                    'TP53, CHEK2, MDM2, MDM4, PPM1D, USP7',
+                    {'TP53', 'CHEK2', 'MDM2', 'MDM4', 'PPM1D', 'USP7'},
+                    'TP53 · CHEK2 vs MDM2 · MDM4 · PPM1D · USP7',
+                ),
+                (
+                    'codep_preset_mapk',
+                    ui('MAPK · Melanoma', 'MAPK · 黑色素瘤网络'),
+                    'BRAF, MAPK1, MAP2K1, SOX10, MITF',
+                    {'BRAF', 'MAPK1', 'MAP2K1', 'SOX10', 'MITF'},
+                    'BRAF · MAPK1 · MAP2K1 · SOX10 · MITF',
+                ),
+                (
+                    'codep_preset_repair_m',
+                    ui('DNA repair', 'DNA 修复复合体'),
+                    'BRCA1, BRCA2, ATR, PARG',
+                    {'BRCA1', 'BRCA2', 'ATR', 'PARG'},
+                    'BRCA1 · BRCA2 · ATR · PARG',
+                ),
+            ]
+        visible = [item for item in items if item[3] <= available]
+        if not visible:
+            return
+        with st.popover(ui('Examples', '示例'), icon=':material/auto_awesome:'):
+            st.caption(ui('Select an example to load and run immediately.', '点击任一示例即可载入并立即计算。'))
+            for key, label, text, _, tip in visible:
+                st.button(label, key=key, width='stretch', help=tip,
+                          on_click=apply_codep_preset, args=(mode, text))
 
 
 def render_run_status(prefix, draft, result):
     if result is None:
         st.markdown(
-            f'<div class="ready-note">{escape(ui("Enter gene symbols or choose a curated example above, then run.", "输入基因符号或点击上方精选示例，即可生成可视化结果。"))}</div>',
+            f'<div class="ready-note">{escape(ui("Enter gene symbols or pick from Examples above, then run.", "输入基因符号或从上方“示例”中选择，点击生成图表。"))}</div>',
             unsafe_allow_html=True,
         )
         return
-    if result.get('input_signature') != input_signature(draft):
-        st.warning(ui('Inputs changed. Run to update the result.', '输入已修改，点击 Run 更新结果。'))
+    is_dirty = result.get('input_signature') != input_signature(draft)
     meta = result['metadata']
     scope = ', '.join(meta['cohort_lineages'])
     if scope == 'ALL':
@@ -2254,10 +2293,10 @@ def render_run_status(prefix, draft, result):
             transfer_genes = result['genes']
             share_genes = result['genes']
         actions = [
-            (ui('Ranking →', '基因排名 →'), 'codep_send_rank', 'rank', transfer_genes),
+            (ui('Ranking', '基因排名'), 'codep_send_rank', 'rank', transfer_genes),
         ]
         if lineage_col:
-            actions.append((ui('Lineages →', '癌种比较 →'), 'codep_send_box', 'box', transfer_genes))
+            actions.append((ui('Lineages', '癌种比较'), 'codep_send_box', 'box', transfer_genes))
     else:
         summary = ui(f"{len(result['genes'])} genes · {meta['cohort_rows']:,} cell lines · {scope}",
                      f"{len(result['genes'])} 个基因 · {meta['cohort_rows']:,} 个细胞系 · {scope}")
@@ -2266,32 +2305,37 @@ def render_run_status(prefix, draft, result):
         if prefix in {'rank', 'multi'}:
             target_genes = result['config'].get('highlight') or result['genes'] if prefix == 'multi' else result['genes']
             if lineage_col:
-                actions.append((ui('Lineages →', '癌种比较 →'), f'{prefix}_send_box', 'box', target_genes))
-            actions.append((ui('Co-dependency →', '共依赖 →'), f'{prefix}_send_codep', 'codep', target_genes))
+                actions.append((ui('Lineages', '癌种比较'), f'{prefix}_send_box', 'box', target_genes))
+            actions.append((ui('Co-dependency', '共依赖'), f'{prefix}_send_codep', 'codep', target_genes))
         elif prefix == 'box':
-            actions.append((ui('Ranking →', '基因排名 →'), 'box_send_rank', 'rank', result['genes']))
-            actions.append((ui('Co-dependency →', '共依赖 →'), 'box_send_codep', 'codep', result['genes']))
+            actions.append((ui('Ranking', '基因排名'), 'box_send_rank', 'rank', result['genes']))
+            actions.append((ui('Co-dependency', '共依赖'), 'box_send_codep', 'codep', result['genes']))
 
-    col_specs = [2.65] + [0.95] * len(actions) + [0.82]
+    dot_class = 'status-dot pending' if is_dirty else 'status-dot'
+    pending_html = (
+        f'<span class="status-pending">· {escape(ui("Unsaved edit", "待更新"))}</span>'
+        if is_dirty else ''
+    )
+    col_specs = [2.65] + [0.95] * len(actions) + [0.85]
     cols = st.columns(col_specs, vertical_alignment='center')
     with cols[0]:
         st.markdown(
-            f'<div class="status-strip"><span class="status-dot"></span>'
-            f'<span><strong>{escape(summary)}</strong></span>'
+            f'<div class="status-strip"><span class="{dot_class}"></span>'
+            f'<span><strong>{escape(summary)}</strong></span>{pending_html}'
             f'<span class="status-time">{escape(timestamp)}</span></div>',
             unsafe_allow_html=True,
         )
     for col, (label, btn_key, target_view, target_genes) in zip(cols[1:-1], actions):
         with col:
             st.button(
-                label, key=btn_key, width='stretch',
+                label, key=btn_key, icon=':material/arrow_forward:', width='stretch',
                 on_click=send_genes_to_view, args=(target_view, target_genes),
             )
     with cols[-1]:
         active_cohort = [x for x in meta.get('cohort_lineages', []) if x != 'ALL']
         st.button(
-            ui('Share URL', '分享链接'),
-            key=f'{prefix}_share_url', width='stretch',
+            ui('Share', '分享'),
+            key=f'{prefix}_share_url', icon=':material/share:', width='stretch',
             on_click=sync_share_url, args=(prefix, share_genes, active_cohort, share_extra),
             help=ui('Write current view, genes, and cohort into the browser URL for sharing.',
                     '将当前视图、基因列表和癌种范围写入浏览器地址栏以便分享。'),
@@ -2351,18 +2395,18 @@ if not st.session_state.get('_qp_initialized'):
                     st.session_state['codep_query'] = parsed_qp[0]
                 else:
                     st.session_state['codep_mode'] = 'matrix'
-                    st.session_state['codep_genes'] = '\n'.join(parsed_qp[:25])
+                    st.session_state['codep_genes'] = ', '.join(parsed_qp[:25])
                 st.session_state['_autorun_view'] = 'codep'
             else:
                 target_view = qp_view if qp_view in {'rank', 'box'} else 'rank'
-                st.session_state[f'{target_view}_genes'] = '\n'.join(parsed_qp)
-                st.session_state[f'{target_view}_method'] = 'text'
+                st.session_state[f'{target_view}_genes'] = ', '.join(parsed_qp)
+                st.session_state[f'{target_view}_upload_mode'] = False
                 st.session_state['_autorun_view'] = target_view
     qp_cohort = qp.get('cohort')
     if qp_cohort:
         st.session_state['_qp_cohort'] = [item.strip() for item in str(qp_cohort).split(',') if item.strip()]
 
-for draft_key in ['rank_genes', 'box_genes', 'multi_bg', 'multi_hl', 'rank_method', 'box_method',
+for draft_key in ['rank_genes', 'box_genes', 'multi_bg', 'multi_hl', 'rank_upload_mode', 'box_upload_mode',
                   'multi_bg_color', 'multi_hl_color', 'box_lineages', 'box_order', 'box_points',
                   'box_cols', 'box_compare', 'reference_a', 'reference_b', 'show_labels',
                   'point_size', 'rank_layout', 'codep_mode', 'codep_method', 'codep_query', 'codep_genes']:
@@ -2481,6 +2525,7 @@ if st.session_state.get('_analysis_context') != context_hash:
     st.session_state['_analysis_context'] = context_hash
 
 gene_rankings, diagnostics = compute_gene_rankings(context_hash, df_scope, gene_columns)
+all_gene_options = sorted(gene_rankings['gene'].tolist()) if not gene_rankings.empty else []
 n_cell_lines = len(df_scope)
 hero_version = t('custom_dataset') if uploaded_file is not None else provenance.get('release', DATA_VERSION)
 scope_name = ', '.join(cohort) if cohort else ui('All cancer types', '全部癌种')
@@ -2494,7 +2539,7 @@ stats_pills = (
 ) if not gene_rankings.empty else f'<span class="hero-version">{escape(hero_version)}</span>'
 st.markdown(f'<section class="hero-shell"><div class="hero-copy">'
             f'<div class="hero-kicker">GENE DEPENDENCY EXPLORER</div>'
-            f'<h1 class="main-header"><span class="brand-accent">CRISPR</span> Score Analyzer</h1>'
+            f'<h1 class="main-header">CRISPR Score Analyzer</h1>'
             f'<p class="sub-header">{t("app_subtitle")}</p></div>'
             f'<div class="hero-stats">{stats_pills}</div></section>', unsafe_allow_html=True)
 if gene_rankings.empty:
@@ -2541,22 +2586,39 @@ view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi', '
                             format_func={'rank': t('tab1'), 'box': t('tab2'), 'multi': t('tab3'), 'codep': t('tab4')}.get,
                             key='analysis_tab', selection_mode='single', label_visibility='collapsed', width='stretch') or 'rank'
 autorun_view = st.session_state.pop('_autorun_view', None)
+allow_initial_autorun = not st.session_state.get('_initial_autorun_done')
+if allow_initial_autorun:
+    st.session_state['_initial_autorun_done'] = True
+
+flash_info = st.session_state.get('_flash_info')
+if flash_info and flash_info[0] == view:
+    st.session_state.pop('_flash_info', None)
+    st.info(flash_info[1])
 
 if view == 'rank':
+    st.session_state.setdefault('rank_upload_mode', False)
     with st.container(border=False, key='rank_input'):
-        top_l, top_r = st.columns([2.4, 1.0], vertical_alignment='center')
-        with top_l:
-            method = st.radio(t('input_method'), ['text', 'file'], horizontal=True, key='rank_method',
-                              format_func={'text': t('input_direct'), 'file': t('input_file')}.get,
-                              label_visibility='collapsed')
-        with top_r:
-            if method == 'text':
-                render_gene_quick_add('rank', 'rank_genes')
-        gene_text, gene_file = read_gene_input('rank', 'KRAS\nSOX10\nBRAF\nESR1\nTP53', method)
+        with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+            with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                st.markdown(f'<span class="input-title">{t("gene_list")}</span>', unsafe_allow_html=True)
+                upload_mode = st.toggle(ui('Upload file', '上传文件'), key='rank_upload_mode')
+            method = 'file' if upload_mode else 'text'
+            with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                render_examples_popover('rank')
+                if method == 'text':
+                    render_gene_quick_add('rank', 'rank_genes')
+                st.button(ui('Clear', '清空'), key='rank_clear', on_click=apply_input_preset, args=('rank', True))
+        gene_text, gene_file = read_gene_input('rank', 'KRAS, SOX10, BRAF, ESR1, TP53', method)
         draft = input_draft(gene_text, gene_file, method=method)
-        submitted = input_actions('rank') or (autorun_view == 'rank')
-        if method == 'text':
-            render_curated_presets('rank')
+        prev_result = st.session_state.get('rank_result')
+        is_dirty = prev_result is not None and prev_result.get('input_signature') != input_signature(draft)
+        initial_autorun = False
+        if (allow_initial_autorun and uploaded_file is None and not cohort and not selected_diseases
+                and prev_result is None and method == 'text' and gene_text.strip()):
+            _, init_matched, _, _ = classify_input(gene_text, None)
+            if init_matched:
+                initial_autorun = True
+        submitted = render_primary_action('rank', is_dirty) or (autorun_view == 'rank') or initial_autorun
     if submitted:
         try:
             parsed, matched, missing, resolved = classify_input(gene_text, gene_file)
@@ -2565,6 +2627,8 @@ if view == 'rank':
                 st.session_state.rank_result = attach_preference(build_result(
                     matched, {'targets': {'parsed': parsed, 'matched': matched, 'missing': missing, 'resolved': resolved}},
                     draft=draft), matched)
+                if is_dirty:
+                    st.rerun()
             else:
                 st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
         except (ValueError, UnicodeError) as exc:
@@ -2581,17 +2645,24 @@ elif view == 'box':
     if not lineage_col:
         st.info(t('lineage_missing'))
     else:
+        st.session_state.setdefault('box_upload_mode', False)
         with st.container(border=False, key='box_input'):
-            top_l, top_r = st.columns([2.4, 1.0], vertical_alignment='center')
-            with top_l:
-                method = st.radio(t('input_method'), ['text', 'file'], horizontal=True, key='box_method',
-                                  format_func={'text': t('input_direct'), 'file': t('input_file')}.get,
-                                  label_visibility='collapsed')
-            with top_r:
-                if method == 'text':
-                    render_gene_quick_add('box', 'box_genes')
-            gene_text, gene_file = read_gene_input('box', 'SOX10\nESR1', method)
-            with st.expander(ui('Comparison options', '比较选项')):
+            with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+                with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                    st.markdown(f'<span class="input-title">{t("gene_list")}</span>', unsafe_allow_html=True)
+                    upload_mode = st.toggle(ui('Upload file', '上传文件'), key='box_upload_mode')
+                method = 'file' if upload_mode else 'text'
+                with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                    render_examples_popover('box')
+                    if method == 'text':
+                        render_gene_quick_add('box', 'box_genes')
+                    st.button(ui('Clear', '清空'), key='box_clear', on_click=apply_input_preset, args=('box', True))
+            gene_text, gene_file = read_gene_input(
+                'box', 'SOX10, ESR1', method,
+                placeholder=ui('Enter up to 8 genes to compare across cancer types (e.g. SOX10, ESR1)',
+                               '输入最多 8 个基因比较各癌种依赖分布（如 SOX10、ESR1）'),
+            )
+            with st.expander(ui('Comparison options', '比较选项'), icon=':material/tune:'):
                 box_lineages = st.multiselect(ui('Cancer types shown in the chart', '图中展示的癌种'),
                                               cohort or all_lineages, key='box_lineages',
                                               placeholder=ui('All types in the analysis scope', '分析范围内的全部癌种'),
@@ -2611,9 +2682,9 @@ elif view == 'box':
                 all_points = st.checkbox(ui('Show all cell lines', '显示全部细胞系散点'), key='box_points')
             draft = input_draft(gene_text, gene_file, method=method, lineages=box_lineages,
                                 sort=sort_mode, all_points=all_points, columns=box_cols, compare_mode=box_compare)
-            submitted = input_actions('box') or (autorun_view == 'box')
-            if method == 'text':
-                render_curated_presets('box')
+            prev_result = st.session_state.get('box_result')
+            is_dirty = prev_result is not None and prev_result.get('input_signature') != input_signature(draft)
+            submitted = render_primary_action('box', is_dirty) or (autorun_view == 'box')
         candidate = st.session_state.get('box_candidates')
         if candidate and candidate['input_signature'] != input_signature(draft):
             st.session_state.pop('box_candidates', None)
@@ -2634,6 +2705,8 @@ elif view == 'box':
                         frame = frame[frame.lineage.isin(box_lineages)]
                     _reset_view_substate('box')
                     st.session_state.box_result = attach_preference(build_result(matched, match, config, frame, draft), matched)
+                    if is_dirty:
+                        st.rerun()
                 else:
                     st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
             except (ValueError, UnicodeError) as exc:
@@ -2680,27 +2753,37 @@ elif view == 'box':
                 render_deep_dive(result, 'box')
 
 elif view == 'multi':
-    st.session_state.setdefault('multi_bg', 'CDK1\nCDK2\nCDK4\nCDK6\nCCNB1\nCCND1\nCCNE1')
-    st.session_state.setdefault('multi_hl', 'PLK1\nAURKA')
-    st.session_state.setdefault('multi_bg_color', '#8FA5B8')
-    st.session_state.setdefault('multi_hl_color', '#1B5E91')
+    st.session_state.setdefault('multi_bg', 'CDK1, CDK2, CDK4, CDK6, CCNB1, CCND1, CCNE1')
+    st.session_state.setdefault('multi_hl', 'PLK1, AURKA')
+    st.session_state.setdefault('multi_bg_color', '#8E8E93')
+    st.session_state.setdefault('multi_hl_color', '#0071E3')
     with st.container(border=False, key='multi_input'):
+        with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+            st.markdown(f'<span class="input-title">{ui("Gene-set layers", "基因集分层")}</span>', unsafe_allow_html=True)
+            with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                render_examples_popover('multi')
+                st.button(ui('Clear', '清空'), key='multi_clear', on_click=apply_input_preset, args=('multi', True))
         c1, c2 = st.columns(2)
         with c1:
-            bg_text = st.text_area(t('bg_gene_set'), key='multi_bg', height=88)
-            render_gene_quick_add('multi_bg', 'multi_bg', ui('+ Search background genes', '+ 搜索背景基因'))
+            with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+                st.caption(t('bg_gene_set'))
+                render_gene_quick_add('multi_bg', 'multi_bg', ui('Search', '搜索'))
+            bg_text = st.text_area(t('bg_gene_set'), key='multi_bg', height=68, label_visibility='collapsed')
         with c2:
-            hl_text = st.text_area(t('hl_gene_set'), key='multi_hl', height=88)
-            render_gene_quick_add('multi_hl', 'multi_hl', ui('+ Search highlight genes', '+ 搜索高亮基因'))
-        with st.expander(ui('Annotation colors', '标注颜色')):
+            with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+                st.caption(t('hl_gene_set'))
+                render_gene_quick_add('multi_hl', 'multi_hl', ui('Search', '搜索'))
+            hl_text = st.text_area(t('hl_gene_set'), key='multi_hl', height=68, label_visibility='collapsed')
+        with st.expander(ui('Annotation colors', '标注颜色'), icon=':material/palette:'):
             color1, color2 = st.columns(2)
             with color1:
                 bg_color = st.color_picker(t('bg_color'), key='multi_bg_color')
             with color2:
                 hl_color = st.color_picker(t('hl_color'), key='multi_hl_color')
         draft = {'background': bg_text, 'highlight': hl_text, 'background_color': bg_color, 'highlight_color': hl_color}
-        submitted = input_actions('multi') or (autorun_view == 'multi')
-        render_multi_presets()
+        prev_result = st.session_state.get('multi_result')
+        is_dirty = prev_result is not None and prev_result.get('input_signature') != input_signature(draft)
+        submitted = render_primary_action('multi', is_dirty) or (autorun_view == 'multi')
     if submitted:
         bg_parsed, hl_parsed = parse_gene_text(bg_text), parse_gene_text(hl_text)
         bg_matched, bg_missing, bg_resolved = resolve_gene_list(gene_rankings, bg_parsed['genes'], GENE_ALIASES)
@@ -2714,29 +2797,40 @@ elif view == 'multi':
             st.session_state.multi_result = attach_preference(build_result(
                 genes, matches, {'background': bg_matched, 'highlight': hl_matched,
                                  'background_color': bg_color, 'highlight_color': hl_color}, draft=draft), pref_genes)
+            if is_dirty:
+                st.rerun()
         else:
             st.warning(ui('No matched genes. The previous result is unchanged.', '没有匹配的基因，保留上次运行结果。'))
     result = st.session_state.get('multi_result')
     render_run_status('multi', draft, result)
     if result is None or result.get('input_signature') != input_signature(draft):
-        fb1, fb2 = st.columns(2)
-        with fb1:
-            render_draft_feedback(bg_text, None, draft, result, t('bg_gene_set'))
-        with fb2:
-            render_draft_feedback(hl_text, None, draft, result, t('hl_gene_set'))
+        bg_p, bg_m, bg_miss, bg_res = classify_input(bg_text, None) if bg_text.strip() else ({}, [], [], [])
+        hl_p, hl_m, hl_miss, hl_res = classify_input(hl_text, None) if hl_text.strip() else ({}, [], [], [])
+        if _has_match_issues(bg_p, bg_miss, bg_res) or _has_match_issues(hl_p, hl_miss, hl_res):
+            fb1, fb2 = st.columns(2)
+            with fb1:
+                show_matches(bg_p, bg_m, bg_miss, t('bg_gene_set'), bg_res)
+            with fb2:
+                show_matches(hl_p, hl_m, hl_miss, t('hl_gene_set'), hl_res)
     if result:
-        m1, m2 = st.columns([1.35, 1.0])
-        for col, (key, title) in zip((m1, m2), [('background', t('bg_gene_set')), ('highlight', t('hl_gene_set'))]):
-            match = result['matches'][key]
-            with col:
-                show_matches(match['parsed'], match['matched'], match['missing'], title, match.get('resolved'))
+        bg_match = result['matches']['background']
+        hl_match = result['matches']['highlight']
+        if (_has_match_issues(bg_match['parsed'], bg_match['missing'], bg_match.get('resolved'))
+                or _has_match_issues(hl_match['parsed'], hl_match['missing'], hl_match.get('resolved'))):
+            m1, m2 = st.columns(2)
+            with m1:
+                show_matches(bg_match['parsed'], bg_match['matched'], bg_match['missing'],
+                             t('bg_gene_set'), bg_match.get('resolved'))
+            with m2:
+                show_matches(hl_match['parsed'], hl_match['matched'], hl_match['missing'],
+                             t('hl_gene_set'), hl_match.get('resolved'))
         render_curve_result('multi')
 
 elif view == 'codep':
     st.session_state.setdefault('codep_mode', 'scan')
     st.session_state.setdefault('codep_method', 'pearson')
     st.session_state.setdefault('codep_query', 'MDM2')
-    st.session_state.setdefault('codep_genes', 'TP53\nCHEK2\nMDM2\nMDM4\nPPM1D\nUSP7')
+    st.session_state.setdefault('codep_genes', 'TP53, CHEK2, MDM2, MDM4, PPM1D, USP7')
     with st.container(border=False, key='codep_input'):
         m_col, meth_col = st.columns([2.0, 1.0], vertical_alignment='bottom')
         with m_col:
@@ -2757,35 +2851,57 @@ elif view == 'codep':
                 key='codep_method', selection_mode='single', width='stretch',
             ) or 'pearson'
 
+        with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+            title_text = ui('Query gene', '查询基因') if codep_mode == 'scan' else t('gene_list')
+            st.markdown(f'<span class="input-title">{title_text}</span>', unsafe_allow_html=True)
+            with st.container(horizontal=True, vertical_alignment='center', width='content'):
+                render_examples_popover('codep', mode=codep_mode)
+                if codep_mode == 'matrix':
+                    render_gene_quick_add('codep', 'codep_genes')
+                st.button(ui('Clear', '清空'), key='codep_clear', on_click=apply_input_preset, args=('codep', True))
+
         if codep_mode == 'scan':
-            q_col, pick_col = st.columns([2.6, 1.0], vertical_alignment='bottom')
-            with q_col:
-                active_text = st.text_input(
-                    ui('Query gene (symbol or alias)', '查询基因（支持官方符号或别名）'),
-                    key='codep_query',
-                    placeholder='MDM2',
-                    help=ui('Correlates this gene against every other gene in the active sidebar scope (including single-lineage cohorts).',
-                            '在当前侧栏癌种范围内，将该基因与其余所有基因逐一计算相关性（支持单癌种内共依赖扫描）。'),
-                )
-            with pick_col:
-                render_single_gene_picker('codep', 'codep_query')
+            cur_query = st.session_state.get('codep_query')
+            if cur_query == '':
+                st.session_state['codep_query'] = None
+                cur_query = None
+            query_opts = (
+                all_gene_options
+                if (not cur_query or cur_query in all_gene_options)
+                else [cur_query, *all_gene_options]
+            )
+            selected_query = st.selectbox(
+                ui('Query gene (symbol or alias)', '查询基因（支持官方符号或别名）'),
+                query_opts,
+                index=None,
+                key='codep_query',
+                accept_new_options=True,
+                label_visibility='collapsed',
+                placeholder=ui(
+                    'Search or type a gene symbol / alias (e.g. MDM2, BRAF, HER2)…',
+                    '搜索或输入基因符号 / 别名（如 MDM2、BRAF、HER2）…',
+                ),
+                help=ui('Correlates this gene against every other gene in the active sidebar scope (including single-lineage cohorts).',
+                        '在当前侧栏癌种范围内，将该基因与其余所有基因逐一计算相关性（支持单癌种内共依赖扫描）。'),
+            )
+            active_text = str(selected_query or '')
             draft = input_draft(active_text, None, mode='scan', method=codep_method)
         else:
-            top_l, top_r = st.columns([2.4, 1.0], vertical_alignment='center')
-            with top_l:
-                st.caption(ui('Enter 2–25 genes to compute pairwise correlations and inspect cell-line scatter plots.',
-                              '输入 2–25 个基因计算两两共依赖相关性矩阵，并查看任意基因对的细胞系散点图。'))
-            with top_r:
-                render_gene_quick_add('codep', 'codep_genes')
             active_text = st.text_area(
-                t('gene_list'), height=88, key='codep_genes',
+                t('gene_list'), height=68, key='codep_genes',
+                label_visibility='collapsed',
+                placeholder=ui(
+                    'Enter 2–25 genes to compute a pairwise correlation matrix (e.g. TP53, CHEK2, MDM2, MDM4)',
+                    '输入 2–25 个基因计算两两共依赖矩阵（如 TP53、CHEK2、MDM2、MDM4）',
+                ),
                 help=ui('Separate with newlines, spaces, tabs, commas or semicolons. DepMap headers like "MYC (4609)" are also accepted.',
                         '支持换行、空格、制表符、中英文逗号和分号，也兼容直接粘贴 "MYC (4609)" 格式。'),
             )
             draft = input_draft(active_text, None, mode='matrix', method=codep_method)
 
-        submitted = input_actions('codep') or (autorun_view == 'codep')
-        render_codep_presets(codep_mode)
+        prev_result = st.session_state.get('codep_result')
+        is_dirty = prev_result is not None and prev_result.get('input_signature') != input_signature(draft)
+        submitted = render_primary_action('codep', is_dirty) or (autorun_view == 'codep')
 
     if submitted:
         try:
@@ -2798,11 +2914,12 @@ elif view == 'codep':
                     st.warning(ui('At least 2 ranked genes are needed for a co-dependency scan.', '至少需要 2 个基因才能进行共依赖扫描。'))
                 else:
                     query_gene = matched[0]
+                    info_note = None
                     if len(matched) > 1:
-                        st.info(ui(
+                        info_note = ui(
                             f'Scanning {query_gene} (first matched gene). Switch to Multi-gene matrix to correlate multiple genes together.',
                             f'正在扫描首个匹配基因 {query_gene}；如需同时比较多个基因的两两相关性，请切换到“多基因相关性矩阵”。',
-                        ))
+                        )
                     with st.spinner(ui(
                         f'Scanning {len(gene_rankings) - 1:,} genes against {query_gene}…',
                         f'正在将 {query_gene} 与 {len(gene_rankings) - 1:,} 个基因计算全基因组共依赖…',
@@ -2828,6 +2945,12 @@ elif view == 'codep':
                             'input_matching': match_info,
                         },
                     }
+                    if is_dirty:
+                        if info_note:
+                            st.session_state['_flash_info'] = ('codep', info_note)
+                        st.rerun()
+                    elif info_note:
+                        st.info(info_note)
             else:
                 if len(matched) < 2:
                     st.warning(ui(
@@ -2836,9 +2959,10 @@ elif view == 'codep':
                     ))
                 else:
                     chosen = matched[:25]
+                    info_note = None
                     if len(matched) > 25:
-                        st.info(ui('Showing the first 25 matched genes in the correlation matrix.',
-                                   '相关性矩阵最多展示前 25 个匹配基因。'))
+                        info_note = ui('Showing the first 25 matched genes in the correlation matrix.',
+                                       '相关性矩阵最多展示前 25 个匹配基因。')
                     corr, counts = gene_correlation_matrix(df_scope, chosen, gene_rankings, method=codep_method)
                     _reset_view_substate('codep')
                     match_info = {'targets': {'parsed': parsed, 'matched': chosen, 'missing': missing, 'resolved': resolved}}
@@ -2860,6 +2984,12 @@ elif view == 'codep':
                             'input_matching': match_info,
                         },
                     }
+                    if is_dirty:
+                        if info_note:
+                            st.session_state['_flash_info'] = ('codep', info_note)
+                        st.rerun()
+                    elif info_note:
+                        st.info(info_note)
         except (ValueError, UnicodeError) as exc:
             st.error(str(exc))
 
@@ -2875,11 +3005,11 @@ elif view == 'codep':
 # =============================================================================
 # 页脚：致谢 + 引用
 # =============================================================================
-st.markdown("---")
-with st.expander(f"📚 {t('resources')}", expanded=False):
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+with st.expander(t('resources'), expanded=False, icon=':material/menu_book:'):
     st.markdown(f"""
     <div class="footer-card">
-        <h4>🙏 {t('acknowledgements')}</h4>
+        <h4>{t('acknowledgements')}</h4>
         <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
             <div style="flex: 1; min-width: 250px;">
                 <p>
@@ -2905,9 +3035,9 @@ with st.expander(f"📚 {t('resources')}", expanded=False):
 footer_release = f' · {escape(provenance.get("release", DATA_VERSION))}' if uploaded_file is None else ''
 st.markdown(
     f'<div style="text-align:center; color:{get_theme()["text_muted"]}; '
-    f'font-size:0.8rem; padding:1rem;">'
-    f'CRISPR Score Analyzer {TOOL_VERSION}{footer_release} | Changhao Kan | '
-    f'<a href="{GITHUB_URL}" target="_blank" style="color:{get_theme()["accent"]};">GitHub</a>'
+    f'font-size:0.79rem; padding:1.1rem 0 0.5rem;">'
+    f'CRISPR Score Analyzer {TOOL_VERSION}{footer_release} · Changhao Kan · '
+    f'<a href="{GITHUB_URL}" target="_blank" style="color:{get_theme()["accent"]}; text-decoration:none;">GitHub</a>'
     f'</div>',
     unsafe_allow_html=True
 )

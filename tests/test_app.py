@@ -138,19 +138,24 @@ class AppSubmissionTests(unittest.TestCase):
         self.assertEqual(first["genes"], ["MYC"])
         first_ranking = first["rankings"].copy(deep=True)
         first_signature = first["input_signature"]
+        self.assertIn("Run", self.app.button(key="rank_run").label)
 
         self.app.text_area(key="rank_genes").set_value("PTEN").run()
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["genes"], ["MYC"])
         self.assertTrue(self.result("rank_result")["rankings"].equals(first_ranking))
         self.assertEqual(self.result("rank_result")["input_signature"], first_signature)
-        self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+        self.assertEqual(len(self.app.warning), 0)
+        self.assertIn("Update", self.app.button(key="rank_run").label)
+        self.assertTrue(any("Unsaved edit" in m.value for m in self.app.markdown))
 
         self.app.button(key="rank_run").click().run()
         self.assert_healthy()
         self.assertEqual(self.result("rank_result")["genes"], ["PTEN"])
         self.assertNotEqual(self.result("rank_result")["input_signature"], first_signature)
-        self.assertFalse(any("Inputs changed" in warning.value for warning in self.app.warning))
+        self.assertEqual(len(self.app.warning), 0)
+        self.assertIn("Run", self.app.button(key="rank_run").label)
+        self.assertFalse(any("Unsaved edit" in m.value for m in self.app.markdown))
 
     def test_draft_reports_unmatched_symbols_before_run(self):
         self.app.text_area(key="rank_genes").set_value("NOT_A_REAL_GENE").run()
@@ -175,14 +180,13 @@ class AppSubmissionTests(unittest.TestCase):
                          original["metadata"]["created_at_utc"])
         self.assertTrue(any("No matched genes" in warning.value for warning in self.app.warning))
 
-    def test_example_and_clear_change_draft_without_replacing_result(self):
+    def test_clear_changes_draft_without_replacing_result(self):
         cases = [
-            ("rank", {"rank_genes": "MYC"}, {"rank_genes": "KRAS\nSOX10\nBRAF\nESR1\nTP53"}),
-            ("box", {"box_genes": "MYC"}, {"box_genes": "SOX10\nESR1"}),
-            ("multi", {"multi_bg": "MYC", "multi_hl": "PTEN"},
-             {"multi_bg": "CDK1\nCDK2\nCDK4\nCDK6\nCCNB1\nCCND1\nCCNE1", "multi_hl": "PLK1\nAURKA"}),
+            ("rank", {"rank_genes": "MYC"}),
+            ("box", {"box_genes": "MYC"}),
+            ("multi", {"multi_bg": "MYC", "multi_hl": "PTEN"}),
         ]
-        for view, initial, example in cases:
+        for view, initial in cases:
             with self.subTest(view=view):
                 self.switch_view(view)
                 for key, text in initial.items():
@@ -190,20 +194,15 @@ class AppSubmissionTests(unittest.TestCase):
                 self.app.button(key=f"{view}_run").click().run()
                 self.assert_healthy()
                 committed = self.result(f"{view}_result")
-
-                self.app.button(key=f"{view}_example").click().run()
-                self.assert_healthy()
-                for key, text in example.items():
-                    self.assertEqual(self.app.text_area(key=key).value, text)
-                self.assertEqual(self.result(f"{view}_result")["genes"], committed["genes"])
-                self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+                self.assertIn("Run", self.app.button(key=f"{view}_run").label)
 
                 self.app.button(key=f"{view}_clear").click().run()
                 self.assert_healthy()
                 for key in initial:
                     self.assertEqual(self.app.text_area(key=key).value, "")
                 self.assertEqual(self.result(f"{view}_result")["genes"], committed["genes"])
-                self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+                self.assertEqual(len(self.app.warning), 0)
+                self.assertIn("Update", self.app.button(key=f"{view}_run").label)
 
     def test_submitting_another_tab_does_not_submit_rank_draft(self):
         self.run_rank("MYC")
@@ -347,7 +346,8 @@ class AppSubmissionTests(unittest.TestCase):
         self.assert_healthy()
         self.assertIsNone(self.result("box_candidates"))
         self.assertEqual(self.result("box_result")["input_signature"], committed["input_signature"])
-        self.assertTrue(any("Inputs changed" in warning.value for warning in self.app.warning))
+        self.assertEqual(len(self.app.warning), 0)
+        self.assertIn("Update", self.app.button(key="box_run").label)
 
     def test_box_selection_uses_valid_counts_and_preserves_cell_identity(self):
         rows = list(csv.reader(io.StringIO(score_csv().decode("utf-8"))))
@@ -440,7 +440,7 @@ class AppSubmissionTests(unittest.TestCase):
 
     def test_codependency_scan_and_matrix_modes(self):
         self.switch_view("codep")
-        self.app.text_input(key="codep_query").set_value("MYC")
+        self.app.selectbox(key="codep_query").set_value("MYC")
         self.app.button(key="codep_run").click().run()
         self.assert_healthy()
         scan_result = self.result("codep_result")
@@ -490,6 +490,46 @@ class AppSubmissionTests(unittest.TestCase):
         self.assert_healthy()
         self.assertEqual(self.app.segmented_control(key="analysis_tab").value, "box")
         self.assertEqual(self.result("box_result")["genes"], ["MYC", "PTEN", "E2F1"])
+
+    def test_initial_load_autoruns_when_default_genes_exist(self):
+        iconic_genes = ["KRAS", "SOX10", "BRAF", "ESR1", "TP53", "MYC", "PTEN"]
+        iconic_path = Path(self.tempdir.name) / "iconic.npz"
+        scores = np.array([
+            [-1.2 + i * 0.25 + r * 0.01 for i in range(len(iconic_genes))]
+            for r in range(12)
+        ], dtype=np.float64)
+        np.savez_compressed(
+            iconic_path,
+            scores=scores,
+            genes=np.array([f"{g} ({i + 1})" for i, g in enumerate(iconic_genes)], dtype="U32"),
+            depmap_id=np.array([f"ACH-{r + 1:06d}" for r in range(12)], dtype="U16"),
+            cell_line_display_name=np.array([f"Line {r + 1}" for r in range(12)], dtype="U32"),
+            lineage=np.array(["Skin"] * 6 + ["Breast"] * 6, dtype="U16"),
+        )
+        iconic_path.with_suffix(".provenance.json").write_text(json.dumps({
+            "release": "DepMap Public 26Q3",
+            "score_type": "Chronos Gene Effect",
+            "source": "iconic-fixture",
+            "files": {"CRISPRGeneEffect.csv": {"sha256": "iconic", "md5": "iconic", "bytes": 0}},
+            "n_models": 12,
+            "n_genes": len(iconic_genes),
+            "score_dtype": "float64",
+            "lineage_column": "lineage",
+        }), encoding="utf-8")
+
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        with patch.dict(os.environ, {"CRISPR_BUILTIN_MATRIX": str(iconic_path)}):
+            fresh = AppTest.from_file(str(APP_PATH), default_timeout=30).run()
+            self.assertEqual(len(fresh.exception), 0, [e.message for e in fresh.exception])
+            self.assertEqual(len(fresh.warning), 0)
+            self.assertIsNotNone(fresh.session_state["rank_result"])
+            self.assertEqual(fresh.session_state["rank_result"]["genes"], ["KRAS", "SOX10", "BRAF", "ESR1", "TP53"])
+            self.assertGreaterEqual(len(fresh.get("plotly_chart")), 1)
+            # Subsequent cohort filter must still invalidate result until explicit Run.
+            fresh.multiselect(key="cohort").set_value(["Skin"]).run()
+            self.assertEqual(len(fresh.exception), 0, [e.message for e in fresh.exception])
+            self.assertNotIn("rank_result", fresh.session_state)
 
 
 if __name__ == "__main__":

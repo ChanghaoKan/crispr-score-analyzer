@@ -19,27 +19,27 @@ from analysis_core import (
     match_genes,
 )
 
-FONT_FAMILY = "Inter, Helvetica Neue, Arial, sans-serif"
+FONT_FAMILY = "-apple-system, BlinkMacSystemFont, Inter, Helvetica Neue, Arial, sans-serif"
 ESSENTIALITY_THRESHOLD = -0.5
 
 SCAN_COLUMNS = ["gene", "correlation", "n_shared", "mean_score", "rank", "percentile"]
 SCATTER_COLUMNS = ["cell_line", "cell_line_name", "lineage", "score_x", "score_y"]
 
-# Refined, colorblind-conscious editorial palette for scatter-plot lineages.
+# Crisp, colorblind-conscious Apple-calibrated palette for scatter-plot lineages.
 LINEAGE_PALETTE = [
-    "#1b5e91", "#c4583b", "#1d8a68", "#8f5585", "#c98a2c", "#4d90b8",
-    "#4b4e8f", "#a3475c", "#3e8c84", "#6b8e4e", "#948447", "#74a5c7",
+    "#0071e3", "#d94f3d", "#248a3d", "#af52de", "#d98200", "#32ade6",
+    "#5856d6", "#d6336c", "#00a699", "#6d9636", "#a2845e", "#5e9ef5",
 ]
 
 
 def _default_theme():
     return {
         "plot_bg": "#ffffff",
-        "plot_text": "#182028",
-        "plot_axis": "#36414d",
-        "plot_reference": "rgba(54,65,77,0.28)",
-        "plot_grid": "rgba(54,65,77,0.06)",
-        "accent": "#1b4d78",
+        "plot_text": "#1d1d1f",
+        "plot_axis": "#424245",
+        "plot_reference": "rgba(29,29,31,0.24)",
+        "plot_grid": "rgba(29,29,31,0.06)",
+        "accent": "#0071e3",
     }
 
 
@@ -349,9 +349,9 @@ def create_codependency_scan_plot(
     order = shown["gene"].tolist()
     vals = shown["correlation"].to_numpy(dtype=float)
     limit = max(float(np.nanmax(np.abs(vals))), 0.15)
-    pos_col = "#5598db" if is_dark else "#1b5e91"
-    neg_col = "#d67458" if is_dark else "#c4583b"
-    neutral = "#1d2836" if is_dark else "#f7f4ef"
+    pos_col = "#0a84ff" if is_dark else "#0071e3"
+    neg_col = "#ff6961" if is_dark else "#d94f3d"
+    neutral = "#2c2c2e" if is_dark else "#f5f5f7"
     metric_label = "Pearson r" if method == "pearson" else "Spearman ρ"
 
     stems = {pos_col: ([], []), neg_col: ([], [])}
@@ -390,7 +390,7 @@ def create_codependency_scan_plot(
         showlegend=False,
     ))
     fig.add_vline(x=0, line_width=1.3, line_color=th["plot_axis"])
-    quiet_grid = "rgba(182,195,207,0.12)" if is_dark else "rgba(54,65,77,0.08)"
+    quiet_grid = "rgba(255,255,255,0.08)" if is_dark else "rgba(29,29,31,0.06)"
     fig.update_yaxes(
         automargin=True, categoryorder="array", categoryarray=order,
         showgrid=True, gridcolor=quiet_grid, gridwidth=1,
@@ -410,7 +410,7 @@ def create_codependency_scan_plot(
                 f"<b>{query_gene}</b>  ·  Top co-dependencies ({len(scan_df):,} genes scanned)",
                 f"<b>{query_gene}</b>  ·  全基因组共依赖排名（{len(scan_df):,} 基因）",
             ),
-            font=dict(size=13.5), x=0, xanchor="left",
+            font=dict(size=13.5), x=0.02, xanchor="left",
         ),
         height=max(420, len(order) * 26 + 120),
         margin=dict(l=24, r=38, t=50, b=58),
@@ -450,7 +450,7 @@ def create_gene_pair_scatter(
             x=other["score_x"], y=other["score_y"], mode="markers",
             name=_ui(lang, f"Other lineages ({len(other)})", f"其他癌种 ({len(other)})"),
             legendrank=100,
-            marker=dict(size=5.2, opacity=0.28, color="#9aa4ae", line=dict(width=0.4, color=th["plot_bg"])),
+            marker=dict(size=5.2, opacity=0.28, color="#8e8e93", line=dict(width=0.4, color=th["plot_bg"])),
             customdata=other[["cell_line_name", "cell_line", "lineage"]].values,
             hovertemplate=hover,
         ))
@@ -482,8 +482,8 @@ def create_gene_pair_scatter(
 
     fig.add_vline(x=0, line=dict(color=th["plot_reference"], width=0.7))
     fig.add_hline(y=0, line=dict(color=th["plot_reference"], width=0.7))
-    fig.add_vline(x=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9aa4ae", width=0.9))
-    fig.add_hline(y=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9aa4ae", width=0.9))
+    fig.add_vline(x=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#8e8e93", width=0.9))
+    fig.add_hline(y=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#8e8e93", width=0.9))
 
     r_str = f"{stats['pearson_r']:+.3f}" if np.isfinite(stats.get("pearson_r", np.nan)) else "NA"
     rho_str = f"{stats['spearman_rho']:+.3f}" if np.isfinite(stats.get("spearman_rho", np.nan)) else "NA"
@@ -492,7 +492,7 @@ def create_gene_pair_scatter(
         f"Pearson r = {r_str}  ·  Spearman ρ = {rho_str}  ·  n = {stats['n_shared']:,}"
     )
     fig.update_layout(
-        title=dict(text=title, font=dict(size=13), x=0, xanchor="left"),
+        title=dict(text=title, font=dict(size=13), xref="paper", x=0, xanchor="left"),
         xaxis=dict(title=f"{gene_x}  ·  {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
                    showgrid=True, gridcolor=th["plot_grid"], automargin=True),
         yaxis=dict(title=f"{gene_y}  ·  {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
