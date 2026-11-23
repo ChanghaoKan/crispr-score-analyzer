@@ -25,21 +25,21 @@ ESSENTIALITY_THRESHOLD = -0.5
 SCAN_COLUMNS = ["gene", "correlation", "n_shared", "mean_score", "rank", "percentile"]
 SCATTER_COLUMNS = ["cell_line", "cell_line_name", "lineage", "score_x", "score_y"]
 
-# High-contrast, readable categorical palette for scatter-plot lineages.
+# Refined, colorblind-conscious editorial palette for scatter-plot lineages.
 LINEAGE_PALETTE = [
-    "#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
-    "#332288", "#882255", "#44AA99", "#117733", "#999933", "#88CCEE",
+    "#1b5e91", "#c4583b", "#1d8a68", "#8f5585", "#c98a2c", "#4d90b8",
+    "#4b4e8f", "#a3475c", "#3e8c84", "#6b8e4e", "#948447", "#74a5c7",
 ]
 
 
 def _default_theme():
     return {
         "plot_bg": "#ffffff",
-        "plot_text": "#172231",
-        "plot_axis": "#2f3d4b",
-        "plot_reference": "rgba(47,61,75,0.32)",
-        "plot_grid": "rgba(47,61,75,0.06)",
-        "accent": "#245f96",
+        "plot_text": "#182028",
+        "plot_axis": "#36414d",
+        "plot_reference": "rgba(54,65,77,0.28)",
+        "plot_grid": "rgba(54,65,77,0.06)",
+        "accent": "#1b4d78",
     }
 
 
@@ -312,14 +312,16 @@ def _apply_theme(fig: go.Figure, th: dict) -> go.Figure:
         title_font_color=th["plot_text"],
     )
     fig.update_xaxes(
-        linecolor=th["plot_axis"], tickcolor=th["plot_axis"],
+        linecolor=th["plot_axis"], linewidth=1.1,
+        ticks="outside", ticklen=4, tickwidth=1, tickcolor=th["plot_axis"],
         tickfont=dict(size=12, color=th["plot_text"]),
-        title_font=dict(size=14, color=th["plot_text"]),
+        title_font=dict(size=13, color=th["plot_text"]),
     )
     fig.update_yaxes(
-        linecolor=th["plot_axis"], tickcolor=th["plot_axis"],
+        linecolor=th["plot_axis"], linewidth=1.1,
+        ticks="outside", ticklen=4, tickwidth=1, tickcolor=th["plot_axis"],
         tickfont=dict(size=12, color=th["plot_text"]),
-        title_font=dict(size=14, color=th["plot_text"]),
+        title_font=dict(size=13, color=th["plot_text"]),
     )
     fig.update_annotations(font_color=th["plot_text"])
     return fig
@@ -337,6 +339,7 @@ def create_codependency_scan_plot(
     if scan_df.empty:
         return None
     th = th or _default_theme()
+    is_dark = th["plot_bg"] != "#ffffff"
     pos = scan_df[scan_df["correlation"] > 0].head(top_n)
     neg = scan_df[scan_df["correlation"] < 0].tail(top_n)
     shown = pd.concat([neg, pos], ignore_index=True).drop_duplicates(subset=["gene"])
@@ -346,12 +349,14 @@ def create_codependency_scan_plot(
     order = shown["gene"].tolist()
     vals = shown["correlation"].to_numpy(dtype=float)
     limit = max(float(np.nanmax(np.abs(vals))), 0.15)
-    neutral = "#243140" if th["plot_bg"] != "#ffffff" else "#f7f4ee"
+    pos_col = "#5598db" if is_dark else "#1b5e91"
+    neg_col = "#d67458" if is_dark else "#c4583b"
+    neutral = "#1d2836" if is_dark else "#f7f4ef"
     metric_label = "Pearson r" if method == "pearson" else "Spearman ρ"
 
-    stems = {"#2f6fad": ([], []), "#d4785a": ([], [])}
+    stems = {pos_col: ([], []), neg_col: ([], [])}
     for gene, val in zip(order, vals):
-        xs, ys = stems["#2f6fad" if val >= 0 else "#d4785a"]
+        xs, ys = stems[pos_col if val >= 0 else neg_col]
         xs.extend((0, val, None))
         ys.extend((gene, gene, None))
     fig = go.Figure()
@@ -360,18 +365,18 @@ def create_codependency_scan_plot(
             continue
         fig.add_trace(go.Scatter(
             x=xs, y=ys, mode="lines",
-            line=dict(color=color, width=2),
+            line=dict(color=color, width=1.8),
             hoverinfo="skip", showlegend=False,
         ))
     fig.add_trace(go.Scatter(
         x=vals, y=order, mode="markers+text",
-        text=[f"{v:+.2f}" for v in vals],
+        text=[f"  {v:+.2f}" if v >= 0 else f"{v:+.2f}  " for v in vals],
         textposition=["middle right" if v >= 0 else "middle left" for v in vals],
         textfont=dict(size=12, color=th["plot_text"]),
         cliponaxis=False,
         marker=dict(
-            size=11, color=vals,
-            colorscale=[[0.0, "#d4785a"], [0.5, neutral], [1.0, "#2f6fad"]],
+            size=10.5, color=vals,
+            colorscale=[[0.0, neg_col], [0.5, neutral], [1.0, pos_col]],
             cmid=0, cmin=-limit, cmax=limit, showscale=False, line=dict(width=0),
         ),
         customdata=np.column_stack((shown["n_shared"], shown["mean_score"], shown["rank"])),
@@ -384,34 +389,36 @@ def create_codependency_scan_plot(
         ),
         showlegend=False,
     ))
-    fig.add_vline(x=0, line_width=1.5, line_color=th["plot_axis"])
-    quiet_grid = "rgba(182,195,207,0.16)" if th["plot_bg"] != "#ffffff" else "rgba(47,61,75,0.10)"
+    fig.add_vline(x=0, line_width=1.3, line_color=th["plot_axis"])
+    quiet_grid = "rgba(182,195,207,0.12)" if is_dark else "rgba(54,65,77,0.08)"
     fig.update_yaxes(
         automargin=True, categoryorder="array", categoryarray=order,
         showgrid=True, gridcolor=quiet_grid, gridwidth=1,
     )
     fig.update_xaxes(
-        range=[-limit * 1.38, limit * 1.38], zeroline=False, showgrid=False,
+        range=[-limit * 1.42, limit * 1.42], zeroline=False, showgrid=False,
         title_text=_ui(
             lang,
-            f"← anti-correlated · {metric_label} with {query_gene} · co-dependent →",
-            f"← 负相关 · 与 {query_gene} 的 {metric_label} · 正共依赖 →",
+            f"← anti-correlated  ·  {metric_label} with {query_gene}  ·  co-dependent →",
+            f"← 负相关  ·  与 {query_gene} 的 {metric_label}  ·  正共依赖 →",
         ),
     )
     fig.update_layout(
         title=dict(
             text=_ui(
                 lang,
-                f"Top co-dependencies of {query_gene} ({len(scan_df):,} genes scanned)",
-                f"{query_gene} 的全基因组共依赖排名（共扫描 {len(scan_df):,} 个基因）",
+                f"<b>{query_gene}</b>  ·  Top co-dependencies ({len(scan_df):,} genes scanned)",
+                f"<b>{query_gene}</b>  ·  全基因组共依赖排名（{len(scan_df):,} 基因）",
             ),
-            font=dict(size=14), x=0, xanchor="left",
+            font=dict(size=13.5), x=0, xanchor="left",
         ),
         height=max(420, len(order) * 26 + 120),
-        margin=dict(l=24, r=36, t=48, b=56),
+        margin=dict(l=24, r=38, t=50, b=58),
         showlegend=False,
     )
-    return _apply_theme(fig, th)
+    themed = _apply_theme(fig, th)
+    themed.update_yaxes(showline=False, ticks="")
+    return themed
 
 
 def create_gene_pair_scatter(
@@ -436,26 +443,29 @@ def create_gene_pair_scatter(
         + f"{gene_x}: %{{x:.3f}}<br>"
         + f"{gene_y}: %{{y:.3f}}<extra></extra>"
     )
-    for idx, lineage in enumerate(top_lineages):
-        sub = scatter_df[scatter_df["lineage"] == lineage]
-        fig.add_trace(go.Scatter(
-            x=sub["score_x"], y=sub["score_y"], mode="markers",
-            name=f"{lineage} ({len(sub)})",
-            marker=dict(
-                size=7, opacity=0.78,
-                color=LINEAGE_PALETTE[idx % len(LINEAGE_PALETTE)],
-                line=dict(width=0.6, color=th["plot_bg"]),
-            ),
-            customdata=sub[["cell_line_name", "cell_line", "lineage"]].values,
-            hovertemplate=hover,
-        ))
+    # Draw unhighlighted background lineages first so top lineages stay crisp in foreground.
     if has_other:
         other = scatter_df[~scatter_df["lineage"].isin(top_lineages)]
         fig.add_trace(go.Scatter(
             x=other["score_x"], y=other["score_y"], mode="markers",
             name=_ui(lang, f"Other lineages ({len(other)})", f"其他癌种 ({len(other)})"),
-            marker=dict(size=6, opacity=0.45, color="#9aa7b4", line=dict(width=0.5, color=th["plot_bg"])),
+            legendrank=100,
+            marker=dict(size=5.2, opacity=0.28, color="#9aa4ae", line=dict(width=0.4, color=th["plot_bg"])),
             customdata=other[["cell_line_name", "cell_line", "lineage"]].values,
+            hovertemplate=hover,
+        ))
+    for idx, lineage in enumerate(top_lineages):
+        sub = scatter_df[scatter_df["lineage"] == lineage]
+        fig.add_trace(go.Scatter(
+            x=sub["score_x"], y=sub["score_y"], mode="markers",
+            name=f"{lineage} ({len(sub)})",
+            legendrank=idx + 1,
+            marker=dict(
+                size=6.8, opacity=0.82,
+                color=LINEAGE_PALETTE[idx % len(LINEAGE_PALETTE)],
+                line=dict(width=0.6, color=th["plot_bg"]),
+            ),
+            customdata=sub[["cell_line_name", "cell_line", "lineage"]].values,
             hovertemplate=hover,
         ))
 
@@ -465,30 +475,30 @@ def create_gene_pair_scatter(
         fig.add_trace(go.Scatter(
             x=xs, y=ys, mode="lines",
             name=_ui(lang, "Linear trend", "线性趋势线"),
-            line=dict(color=th["plot_axis"], width=1.8, dash="dash"),
+            legendrank=200,
+            line=dict(color=th["plot_axis"], width=1.6, dash="dash"),
             hoverinfo="skip",
         ))
 
     fig.add_vline(x=0, line=dict(color=th["plot_reference"], width=0.7))
     fig.add_hline(y=0, line=dict(color=th["plot_reference"], width=0.7))
-    fig.add_vline(x=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9BA6B0", width=0.9))
-    fig.add_hline(y=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9BA6B0", width=0.9))
+    fig.add_vline(x=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9aa4ae", width=0.9))
+    fig.add_hline(y=ESSENTIALITY_THRESHOLD, line=dict(dash="dot", color="#9aa4ae", width=0.9))
 
     r_str = f"{stats['pearson_r']:+.3f}" if np.isfinite(stats.get("pearson_r", np.nan)) else "NA"
     rho_str = f"{stats['spearman_rho']:+.3f}" if np.isfinite(stats.get("spearman_rho", np.nan)) else "NA"
-    title = _ui(
-        lang,
-        f"{gene_x} vs {gene_y} · Pearson r = {r_str} · Spearman ρ = {rho_str} · n = {stats['n_shared']:,}",
-        f"{gene_x} vs {gene_y} · Pearson r = {r_str} · Spearman ρ = {rho_str} · n = {stats['n_shared']:,}",
+    title = (
+        f"<b>{gene_x} vs {gene_y}</b>  ·  "
+        f"Pearson r = {r_str}  ·  Spearman ρ = {rho_str}  ·  n = {stats['n_shared']:,}"
     )
     fig.update_layout(
         title=dict(text=title, font=dict(size=13), x=0, xanchor="left"),
-        xaxis=dict(title=f"{gene_x} · {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
+        xaxis=dict(title=f"{gene_x}  ·  {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
                    showgrid=True, gridcolor=th["plot_grid"], automargin=True),
-        yaxis=dict(title=f"{gene_y} · {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
+        yaxis=dict(title=f"{gene_y}  ·  {_ui(lang, 'CRISPR score', 'CRISPR 分数')}",
                    showgrid=True, gridcolor=th["plot_grid"], automargin=True),
         legend=dict(font=dict(size=11), itemsizing="constant"),
-        width=760, height=520,
-        margin=dict(l=64, r=24, t=46, b=56),
+        width=780, height=520,
+        margin=dict(l=64, r=24, t=48, b=56),
     )
     return _apply_theme(fig, th)

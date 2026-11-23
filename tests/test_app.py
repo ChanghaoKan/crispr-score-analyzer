@@ -177,10 +177,10 @@ class AppSubmissionTests(unittest.TestCase):
 
     def test_example_and_clear_change_draft_without_replacing_result(self):
         cases = [
-            ("rank", {"rank_genes": "MYC"}, {"rank_genes": "E2F1\nE2F2\nE2F3"}),
-            ("box", {"box_genes": "MYC"}, {"box_genes": "E2F1\nE2F2"}),
+            ("rank", {"rank_genes": "MYC"}, {"rank_genes": "KRAS\nSOX10\nBRAF\nESR1\nTP53"}),
+            ("box", {"box_genes": "MYC"}, {"box_genes": "SOX10\nESR1"}),
             ("multi", {"multi_bg": "MYC", "multi_hl": "PTEN"},
-             {"multi_bg": "CDK1\nCDK2\nCCNB1\nCCND1\nCCNE1", "multi_hl": "PLK1\nAURKA"}),
+             {"multi_bg": "CDK1\nCDK2\nCDK4\nCDK6\nCCNB1\nCCND1\nCCNE1", "multi_hl": "PLK1\nAURKA"}),
         ]
         for view, initial, example in cases:
             with self.subTest(view=view):
