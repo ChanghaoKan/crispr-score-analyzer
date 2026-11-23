@@ -26,3 +26,7 @@ Thumbs.db
 
 # Official DepMap downloads used only to rebuild data/depmap_chronos.npz
 data/raw/
+
+# Intermediate single-panel exports for preprint figures (composite Figure1/Figure2 are tracked)
+preprint/figures/fig*.svg
+preprint/figures/fig*.png

@@ -1,0 +1,150 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=2.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage[hidelinks,colorlinks=true,linkcolor=accentblue,urlcolor=accentblue,citecolor=accentblue]{hyperref}
+\usepackage{titlesec}
+\usepackage{caption}
+
+\definecolor{accentblue}{HTML}{0071E3}
+\definecolor{ink}{HTML}{1D1D1F}
+\definecolor{muted}{HTML}{6E6E73}
+
+\titleformat{\section}{\large\bfseries\color{ink}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{ink}}{\thesubsection}{0.5em}{}
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+{\small\textbf{\textcolor{accentblue}{BIOINFORMATICS \textperiodcentered{} APPLICATION NOTE (PREPRINT)}}}
+\vspace{0.35em}
+
+{\LARGE\bfseries\color{ink} CRISPR Score Analyzer: an interactive, cohort-scoped browser platform for DepMap gene essentiality and co-dependency analysis}
+
+\vspace{0.6em}
+{\normalsize\textbf{Changhao Kan}$^{1,*}$}
+
+{\small\color{muted}
+$^{1}$Shenzhen Bay Laboratory, Shenzhen, China\\
+$^{*}$Correspondence: \href{mailto:kanchanghao@szbl.ac.cn}{\texttt{kanchanghao@szbl.ac.cn}} \textperiodcentered{} ORCID: \href{https://orcid.org/0009-0000-4014-5923}{\texttt{0009-0000-4014-5923}}
+}
+
+\vspace{0.8em}
+\hrule
+\vspace{0.6em}
+
+\noindent\textbf{Abstract}\\
+\textbf{Summary:} Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) are widely used to prioritize candidate cancer targets, identify lineage-restricted vulnerabilities, and map functional gene networks. In routine practice, however, experimental and computational biologists encounter recurring workflow friction when moving beyond single-gene portal lookups—such as locating multi-gene candidate lists on a cohort-wide essentiality curve, separating pan-cancer essentiality from tissue-specific dependency, selecting sensitive and resistant cell-line models for wet-lab validation, performing single-lineage genome-wide co-dependency scans, and exporting publication-ready vector figures alongside reproducible provenance. We present \textbf{CRISPR Score Analyzer (v1.2.0)}, an open-source, bilingual (English/Chinese) browser platform built on Python and Streamlit. The application ships directly with the DepMap Public 26Q3 Chronos gene effect matrix (1,361 cancer cell lines $\times$ 18,434 genes across 30 Oncotree lineages) together with 40,402 unambiguous HGNC alias mappings, and supports validated custom CRISPR score CSV uploads. Across four integrated workflows---\textit{Gene ranking}, \textit{Cancer-type comparison}, \textit{Gene-set annotation}, and \textit{Co-dependency}---users can interrogate pan-cancer or lineage-restricted cohorts, inspect lineage preference and top sensitive/resistant cell lines, execute chunked vectorized genome-wide Pearson or Spearman co-dependency scans in seconds without external statistical dependencies, and export full-vector PDF/SVG figures, 300-DPI PNGs, and self-contained ZIP provenance bundles. We demonstrate the platform through two biological use cases: separating lineage-selective dependencies (\textit{SOX10} in skin and \textit{ESR1} in breast cancer) from pan-cancer averages, and uncovering both pan-cancer \textit{MDM2}--\textit{TP53} antagonism ($r = -0.702$) and sharpened intra-lineage \textit{BRAF}--MAPK co-dependencies within skin cancer cell lines (\textit{MAPK1} $r = +0.798$, \textit{MAP2K1} $r = +0.552$, \textit{MAP2K2} $r = +0.550$).
+
+\textbf{Availability and Implementation:} Source code for v1.2.0 is freely available under the MIT license at \url{https://github.com/ChanghaoKan/crispr-score-analyzer} (release tag \texttt{v1.2.0}: \url{https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0}; Zenodo concept DOI \texttt{10.5281/zenodo.19607602}). A hosted instance is available at \url{https://crispr-score-analyzer-szbl-denglab.streamlit.app/}.
+
+\vspace{0.5em}
+\hrule
+\vspace{0.6em}
+
+\section{Introduction}
+Pooled genome-scale CRISPR-Cas9 loss-of-function screens across human cancer cell lines---led by the Broad Institute Cancer Dependency Map (DepMap) (Tsherniak \textit{et al.}, 2017; Meyers \textit{et al.}, 2017; Dempster \textit{et al.}, 2021)---serve as a standard reference for oncology target prioritization, pathway mapping, and experimental model selection. Using copy-number- and kinetics-corrected Chronos gene effect scores (Dempster \textit{et al.}, 2021), researchers routinely ask whether candidate genes from transcriptomic, proteomic, or functional screens represent broad pan-cancer dependencies or context-specific vulnerabilities.
+
+Although the DepMap Portal (\url{https://depmap.org/portal/}) and companion tools such as shinyDepMap (Shimada \textit{et al.}, 2021) and co-essentiality atlases (Wainberg \textit{et al.}, 2021) provide extensive access to dependency resources, everyday workflows still encounter four practical gaps: (i) locating a multi-gene candidate list simultaneously on a cohort-wide essentiality ranking curve or overlaying prioritized highlights on a pathway background often requires repetitive single-gene lookups or ad-hoc scripting; (ii) pan-cancer means obscure lineage-restricted vulnerabilities, while selecting concrete positive (sensitive) and negative (resistant) cell lines requires cross-referencing multiple tables; (iii) standard portal co-dependency queries report pan-cancer correlations where lineage composition can confound pathway co-essentiality, rather than supporting instant single-lineage genome-wide scans; and (iv) exporting vector-editable figures paired with full numerical precision, data checksums, and analysis metadata remains fragmented.
+
+To address these workflow needs without requiring programming, we developed \textbf{CRISPR Score Analyzer}, an open-source browser platform emphasizing visual clarity, explicit draft-vs-committed state isolation, descriptive statistical honesty, bilingual English/Chinese support, and reproducible exports.
+
+\section{Implementation and Core Capabilities}
+
+\subsection{Bundled Reference Data, Custom Uploads, and Symbol Resolution}
+CRISPR Score Analyzer is implemented in Python using Streamlit, pandas, NumPy, Plotly, Kaleido, and Pillow. To ensure fast, deterministic startup without remote matrix fetches, the repository bundles a compact \texttt{float32} binary matrix (\texttt{data/depmap\_chronos.npz}, 88 MB; maximum absolute \texttt{float32} rounding error $1.19 \times 10^{-7}$ across the first 100 genes) of the \textbf{DepMap Public 26Q3 Chronos Gene Effect} dataset (1,361 cancer cell lines $\times$ 18,434 genes across 30 Oncotree lineages), accompanied by SHA-256 and MD5 checksum provenance (\texttt{data/depmap\_chronos.provenance.json}).
+
+Users can also upload custom UTF-8 CRISPR score CSV matrices. Automatic gene detection strictly requires DepMap-style \texttt{SYMBOL (Entrez ID)} column headers so numeric metadata columns are never misclassified by score range; plain-symbol tables require explicit manual column mapping. Ambiguous duplicate gene symbols and repeated metadata columns are excluded and logged in a downloadable \texttt{diagnostics.csv} report. Gene-list inputs support arbitrary delimiters, file uploads (\texttt{.txt/.csv/.tsv}), pasted DepMap headers, and offline HGNC alias resolution (\texttt{data/gene\_aliases.json}, 40,402 unambiguous previous-symbol and alias mappings; Seal \textit{et al.}, 2023). Input matching follows an exception-only pattern: clean matches stay silent, whereas alias remappings, duplicates, and unmatched names are reported immediately.
+
+\subsection{Modular Analytical Workflows}
+Analyses are organized into four top-level modules sharing a sidebar cohort filter (cancer lineages and optional disease subtypes; Table~\ref{tab:comparison}):
+\begin{enumerate}
+    \item \textbf{Gene ranking:} Ranks genes within the active scope by ascending mean finite Chronos score (\texttt{rank}, \texttt{percentile}, \texttt{n\_valid}, and missingness), pairing WebGL background curves with configurable reference anchors (default \textit{MYC}, \textit{PTEN}), a $-0.5$ screening reference line, and collision-avoided transparent vector labels.
+    \item \textbf{Cancer-type comparison:} Plots horizontal per-lineage boxplots annotated with valid sample counts ($n$), median or alphabetical ordering, 1- or 2-column grids, single-axis multi-gene comparison, optional individual cell-line overlays (\texttt{ModelID} and display name), and explicit subset selection when $>8$ genes match.
+    \item \textbf{Gene-set annotation:} Overlays prioritized highlight genes on a background gene set across the cohort ranking curve with user-configurable colors.
+    \item \textbf{Co-dependency:} Provides both \textit{genome-wide single-gene scans} across all other ranked genes in the active sidebar scope (using chunked vectorized NumPy/pandas exact pairwise-complete Pearson $r$ or Spearman $\rho$ without requiring SciPy) and \textit{multi-gene correlation matrices} (2--25 genes), each paired with an interactive lineage-colored cell-line scatter plot with OLS trendline and top-50 positive/negative tables.
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of workflow capabilities across CRISPR Score Analyzer and existing DepMap web interfaces.}
+\label{tab:comparison}
+\footnotesize
+\begin{tabularx}{\textwidth}{Xccc}
+\toprule
+\textbf{Capability} & \textbf{DepMap Portal} & \textbf{shinyDepMap} & \textbf{CRISPR Score Analyzer} \\
+\midrule
+Multi-gene batch placement on cohort ranking curve & Single-gene default & Efficacy/selectivity scatter & \textbf{Yes} (ranking + two-layer) \\
+Cohort-scoped / single-lineage genome-wide co-dependency & Pan-cancer precomputed & Pan-cancer clusters & \textbf{Yes} (live Pearson $r$ / Spearman $\rho$) \\
+Multi-gene correlation matrix + lineage scatter & Custom explorer steps & Cluster view & \textbf{Yes} (2--25 genes, integrated) \\
+Lineage preference lollipop/heatmap vs all-lineage mean & Per-gene violin & No & \textbf{Yes} (Top/Bottom 6 \& heatmap) \\
+Wet-lab sensitive / resistant cell-line lookup & Table filtering & Sensitive list & \textbf{Yes} (paired tables + CSV) \\
+Custom CRISPR score CSV upload + column diagnostics & No & No & \textbf{Yes} (strict schema + report) \\
+Offline HGNC alias resolution (40,402 symbols) & Built-in search & No & \textbf{Yes} (batch + scan + refs) \\
+Vector PDF/SVG + 300-DPI PNG + SHA-256 ZIP bundle & Separate PNG/CSV & PNG/CSV & \textbf{Yes} (white-paper export + ZIP) \\
+Bilingual UI (EN/ZH) \& Light/Dark themes & English only & English only & \textbf{Yes} (instant + shareable URL) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Deep-Dive Views, Reproducibility, Performance, and Verification}
+Two deep-dive tabs sit beneath ranking, comparison, and annotation views: \textbf{Lineage preference} (comparing each cancer type with $n_{\mathrm{valid}} \ge 5$ against each gene's full-dataset mean, reporting mean/median difference and $\% < -0.5$ in lollipop or heatmap format) and \textbf{Top cell lines} (most dependent and least dependent models within scope). Pending draft edits remain isolated from committed results and exports, indicated quietly by an amber status dot and a morphing \textbf{Update chart} button, while dataset or cohort changes invalidate prior results until re-run. All figure exports enforce white paper backgrounds and vector-converted traces (PDF/SVG) or 300-DPI PNGs (capped at 24M pixels), and on-demand ZIP archives bundle \texttt{selected\_results.csv}, \texttt{full\_rankings.csv}, \texttt{plot\_data.csv}, \texttt{lineage\_preference.csv}, \texttt{diagnostics.csv}, and \texttt{metadata.json} with SHA-256 provenance and software versions.
+
+On a standard Linux CPU container (Python 3.12), matrix loading completes in 2.12~s, full ranking across 18,434 genes in 0.92~s, and pan-cancer genome-wide co-dependency scanning across 18,433 partner genes in 1.18~s (Pearson $r$) or 6.29~s (Spearman $\rho$). A regression suite of 90 automated tests validates parsing, missingness, exact correlation parity, UI state isolation, citation metadata, and vector/DPI figure generation on GitHub Actions.
+
+\section{Demonstration and Biological Use Cases}
+
+\subsection{Separating Pan-Cancer Essentiality from Lineage-Selective Vulnerability}
+On DepMap Public 26Q3 ($n = 1{,}361$ models; 1,712 genes with mean score $< -0.5$, range $-5.250$ to $+0.398$), the initial ranking view locates five canonical cancer genes (\textit{KRAS}, \textit{SOX10}, \textit{BRAF}, \textit{ESR1}, \textit{TP53}) relative to \textit{MYC} (mean $-1.971$, rank 187, 1.01\%) and \textit{PTEN} (mean $+0.377$, rank 18,428, 99.97\%) (Figure~\ref{fig:fig1}A). Whereas \textit{KRAS} crosses the $-0.5$ reference (mean $-0.729$, rank 1,263, 6.85\%) and \textit{TP53} sits at the positive growth-advantage extreme (mean $+0.381$, rank 18,430, 99.98\%), lineage drivers \textit{SOX10} (mean $-0.347$, rank 2,225, 12.07\%) and \textit{ESR1} (mean $-0.065$, rank 7,347, 39.86\%) appear modest in pan-cancer averages.
+
+The \textbf{Lineage preference} view immediately exposes their tissue restriction (Figure~\ref{fig:fig1}C,D): \textit{SOX10} shifts strongly toward Skin ($\text{mean} = -1.487$, $\Delta = -1.140$, median $\Delta = -1.368$, $78.7\%$ of $n = 75$ lines $< -0.5$) and Eye ($\text{mean} = -0.882$, $\Delta = -0.535$, $n = 15$), while \textit{ESR1} enriches in Breast ($\text{mean} = -0.285$, $\Delta = -0.220$, $n = 67$, $17.9\% < -0.5$). The \textbf{Top cell lines} tab concurrently highlights classic ER-positive models (\texttt{HCC1428}, $-1.912$; \texttt{T-47D}, $-1.845$; \texttt{MDA-MB-415}, $-1.636$) alongside resistant negative controls. Meanwhile, \textbf{Gene-set annotation} overlays mitotic kinases \textit{PLK1} (mean $-2.691$, rank 38, 0.21\%) and \textit{AURKA} (mean $-1.236$, rank 626, 3.40\%) over a seven-gene CDK/cyclin background (Figure~\ref{fig:fig1}B).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/Figure1.png}
+\caption{\textbf{Multi-gene essentiality positioning and lineage preference across DepMap Public 26Q3 ($n = 1{,}361$ cell lines, 18,434 genes).} \textbf{(A)} Pan-cancer mean Chronos ranking of \textit{KRAS}, \textit{SOX10}, \textit{BRAF}, \textit{ESR1}, and \textit{TP53} anchored by \textit{MYC} and \textit{PTEN}. \textbf{(B)} Two-layer gene-set annotation highlighting \textit{PLK1} and \textit{AURKA} over a CDK/cyclin cell-cycle background. \textbf{(C, D)} Diverging lineage preference lollipops (top and bottom 4 lineages with $n \ge 5$) relative to each gene's all-lineage mean for \textit{SOX10} (C) and \textit{ESR1} (D).}
+\label{fig:fig1}
+\end{figure}
+
+\subsection{Pan-Cancer and Single-Lineage Co-Dependency Discovery}
+A pan-cancer genome-wide Pearson scan of \textit{MDM2} across 18,433 partner genes (1.18~s; Figure~\ref{fig:fig2}A) symmetrically recovers positive regulators (\textit{PPM1D} $r = +0.664$, \textit{MDM4} $r = +0.614$, \textit{USP7} $r = +0.522$, \textit{DDX31} $r = +0.466$, \textit{UBE2D3} $r = +0.398$) and antagonistic p53 tumor-suppressor axis partners (\textit{TP53} $r = -0.702$, \textit{TP53BP1} $r = -0.589$, \textit{USP28} $r = -0.531$, \textit{CDKN1A} $r = -0.530$, \textit{CHEK2} $r = -0.491$, \textit{ATM} $r = -0.461$). Multi-gene matrix mode resolves the six-gene \textit{p53--MDM2} module into two anti-correlated blocks (Figure~\ref{fig:fig2}B), and the lineage-colored cell-line scatter plot (\textit{MDM2} vs \textit{TP53}, $r = -0.702$, $\rho = -0.704$, $n = 1{,}361$; Figure~\ref{fig:fig2}C) confirms pan-lineage consistency.
+
+Restricting the sidebar scope to \textbf{Skin} ($n = 75$ cell lines; 17,785 genes passing finite-observation checks) illustrates the benefit of cohort-scoped scanning for tissue-enriched oncogenes (Figure~\ref{fig:fig2}D): relative to a pan-cancer \textit{BRAF} scan (\textit{MAPK1} $+0.644$, \textit{MAP2K1} $+0.391$, \textit{MAP2K2} $+0.271$), Skin-only scanning sharpens canonical RAF--MEK--ERK cascade correlations substantially (\textit{MAPK1} $+0.798$, \textit{MAP2K1} $+0.552$, \textit{MAP2K2} $+0.550$).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/Figure2.png}
+\caption{\textbf{Pan-cancer and single-lineage genome-wide co-dependency discovery.} \textbf{(A)} Pan-cancer Pearson $r$ scan of \textit{MDM2} across 18,433 genes ($n = 1{,}361$ lines). \textbf{(B)} Pairwise correlation matrix of the six-gene \textit{p53--MDM2} regulatory axis. \textbf{(C)} Lineage-colored cell-line scatter plot of \textit{MDM2} vs \textit{TP53} ($r = -0.702$, $\rho = -0.704$, $n = 1{,}361$). \textbf{(D)} Cohort-scoped \textit{BRAF} scan restricted to Skin cell lines ($n = 75$, 17,785 genes), sharpening intra-lineage MAPK cascade co-dependencies.}
+\label{fig:fig2}
+\end{figure}
+
+\section{Scope, Limitations, and Scientific Interpretation}
+CRISPR Score Analyzer focuses on transparent exploratory visualization rather than formal statistical hypothesis testing. Mean dependency ranks, lineage preference shifts, and co-dependency correlations are descriptive summaries and do not establish statistical significance, cancer-type selectivity, or synthetic lethality. The $-0.5$ dashed line is a descriptive screening reference rather than a formal common-essential classifier. Because dependency correlations can reflect shared complexes, signaling pathways, residual subtype structure, or common-essentiality variance, results should be interpreted alongside shared sample counts ($n_{\mathrm{shared}}$), Spearman $\rho$, and cell-line scatter distributions. Custom uploads assume one row per unique cell line.
+
+\section*{Acknowledgements and Disclosures}
+\textbf{Data Source:} Reference dependency data are from DepMap Public 26Q3 Chronos Gene Effect scores (\url{https://depmap.org/portal/}). \textbf{AI Assistance Disclosure:} Large language model assistants (Claude, Codex, and agentic development tools) assisted with code engineering, interface design, automated testing, and manuscript editing; all scientific specifications, biological analyses, verification, and final decisions were made by the author. \textbf{Funding:} This work received no specific external funding. \textbf{Competing Interests:} None declared.
+
+\section*{References}
+\small
+\begin{enumerate}
+\item Dempster, J. M. \textit{et al.} (2021). Chronos: a cell population dynamics model of CRISPR experiments that improves inference of gene fitness effects. \textit{Genome Biology}, 22(1), 343. \url{https://doi.org/10.1186/s13059-021-02540-7}
+\item DepMap, Broad. (2026). DepMap Public 26Q3 Chronos Gene Effect dataset. \url{https://depmap.org/portal/}
+\item Kan, C. (2026). CRISPR Score Analyzer (v1.2.0) [Software]. GitHub / Zenodo. \url{https://doi.org/10.5281/zenodo.19607602} (Release tag \texttt{v1.2.0}: \url{https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0})
+\item Meyers, R. M. \textit{et al.} (2017). Computational correction of copy number effect improves specificity of CRISPR-Cas9 essentiality screens in cancer cells. \textit{Nature Genetics}, 49(12), 1779--1784. \url{https://doi.org/10.1038/ng.3984}
+\item Seal, R. L. \textit{et al.} (2023). Genenames.org: the HGNC resources in 2023. \textit{Nucleic Acids Research}, 51(D1), D1003--D1009. \url{https://doi.org/10.1093/nar/gkac888}
+\item Shimada, K., Bachman, J. A., Muhlich, J. L., \& Mitchison, T. J. (2021). shinyDepMap, a tool to identify targetable cancer genes and their functional connections from Cancer Dependency Map data. \textit{eLife}, 10, e57116. \url{https://doi.org/10.7554/eLife.57116}
+\item Tsherniak, A. \textit{et al.} (2017). Defining a Cancer Dependency Map. \textit{Cell}, 170(3), 564--576.e16. \url{https://doi.org/10.1016/j.cell.2017.06.010}
+\item Wainberg, M. \textit{et al.} (2021). A genome-wide atlas of co-essential modules assigns function to uncharacterized genes. \textit{Nature Genetics}, 53(5), 638--649. \url{https://doi.org/10.1038/s41588-021-00840-z}
+\end{enumerate}
+
+\end{document}

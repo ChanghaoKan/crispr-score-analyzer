@@ -197,7 +197,7 @@ GitHub Actions runs the full suite on Python 3.12. Automated checks do not repla
 
 ## Citation
 
-Cite CRISPR Score Analyzer 1.1.0, deposited 2026-11-21: [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595). The concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602) resolves to that version. The Zenodo record and the code in this repository are both MIT. Record DepMap Public 26Q3 with an analysis from the current app. The source archive on Zenodo does not include the bundled matrix.
+Cite **CRISPR Score Analyzer v1.2.0** ([GitHub release](https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0); [preprint manuscript](preprint/manuscript.pdf)) via the Zenodo concept DOI [10.5281/zenodo.19607602](https://doi.org/10.5281/zenodo.19607602), which resolves to the latest Zenodo archive (currently version 1.1.0, deposited 2026-11-21: [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595)). The source archive and the code in this repository are both MIT, and `.gitattributes` excludes the bundled matrix from release source archives. Record DepMap Public 26Q3 with an analysis from the current app.
 
 The 2026-04-16 snapshot remains version 1.0.0: [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603). That record's Zenodo license is CC-BY-4.0.
 
@@ -211,7 +211,7 @@ Also cite the underlying DepMap release and relevant methodology. The bundled ma
 
 Report bugs and request features through [GitHub Issues](https://github.com/ChanghaoKan/crispr-score-analyzer/issues). Include reproduction steps, relevant package versions, and a small synthetic example when reporting a data problem. Pull requests should describe the behavior changed and the checks performed.
 
-Maintainer: [Changhao Kan](https://github.com/ChanghaoKan).
+Maintainer: [Changhao Kan](https://github.com/ChanghaoKan) ([ORCID: 0009-0000-4014-5923](https://orcid.org/0009-0000-4014-5923) · `kanchanghao@szbl.ac.cn`).
 
 ## License and acknowledgements
 
