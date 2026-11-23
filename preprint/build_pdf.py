@@ -34,7 +34,7 @@ def build_html() -> str:
 <style>
   @page {{
     size: A4 portrait;
-    margin: 15.5mm 17.5mm 15.5mm 17.5mm;
+    margin: 14.2mm 17mm 14.2mm 17mm;
   }}
 
   * {{
@@ -47,8 +47,8 @@ def build_html() -> str:
     background: #ffffff;
     color: #1d1d1f;
     font-family: "Liberation Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-    font-size: 8.75pt;
-    line-height: 1.43;
+    font-size: 8.55pt;
+    line-height: 1.40;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }}
@@ -63,9 +63,9 @@ def build_html() -> str:
     letter-spacing: 0.085em;
     text-transform: uppercase;
     color: #0071e3;
-    padding-bottom: 3.5pt;
+    padding-bottom: 3pt;
     border-bottom: 1.1pt solid #1d1d1f;
-    margin-bottom: 7.5pt;
+    margin-bottom: 6.5pt;
   }}
 
   .doc-kicker .kicker-right {{
@@ -75,28 +75,28 @@ def build_html() -> str:
   }}
 
   h1.title {{
-    font-size: 15.4pt;
-    line-height: 1.21;
+    font-size: 15.2pt;
+    line-height: 1.20;
     font-weight: 700;
     letter-spacing: -0.018em;
     color: #1d1d1f;
-    margin: 0 0 5.5pt 0;
+    margin: 0 0 4.8pt 0;
   }}
 
   .author-block {{
-    margin: 0 0 7.5pt 0;
+    margin: 0 0 6.5pt 0;
   }}
 
   .author-name {{
-    font-size: 9.5pt;
+    font-size: 9.4pt;
     font-weight: 700;
     color: #1d1d1f;
-    margin: 0 0 1.8pt 0;
+    margin: 0 0 1.5pt 0;
   }}
 
   .affiliations {{
     font-size: 7.8pt;
-    line-height: 1.36;
+    line-height: 1.38;
     color: #6e6e73;
     margin: 0;
     text-align: left;
@@ -107,24 +107,24 @@ def build_html() -> str:
     background: #f5f5f7;
     border-left: 2.4pt solid #0071e3;
     border-radius: 0 4.5pt 4.5pt 0;
-    padding: 7.2pt 10pt 7pt 10pt;
-    margin: 0 0 8.5pt 0;
+    padding: 6.5pt 9.5pt 6.2pt 9.5pt;
+    margin: 0 0 7.5pt 0;
   }}
 
   .abstract-label {{
-    font-size: 7.4pt;
+    font-size: 7.3pt;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.085em;
     color: #0071e3;
-    margin: 0 0 3.5pt 0;
+    margin: 0 0 3pt 0;
   }}
 
   .abstract-card p {{
-    font-size: 8.1pt;
-    line-height: 1.39;
+    font-size: 7.95pt;
+    line-height: 1.36;
     color: #1d1d1f;
-    margin: 0 0 4pt 0;
+    margin: 0 0 3.6pt 0;
     text-align: justify;
     hyphens: auto;
   }}
@@ -360,16 +360,16 @@ def build_html() -> str:
   .scope-list {{
     background: #f5f5f7;
     border-radius: 4.5pt;
-    padding: 6.5pt 11pt 6.5pt 21pt;
-    margin: 4pt 0 7.5pt 0;
+    padding: 5pt 10pt 5pt 19pt;
+    margin: 3pt 0 5.5pt 0;
     break-inside: avoid;
     page-break-inside: avoid;
   }}
 
   .scope-list li {{
-    font-size: 8.2pt;
-    line-height: 1.40;
-    margin-bottom: 3.2pt;
+    font-size: 7.9pt;
+    line-height: 1.35;
+    margin-bottom: 2.2pt;
   }}
 
   .scope-list li:last-child {{
@@ -378,9 +378,9 @@ def build_html() -> str:
 
   /* Disclosures */
   .disclosure-block p {{
-    font-size: 8.15pt;
-    line-height: 1.40;
-    margin-bottom: 3.8pt;
+    font-size: 7.85pt;
+    line-height: 1.34;
+    margin-bottom: 2.6pt;
     text-align: left;
     hyphens: none;
   }}
@@ -389,16 +389,16 @@ def build_html() -> str:
   ul.references {{
     list-style: none;
     padding-left: 0;
-    margin: 4pt 0 0 0;
+    margin: 3pt 0 0 0;
   }}
 
   ul.references li {{
-    font-size: 7.85pt;
-    line-height: 1.38;
+    font-size: 7.5pt;
+    line-height: 1.32;
     color: #424245;
-    padding-left: 14pt;
-    text-indent: -14pt;
-    margin-bottom: 3.5pt;
+    padding-left: 13pt;
+    text-indent: -13pt;
+    margin-bottom: 2.2pt;
     text-align: left;
     hyphens: none;
   }}
@@ -417,7 +417,7 @@ def build_html() -> str:
   <div class="author-block">
     <p class="author-name">Changhao Kan<sup>1,*</sup></p>
     <p class="affiliations">
-      <sup>1</sup>Shenzhen Bay Laboratory, Shenzhen, China &nbsp;&middot;&nbsp;
+      <sup>1</sup>Institute of Molecular Physiology, Shenzhen Bay Laboratory, Shenzhen, China<br />
       <sup>*</sup>Correspondence: <a href="mailto:kanchanghao@szbl.ac.cn"><code>kanchanghao@szbl.ac.cn</code></a> &nbsp;&middot;&nbsp;
       ORCID: <a href="https://orcid.org/0009-0000-4014-5923"><code>0009-0000-4014-5923</code></a>
     </p>
@@ -427,15 +427,15 @@ def build_html() -> str:
   <div class="abstract-card">
     <div class="abstract-label">Abstract</div>
     <p>
-      <strong>Summary:</strong> Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) are widely used to prioritize candidate cancer targets, evaluate lineage-restricted vulnerabilities, and inspect functional gene relationships. Moving beyond single-gene portal lookups—such as placing multi-gene candidate panels on a cohort-wide essentiality curve, separating pan-cancer essentiality from tissue-specific dependency, pairing sensitive and resistant cell lines for experimental validation, running single-lineage genome-wide co-dependency scans, and exporting vector figures with analysis provenance—often requires ad-hoc scripting. We present <strong>CRISPR Score Analyzer (v1.2.0)</strong>, an open-source Python/Streamlit browser platform bundling the DepMap Public 26Q3 Chronos gene effect matrix (1,361 cancer cell lines &times; 18,434 genes across 30 Oncotree lineages) and 40,402 unambiguous HGNC alias mappings, while also supporting validated custom CSV uploads. Across four workflows—<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, and <em>Co-dependency</em>—users can interrogate pan-cancer or lineage-restricted cohorts, run chunked vectorized Pearson or Spearman scans in seconds using NumPy and pandas without requiring SciPy, and export white-paper PDF/SVG/300-DPI PNG figures alongside SHA-256 ZIP provenance bundles. Benchmark use cases demonstrate recapitulating lineage-selective dependencies (<span class="gene">SOX10</span> in skin, <span class="gene">ESR1</span> in ER-positive breast models), pan-cancer <span class="gene">MDM2</span>–<span class="gene">TP53</span> antagonism (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), and strengthened intra-lineage <span class="gene">BRAF</span>–MAPK co-dependencies within skin cancer cell lines (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>).
+      <strong>Summary:</strong> Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) are widely used to prioritize candidate cancer targets, evaluate lineage-restricted vulnerabilities, and inspect functional gene relationships. Moving beyond single-gene portal lookups—such as placing multi-gene candidate panels on a cohort-wide essentiality curve, separating pan-cancer essentiality from tissue-specific dependency, pairing sensitive and resistant cell lines for experimental validation, running single-lineage genome-wide co-dependency scans, and exporting vector figures with analysis provenance—often requires ad-hoc scripting. We present <strong>CRISPR Score Analyzer (v1.2.0)</strong>, an open-source Python/Streamlit browser platform bundling the DepMap Public 26Q3 Chronos gene effect matrix (1,361 cancer cell lines &times; 18,434 genes across 30 Oncotree lineages) and 40,402 unambiguous HGNC alias mappings, while also supporting validated custom CSV uploads. Across four workflows—<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, and <em>Co-dependency</em>—users can interrogate pan-cancer or lineage-restricted cohorts, run chunked vectorized Pearson or Spearman scans in seconds using NumPy and pandas without requiring SciPy, and export white-paper PDF/SVG/300-DPI PNG figures alongside SHA-256 ZIP provenance bundles. Benchmark use cases recapitulate lineage-selective dependencies (<span class="gene">SOX10</span> in skin, <span class="gene">ESR1</span> in ER-positive breast models), the inverse correlation between <span class="gene">MDM2</span> and <span class="gene">TP53</span> Chronos gene-effect profiles across cancer cell lines (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), and higher descriptive <span class="gene">BRAF</span>–MAPK correlations within skin cancer cell lines (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>).
     </p>
     <p class="avail">
       <strong>Availability and Implementation:</strong> Source code for v1.2.0 is freely available under the MIT license at
       <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/ChanghaoKan/crispr-score-analyzer</a>
-      (release tag <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0"><code>v1.2.0</code></a>; Zenodo version 1.2.0 DOI <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI <code>10.5281/zenodo.19607602</code>).
+      (software release tag <code>v1.2.0</code>: <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a>; commit <code>5c18f9b</code>; Zenodo version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>).
       A hosted web instance is accessible at
       <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>.
-      Because MIT release source archives exclude the bundled DepMap matrix under DepMap portal terms, exact reproduction of the analyses and figures requires cloning the repository, verifying <code>data/depmap_chronos.npz</code> against the SHA-256 checksum in <code>data/depmap_chronos.provenance.json</code> (<code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding via <code>scripts/build_builtin_matrix.py</code>), and running <code>python preprint/generate_figures.py</code>.
+      MIT source archives exclude the bundled DepMap Public 26Q3 matrix, which is governed separately by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in full in <code>data/DEPMAP_TERMS.md</code>). Manuscript figure and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v1</code>; exact reproduction from a clean Python 3.12 environment requires checking out <code>preprint-v1</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (SHA-256 <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding via <code>scripts/build_builtin_matrix.py</code>), installing <code>requirements.txt</code>, and running both scripts.
     </p>
     <p class="keywords">
       <strong>Keywords:</strong> DepMap; CRISPR-Cas9 screen; Chronos gene effect; gene essentiality; co-dependency; cancer cell lines; reproducibility
@@ -463,9 +463,12 @@ def build_html() -> str:
   <!-- Section 2 -->
   <h2><span class="sec-num">2.</span>Implementation and Core Capabilities</h2>
 
-  <h3>2.1 Bundled Reference Data, Custom Uploads, and Symbol Resolution</h3>
+  <h3>2.1 Bundled Reference Data, Construction, Licensing, and Symbol Resolution</h3>
+  <p style="text-align:left; hyphens:none;">
+    CRISPR Score Analyzer is implemented in Python (Streamlit, pandas, NumPy, Plotly, Kaleido, and Pillow) and provides English and Chinese interface localization. To ensure deterministic startup without remote matrix downloads, the repository bundles a compact <code>float32</code> binary matrix (<code>data/depmap_chronos.npz</code>, 88 MB; maximum absolute <code>float32</code> rounding deviation <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes) derived from the <strong>DepMap Public 26Q3</strong> release (released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). Using <code>scripts/build_builtin_matrix.py</code>, official <code>CRISPRGeneEffect.csv</code> (497,139,964 bytes; MD5 <code>a0a87b48137996f620437604b8c2eb79</code>) and <code>Model.csv</code> (789,805 bytes; MD5 <code>a7423dbf345fcf5a822ab5fc7e854e5c</code>), retrieved on 2026-11-21, were checked for unique <code>ModelID</code> rows and <code>SYMBOL (Entrez ID)</code> headers; all <strong>1,361 cancer cell lines</strong> and <strong>18,434 genes</strong> in <code>CRISPRGeneEffect.csv</code> were retained verbatim without row filtering and left-joined on <code>ModelID</code> against deduplicated <code>Model.csv</code> to attach <code>OncotreeLineage</code> (1,361/1,361 matched across <strong>30 Oncotree lineages</strong>) and <code>CellLineName</code> (falling back to <code>ModelID</code> when blank), with SHA-256 and MD5 checksums recorded in <code>data/depmap_chronos.provenance.json</code>.
+  </p>
   <p>
-    CRISPR Score Analyzer is implemented in Python (Streamlit, pandas, NumPy, Plotly, Kaleido, and Pillow) and provides English and Chinese interface localization. To ensure deterministic startup without remote matrix downloads, the repository bundles a compact <code>float32</code> binary matrix (<code>data/depmap_chronos.npz</code>, 88 MB; maximum absolute <code>float32</code> rounding deviation <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes) of the <strong>DepMap Public 26Q3 Chronos Gene Effect</strong> dataset comprising <strong>1,361 cancer cell lines</strong> and <strong>18,434 genes</strong> across <strong>30 Oncotree lineages</strong>, paired with SHA-256 and MD5 provenance metadata (<code>data/depmap_chronos.provenance.json</code>). The bundled matrix stores <code>OncotreeLineage</code> metadata; optional subtype filtering (<code>OncotreePrimaryDisease</code> / <code>primary_disease</code>) activates automatically when present in custom uploaded tables.
+    Software and data licensing are strictly separated: the MIT license covers only application source code, whereas rehosting <code>data/depmap_chronos.npz</code> in the GitHub repository and hosted Streamlit instance is governed by the Broad Institute DepMap Terms and Conditions (non-commercial research use only; commercial use requires a separate Broad license; full terms reposted in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web app per DepMap’s <em>Continuity of Terms of Use</em> clause). MIT GitHub and Zenodo source release archives exclude the matrix via <code>.gitattributes</code>. Optional subtype filtering (<code>OncotreePrimaryDisease</code> / <code>primary_disease</code>) activates automatically when present in custom uploaded tables.
   </p>
   <p>
     Researchers can upload custom UTF-8 CRISPR score CSV matrices. To guard against silent misinterpretation of numeric metadata columns, automatic gene detection strictly requires DepMap-style <code>SYMBOL (Entrez ID)</code> headers, whereas plain-symbol tables require explicit manual score-column mapping in the sidebar. Ambiguous duplicate gene symbols and repeated metadata columns are excluded automatically and logged in a downloadable <code>diagnostics.csv</code> validation report.
@@ -492,13 +495,13 @@ def build_html() -> str:
 
   <!-- Table 1 -->
   <div class="table-block">
-    <p class="table-caption"><strong>Table 1.</strong> Workflow comparison across CRISPR Score Analyzer (v1.2.0) and existing DepMap web interfaces (capabilities verified November 2026).</p>
+    <p class="table-caption"><strong>Table 1.</strong> Workflow comparison across CRISPR Score Analyzer (v1.2.0) and existing DepMap web interfaces, verified November 2026 on equivalent gene-ranking, lineage-comparison, and co-dependency tasks.</p>
     <table class="cmp-table">
       <thead>
         <tr>
           <th>Workflow dimension</th>
-          <th>DepMap Portal</th>
-          <th>shinyDepMap</th>
+          <th>DepMap Portal (26Q3; depmap.org/portal)</th>
+          <th>shinyDepMap (eLife 2021; shinyapps.io/depmap)</th>
           <th class="col-csa">CRISPR Score Analyzer (v1.2.0)</th>
         </tr>
       </thead>
@@ -590,10 +593,10 @@ def build_html() -> str:
 
   <h3>3.2 Benchmarking Pan-Cancer and Single-Lineage Co-Dependency Exploration</h3>
   <p>
-    To benchmark exploratory co-dependency workflows in the <strong>Co-dependency</strong> module, we first performed a pan-cancer genome-wide Pearson scan of <span class="gene">MDM2</span> across all 18,433 other ranked genes (0.82 s; <strong>Figure 2A</strong>). The diverging lollipop recapitulates the established <span class="gene">TP53</span>–<span class="gene">MDM2</span> regulatory axis: top positive co-dependencies include <span class="gene">PPM1D</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.664</span>), <span class="gene">MDM4</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.614</span>), <span class="gene">USP7</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.522</span>), <span class="gene">DDX31</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.466</span>), and <span class="gene">UBE2D3</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.398</span>, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>), whereas top anti-correlated partners include <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), <span class="gene">TP53BP1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.589</span>), <span class="gene">USP28</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.531</span>), <span class="gene">CDKN1A</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.530</span>), <span class="gene">CHEK2</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.491</span>), and <span class="gene">ATM</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.461</span>, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>). Surfacing <code>n_shared</code> directly on the scan output flags <span class="gene">TERF1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.395</span>, rank 6 positive) as having partial coverage (<span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;228</span> vs 1,361), preventing sparse-coverage correlations from being treated equivalently to full-panel hits. Transferring the core six-gene regulatory panel (<span class="gene">TP53</span>, <span class="gene">CHEK2</span>, <span class="gene">MDM2</span>, <span class="gene">MDM4</span>, <span class="gene">PPM1D</span>, <span class="gene">USP7</span>) to multi-gene matrix mode resolves the two-block antagonistic structure (<strong>Figure 2B</strong>), while the integrated cell-line scatter plot of <span class="gene">MDM2</span> vs <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;&minus;0.704</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>; <strong>Figure 2C</strong>) confirms that the inverse relationship spans CNS/Brain, Lung, Lymphoid, Skin, Bowel, and Breast lineages rather than reflecting a single-tissue artifact.
+    To benchmark exploratory co-dependency workflows in the <strong>Co-dependency</strong> module, we first performed a pan-cancer genome-wide Pearson scan of <span class="gene">MDM2</span> across all 18,433 other ranked genes (0.82 s; <strong>Figure 2A</strong>). The diverging lollipop recapitulates the established <span class="gene">TP53</span>–<span class="gene">MDM2</span> regulatory axis: top positive co-dependencies include <span class="gene">PPM1D</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.664</span>), <span class="gene">MDM4</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.614</span>), <span class="gene">USP7</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.522</span>), <span class="gene">DDX31</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.466</span>), and <span class="gene">UBE2D3</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.398</span>, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>), whereas top anti-correlated partners include <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), <span class="gene">TP53BP1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.589</span>), <span class="gene">USP28</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.531</span>), <span class="gene">CDKN1A</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.530</span>), <span class="gene">CHEK2</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.491</span>), and <span class="gene">ATM</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.461</span>, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>). Surfacing <code>n_shared</code> directly on the scan output flags <span class="gene">TERF1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.395</span>, rank 6 positive) as having partial coverage (<span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;228</span> vs 1,361), preventing sparse-coverage correlations from being treated equivalently to full-panel hits. Transferring the core six-gene regulatory panel (<span class="gene">TP53</span>, <span class="gene">CHEK2</span>, <span class="gene">MDM2</span>, <span class="gene">MDM4</span>, <span class="gene">PPM1D</span>, <span class="gene">USP7</span>) to multi-gene matrix mode resolves the two-block inverse correlation structure (<strong>Figure 2B</strong>), while the integrated cell-line scatter plot of <span class="gene">MDM2</span> vs <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;&minus;0.704</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>; <strong>Figure 2C</strong>) shows cell lines across multiple lineages following a similar negative trend. Follow-up verification (<code>preprint/reproduce_stats.py</code>) shows that demeaning both genes by <code>OncotreeLineage</code> retains a strong within-lineage pooled correlation (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.648</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span> across 30 lineages), and all 23 lineages with <span class="nowrap"><em>n</em>&nbsp;&ge;&nbsp;15</span> exhibit negative correlations (median <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.680</span>; e.g., Lung <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.802</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;126</span>], Skin <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.793</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>], Breast <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.719</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>], Bowel <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.674</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;85</span>], CNS/Brain <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.663</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;133</span>], Lymphoid <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.609</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;97</span>]).
   </p>
   <p>
-    Conversely, pan-cancer correlations of tissue-enriched oncogenes combine pathway co-essentiality with inter-lineage variance. In a pan-cancer scan of <span class="gene">BRAF</span>, core MAPK cascade components exhibit moderate-to-strong correlations (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.644</span>, <span class="gene">MAP2K1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.391</span>, <span class="gene">MAP2K2</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.271</span>) alongside melanoma lineage markers (<span class="gene">SOX10</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.544</span>, <span class="gene">DUSP4</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.474</span>; <span class="gene">SOX5</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.208</span>). Filtering the sidebar scope exclusively to <strong>Skin</strong> (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span> cell lines; 17,785 partner genes meeting <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>, with 648 sparser genes excluded) and re-running the genome-wide scan yields top seven positive correlations for <span class="gene">MAPK1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>), <span class="gene">SOX10</span> (+0.633), <span class="gene">SOX5</span> (+0.562), <span class="gene">MAP2K1</span> (+0.552), <span class="gene">MAP2K2</span> (+0.550), <span class="gene">UBQLN1</span> (+0.526), and <span class="gene">AKIRIN1</span> (+0.496), alongside negative tails led by <span class="gene">STYXL1</span> (&minus;0.534) (<strong>Figure 2D</strong>). Thus, restricting to Skin strengthens canonical RAF–MEK–ERK co-dependencies substantially—and an offline partial-correlation check regressing out <span class="gene">SOX10</span> within Skin still retains <span class="gene">MAPK1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.665</span>), <span class="gene">MAP2K1</span> (+0.467), and <span class="gene">MAP2K2</span> (+0.398)—yet the top-ranked list is not a pure MAPK module. The persistence of <span class="gene">SOX10</span> and <span class="gene">SOX5</span> reflects Oncotree Skin heterogeneity across <span class="gene">SOX10</span>-high cutaneous melanoma and <span class="gene">SOX10</span>-low non-melanoma or dedifferentiated skin models (e.g., <code>HSC-5</code>, <code>MCC26</code>, <code>RVH421_DAB_R</code>), while at <span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span> across 17,785 genes, correlations near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.5</span> (such as <span class="gene">UBQLN1</span>, <span class="gene">AKIRIN1</span>, or <span class="gene">STYXL1</span>) sit close to genome-wide multiple-testing bounds and should be treated strictly as exploratory candidates rather than confirmed biological interactions.
+    Conversely, pan-cancer correlations of tissue-enriched oncogenes combine pathway co-essentiality with inter-lineage variance. In a pan-cancer scan of <span class="gene">BRAF</span>, core MAPK cascade components exhibit moderate-to-strong descriptive correlations (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.644</span>, <span class="gene">MAP2K1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.391</span>, <span class="gene">MAP2K2</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.271</span>) alongside melanoma lineage markers (<span class="gene">SOX10</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.544</span>, <span class="gene">DUSP4</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.474</span>; <span class="gene">SOX5</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.208</span>). Filtering the sidebar scope exclusively to <strong>Skin</strong> (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span> cell lines; 17,785 partner genes meeting <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>, with 648 sparser genes excluded) and re-running the genome-wide scan yields top seven positive correlations for <span class="gene">MAPK1</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>), <span class="gene">SOX10</span> (+0.633), <span class="gene">SOX5</span> (+0.562), <span class="gene">MAP2K1</span> (+0.552), <span class="gene">MAP2K2</span> (+0.550), <span class="gene">UBQLN1</span> (+0.526), and <span class="gene">AKIRIN1</span> (+0.496), alongside a negative tail led by <span class="gene">STYXL1</span> (&minus;0.534; all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;75</span>; <strong>Figure 2D</strong>). Thus, in descriptive comparison against the pan-cancer scan, restricting to Skin raises canonical RAF–MEK–ERK correlations—and an offline OLS partial-correlation check regressing both <span class="gene">BRAF</span> and each partner’s Chronos gene effect on the <span class="gene">SOX10</span> Chronos gene effect across all <span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span> complete Skin models (zero missing values; <code>preprint/reproduce_stats.py</code>) still retains <span class="gene">MAPK1</span> (<span class="nowrap">partial <em>r</em>&nbsp;=&nbsp;+0.665</span>), <span class="gene">MAP2K1</span> (+0.467), and <span class="gene">MAP2K2</span> (+0.398)—yet the top-ranked list is not a pure MAPK module. The persistence of <span class="gene">SOX10</span> and <span class="gene">SOX5</span> reflects Oncotree Skin heterogeneity across <span class="gene">SOX10</span>-high cutaneous melanoma and <span class="gene">SOX10</span>-low non-melanoma or dedifferentiated skin models (e.g., <code>HSC-5</code>, <code>MCC26</code>, <code>RVH421_DAB_R</code>). Moreover, post-hoc two-sided Pearson <em>t</em>-tests across all 17,785 Skin partner genes (<span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;75</span> each; <code>preprint/reproduce_stats.py</code>, computed outside the descriptive browser UI) illustrate how candidates near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span> contrast sharply with <span class="gene">MAPK1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;9.72&nbsp;&times;&nbsp;10<sup>&minus;18</sup></span>, Bonferroni <span class="nowrap">1.73&nbsp;&times;&nbsp;10<sup>&minus;13</sup></span>): <span class="gene">AKIRIN1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;5.95&nbsp;&times;&nbsp;10<sup>&minus;6</sup></span>, Bonferroni 0.106), <span class="gene">UBQLN1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;1.29&nbsp;&times;&nbsp;10<sup>&minus;6</sup></span>, Bonferroni 0.023), and <span class="gene">STYXL1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;8.28&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span>, Bonferroni 0.015) should be treated strictly as exploratory candidates pending independent validation.
   </p>
 
   <!-- Figure 2 -->
@@ -604,7 +607,7 @@ def build_html() -> str:
       <strong>(A)</strong> Pan-cancer genome-wide Pearson <em>r</em> scan of <span class="gene">MDM2</span> across 18,433 genes (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span> cell lines), showing the top 7 positive (<span class="gene">PPM1D</span>, <span class="gene">MDM4</span>, <span class="gene">USP7</span>, <span class="gene">DDX31</span>, <span class="gene">UBE2D3</span>, <span class="gene">TERF1</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;228</span>], <span class="gene">PPM1G</span>) and top 7 negative (<span class="gene">TP53</span>, <span class="gene">TP53BP1</span>, <span class="gene">USP28</span>, <span class="gene">CDKN1A</span>, <span class="gene">CHEK2</span>, <span class="gene">ATM</span>, <span class="gene">UBE2K</span>) partners.
       <strong>(B)</strong> Pairwise Pearson correlation matrix for the six-gene <span class="gene">TP53</span>–<span class="gene">MDM2</span> regulatory axis.
       <strong>(C)</strong> Lineage-colored cell-line scatter plot of <span class="gene">MDM2</span> vs <span class="gene">TP53</span> Chronos gene effect (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>, Spearman <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;&minus;0.704</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>) with linear trendline.
-      <strong>(D)</strong> Cohort-scoped genome-wide <span class="gene">BRAF</span> scan restricted to Skin cell lines (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>, 17,785 genes with <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>), showing strengthened MAPK cascade correlations (<span class="gene">MAPK1</span> +0.80, <span class="gene">MAP2K1</span> +0.55, <span class="gene">MAP2K2</span> +0.55) co-ranking with lineage factors (<span class="gene">SOX10</span> +0.63, <span class="gene">SOX5</span> +0.56) and exploratory hits near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.5</span>.
+      <strong>(D)</strong> Cohort-scoped genome-wide <span class="gene">BRAF</span> scan restricted to Skin cell lines (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>, 17,785 genes with <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>), showing higher descriptive MAPK cascade correlations (<span class="gene">MAPK1</span> +0.80, <span class="gene">MAP2K1</span> +0.55, <span class="gene">MAP2K2</span> +0.55) co-ranking with lineage factors (<span class="gene">SOX10</span> +0.63, <span class="gene">SOX5</span> +0.56) and exploratory hits near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span> (all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;75</span>).
     </p>
   </div>
 
@@ -625,18 +628,19 @@ def build_html() -> str:
   <div class="keep-together">
     <h2>Acknowledgements and Disclosures</h2>
     <div class="disclosure-block">
-      <p><strong>Data Source:</strong> Reference dependency data are derived from DepMap Public 26Q3 Chronos Gene Effect scores provided by the Broad Institute DepMap Portal (<a href="https://depmap.org/portal/">https://depmap.org/portal/</a>).</p>
+      <p><strong>Acknowledgements:</strong> The author thanks Dr. Lin Deng and Dr. Zixi Wang (Institute of Molecular Physiology, Shenzhen Bay Laboratory) for their constructive suggestions and feedback.</p>
+      <p><strong>Data Source and Terms:</strong> Reference dependency data are derived from DepMap Public 26Q3 Chronos Gene Effect scores (released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). The bundled matrix is governed by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in full in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web app), separately from the MIT-licensed application code.</p>
       <p><strong>AI Assistance Disclosure:</strong> Large language model assistants (Claude, Codex, and related coding agents) were used to assist with software engineering, automated testing, and manuscript editing. All scientific specifications, biological case studies, verification, and final manuscript decisions were reviewed and approved by the author.</p>
       <p><strong>Funding:</strong> This work received no specific external funding.</p>
       <p><strong>Competing Interests:</strong> The author declares no competing financial or non-financial interests.</p>
-      <p><strong>Data and Code Availability:</strong> The MIT-licensed source code (v1.2.0), automated test suite, figure reproduction script (<code>preprint/generate_figures.py</code>), and matrix build scripts are hosted at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/ChanghaoKan/crispr-score-analyzer</a> (release tag <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0"><code>v1.2.0</code></a>; Zenodo version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>). The hosted web tool is accessible at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Because release source archives exclude <code>data/depmap_chronos.npz</code> under DepMap portal terms, exact reproduction requires cloning the repository and verifying the bundled matrix against <code>data/depmap_chronos.provenance.json</code> (<code>matrix_sha256</code>: <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>).</p>
+      <p><strong>Data and Code Availability:</strong> The MIT-licensed software release (<code>v1.2.0</code>, commit <code>5c18f9b</code>) is hosted at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a> and archived on Zenodo (version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>); the hosted web tool is accessible at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Because MIT release source archives exclude <code>data/depmap_chronos.npz</code> under DepMap terms, the manuscript figure and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v1</code>. From a clean Python 3.12 environment, all figures and statistics can be reproduced via <code class="wrap-code">git clone https://github.com/ChanghaoKan/crispr-score-analyzer.git &amp;&amp; cd crispr-score-analyzer &amp;&amp; git checkout preprint-v1 &amp;&amp; python -m venv .venv &amp;&amp; .venv/bin/pip install -r requirements.txt &amp;&amp; .venv/bin/python preprint/generate_figures.py &amp;&amp; .venv/bin/python preprint/reproduce_stats.py</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (<code>matrix_sha256</code>: <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding from official 26Q3 files via <code>scripts/build_builtin_matrix.py</code>).</p>
     </div>
   </div>
 
   <h2>References</h2>
   <ul class="references">
     <li>Dempster, J. M., Boyle, I., Vazquez, F., Root, D. E., Boehm, J. S., Hahn, W. C., Tsherniak, A., &amp; McFarland, J. M. (2021). Chronos: a cell population dynamics model of CRISPR experiments that improves inference of gene fitness effects. <em>Genome Biology</em>, 22(1), 343. <a href="https://doi.org/10.1186/s13059-021-02540-7">https://doi.org/10.1186/s13059-021-02540-7</a></li>
-    <li>DepMap, Broad. (2026). DepMap Public 26Q3 Chronos Gene Effect dataset. Broad Institute. <a href="https://depmap.org/portal/">https://depmap.org/portal/</a></li>
+    <li>DepMap, Broad. (2026). DepMap Public 26Q3 Chronos Gene Effect dataset (released October 5, 2026). Broad Institute. <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a> (Release notes: <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>)</li>
     <li>Kan, C. (2026). CRISPR Score Analyzer (1.2.0) [Software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.24458535">https://doi.org/10.5281/zenodo.24458535</a> (Concept DOI: <a href="https://doi.org/10.5281/zenodo.19607602">https://doi.org/10.5281/zenodo.19607602</a>)</li>
     <li>Meyers, R. M., Bryan, J. G., McFarland, J. M., Weir, B. A., Sizemore, A. E., Xu, H., <em>et al.</em> (2017). Computational correction of copy number effect improves specificity of CRISPR-Cas9 essentiality screens in cancer cells. <em>Nature Genetics</em>, 49(12), 1779–1784. <a href="https://doi.org/10.1038/ng.3984">https://doi.org/10.1038/ng.3984</a></li>
     <li>Seal, R. L., Braschi, B., Gray, K., Jones, T. E. M., Tweedie, S., Haim-Vilmovsky, L., &amp; Bruford, E. A. (2023). Genenames.org: the HGNC resources in 2023. <em>Nucleic Acids Research</em>, 51(D1), D1003–D1009. <a href="https://doi.org/10.1093/nar/gkac888">https://doi.org/10.1093/nar/gkac888</a></li>

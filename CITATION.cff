@@ -4,7 +4,7 @@ title: "CRISPR Score Analyzer: an interactive, cohort-scoped browser platform fo
 authors:
   - family-names: Kan
     given-names: Changhao
-    affiliation: "Shenzhen Bay Laboratory"
+    affiliation: "Institute of Molecular Physiology, Shenzhen Bay Laboratory"
     orcid: "https://orcid.org/0009-0000-4014-5923"
 identifiers:
   - type: doi
@@ -37,7 +37,7 @@ preferred-citation:
   authors:
     - family-names: Kan
       given-names: Changhao
-      affiliation: "Shenzhen Bay Laboratory"
+      affiliation: "Institute of Molecular Physiology, Shenzhen Bay Laboratory"
       orcid: "https://orcid.org/0009-0000-4014-5923"
   year: 2026
   date-released: "2026-11-23"

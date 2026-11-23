@@ -1006,13 +1006,24 @@ def render_citation_section():
     st.markdown("**BibTeX:**")
     st.code(bibtex, language="bibtex")
 
-    st.markdown("**DepMap data citation:**")
+    st.markdown("**DepMap data citation & terms:**")
     st.markdown(
         '<div class="cite-box">Tsherniak, A., et al. (2017). '
         'Defining a Cancer Dependency Map. <i>Cell</i> 170, 564–576. '
-        'https://depmap.org/portal/</div>',
+        'DepMap Public 26Q3 (https://depmap.org/portal/data_page/).</div>',
         unsafe_allow_html=True
     )
+    st.caption(ui(
+        "The application code is MIT-licensed. Built-in DepMap Public 26Q3 data are provided for non-commercial "
+        "research use under the Broad Institute DepMap Terms and Conditions (commercial use requires a separate "
+        "license from Broad Institute or its contributors).",
+        "本应用源码采用 MIT 许可证；内置 DepMap Public 26Q3 数据仅限非商业科研使用，受 Broad Institute DepMap "
+        "使用条款约束（商业用途须另行获得 Broad Institute 或数据贡献方授权）。"))
+    terms_path = Path(__file__).resolve().parent / "data" / "DEPMAP_TERMS.md"
+    if terms_path.exists():
+        with st.expander(ui("DepMap Terms and Conditions (Full Text)", "DepMap 数据使用条款（全文）"), expanded=False):
+            st.markdown(terms_path.read_text(encoding="utf-8"))
+
 
 
 def ui(en, zh):

@@ -201,9 +201,9 @@ Cite **CRISPR Score Analyzer 1.2.0**, deposited 2026-11-23: [10.5281/zenodo.2445
 
 Earlier archived versions remain addressable: version 1.1.0 (2026-11-21, MIT) at [10.5281/zenodo.24424595](https://doi.org/10.5281/zenodo.24424595), and version 1.0.0 (2026-04-16, CC-BY-4.0) at [10.5281/zenodo.19607603](https://doi.org/10.5281/zenodo.19607603).
 
-Also cite the underlying DepMap release and relevant methodology. The bundled matrix is DepMap Public 26Q3. The repository records this foundational reference:
+Also cite the underlying DepMap release and relevant methodology. The bundled matrix is derived from **DepMap Public 26Q3** (released October 5, 2026; [26Q3 release notes](https://forum.depmap.org/t/announcing-the-26q3-release/4692); [DepMap Data Portal](https://depmap.org/portal/data_page/)). The repository records these foundational references:
 
-> DepMap, Broad (2026). DepMap Public 26Q3. https://depmap.org/portal/
+> DepMap, Broad (2026). DepMap Public 26Q3 Chronos Gene Effect dataset. https://depmap.org/portal/data_page/ (Release notes: https://forum.depmap.org/t/announcing-the-26q3-release/4692).
 
 > Tsherniak, A., et al. (2017). Defining a Cancer Dependency Map. *Cell*, 170, 564–576. [doi:10.1016/j.cell.2017.06.010](https://doi.org/10.1016/j.cell.2017.06.010).
 
@@ -211,13 +211,13 @@ Also cite the underlying DepMap release and relevant methodology. The bundled ma
 
 Report bugs and request features through [GitHub Issues](https://github.com/ChanghaoKan/crispr-score-analyzer/issues). Include reproduction steps, relevant package versions, and a small synthetic example when reporting a data problem. Pull requests should describe the behavior changed and the checks performed.
 
-Maintainer: [Changhao Kan](https://github.com/ChanghaoKan) ([ORCID: 0009-0000-4014-5923](https://orcid.org/0009-0000-4014-5923) · `kanchanghao@szbl.ac.cn`).
+Maintainer: [Changhao Kan](https://github.com/ChanghaoKan), Institute of Molecular Physiology, Shenzhen Bay Laboratory ([ORCID: 0009-0000-4014-5923](https://orcid.org/0009-0000-4014-5923) · `kanchanghao@szbl.ac.cn`).
 
-## License and acknowledgements
+## License, data terms, and acknowledgements
 
-The application code is licensed under the [MIT License](License). DepMap and other source datasets retain their own terms; consult the [DepMap Portal](https://depmap.org/portal/) before redistributing data.
+The application source code is licensed under the [MIT License](License). The bundled `data/depmap_chronos.npz` matrix is **not** MIT-licensed and is excluded from MIT release source archives (GitHub Releases and Zenodo) via `.gitattributes`. Access to and use of the bundled DepMap Public 26Q3 matrix in this repository and the hosted web instance are governed by the **Broad Institute DepMap Terms and Conditions** (non-commercial research use only; commercial use requires a separate license from Broad Institute or its contributors). In compliance with DepMap's *Continuity of Terms of Use* clause, the full DepMap Terms and Conditions are reposted in [data/DEPMAP_TERMS.md](data/DEPMAP_TERMS.md) and inside the hosted web application.
 
-Thanks to the DepMap Consortium for the dependency data.
+Thanks to the DepMap Consortium for the dependency data, and to Dr. Lin Deng and Dr. Zixi Wang (Institute of Molecular Physiology, Shenzhen Bay Laboratory) for their constructive suggestions and feedback.
 
 ### Development assistance
 

@@ -120,7 +120,7 @@ def compose_2x2(
 
     canvas = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
     draw = ImageDraw.Draw(canvas)
-    font = load_label_font(44)
+    font = load_label_font(48)
 
     coords = [
         (pad_x, pad_y),
@@ -150,6 +150,40 @@ def annotate_partial_n(scan_df: pd.DataFrame, cohort_n: int) -> pd.DataFrame:
     return out
 
 
+def boost_panel_fonts(
+    fig: go.Figure,
+    *,
+    title_size: int = 15,
+    axis_title_size: int = 15,
+    x_tick_size: int = 13,
+    y_tick_size: int = 13,
+    legend_size: int = 12,
+    annot_size: float | None = 13,
+    trace_text_size: float | None = None,
+) -> go.Figure:
+    """Apply print-legible typography sizes for multi-panel manuscript figures."""
+    fig.update_layout(
+        title_font=dict(size=title_size),
+        legend=dict(font=dict(size=legend_size)),
+    )
+    fig.update_xaxes(
+        title_font=dict(size=axis_title_size),
+        tickfont=dict(size=x_tick_size),
+    )
+    fig.update_yaxes(
+        title_font=dict(size=axis_title_size),
+        tickfont=dict(size=y_tick_size),
+    )
+    if annot_size is not None and fig.layout.annotations:
+        for ann in fig.layout.annotations:
+            ann.font.size = annot_size
+    if trace_text_size is not None:
+        for tr in fig.data:
+            if hasattr(tr, "textfont") and tr.text is not None:
+                tr.textfont = dict(size=trace_text_size, color=getattr(tr.textfont, "color", None))
+    return fig
+
+
 def main() -> None:
     ns = load_app_plot_helpers()
     th = ns["get_theme"]()
@@ -170,10 +204,12 @@ def main() -> None:
         show_labels=True,
         point_size=4,
         width=620,
-        height=440,
+        height=450,
     )
     fig1a.update_yaxes(title_text="Mean Chronos gene effect")
-    p1a = save_panel(fig1a, "fig1A_rank", 620, 440)
+    boost_panel_fonts(fig1a, title_size=14, axis_title_size=15, x_tick_size=13, y_tick_size=13, legend_size=11.5, annot_size=13)
+    fig1a.update_layout(margin=dict(l=64, r=22, t=42, b=106))
+    p1a = save_panel(fig1a, "fig1A_rank", 620, 450)
 
     # ------------------------------------------------------------------
     # Figure 1B: Two-layer gene-set annotation with explicit background gene list
@@ -190,7 +226,7 @@ def main() -> None:
         show_labels=True,
         point_size=4,
         width=620,
-        height=440,
+        height=450,
     )
     fig1b.update_yaxes(title_text="Mean Chronos gene effect")
     for tr in fig1b.data:
@@ -198,7 +234,9 @@ def main() -> None:
             tr.name = "Background: CDK1/2/4/6, CCNB1/D1/E1"
         elif tr.name == "Highlight genes":
             tr.name = "Highlight: PLK1, AURKA"
-    p1b = save_panel(fig1b, "fig1B_multilayer", 620, 440)
+    boost_panel_fonts(fig1b, title_size=14, axis_title_size=15, x_tick_size=13, y_tick_size=13, legend_size=11.5, annot_size=13)
+    fig1b.update_layout(margin=dict(l=64, r=22, t=42, b=106))
+    p1b = save_panel(fig1b, "fig1B_multilayer", 620, 450)
 
     # ------------------------------------------------------------------
     # Figure 1C & 1D: Lineage preference lollipops WITH sample size (n=...)
@@ -213,14 +251,16 @@ def main() -> None:
     sox_pref = pref_df[pref_df["gene"] == "SOX10"].copy()
     fig1c = ns["create_preference_plot"](sox_pref, top_k=4)
     fig1c.update_xaxes(title_text="← more dependent · Δ mean Chronos · less dependent →")
-    fig1c.update_layout(width=620, height=340, margin=dict(l=170, r=32, t=42, b=52))
-    p1c = save_panel(fig1c, "fig1C_sox10_pref", 620, 340)
+    boost_panel_fonts(fig1c, title_size=15, axis_title_size=13.5, x_tick_size=13, y_tick_size=12.5, annot_size=14.5, trace_text_size=12.5)
+    fig1c.update_layout(width=620, height=365, margin=dict(l=205, r=36, t=46, b=58))
+    p1c = save_panel(fig1c, "fig1C_sox10_pref", 620, 365)
 
     esr_pref = pref_df[pref_df["gene"] == "ESR1"].copy()
     fig1d = ns["create_preference_plot"](esr_pref, top_k=4)
     fig1d.update_xaxes(title_text="← more dependent · Δ mean Chronos · less dependent →")
-    fig1d.update_layout(width=620, height=340, margin=dict(l=185, r=32, t=42, b=52))
-    p1d = save_panel(fig1d, "fig1D_esr1_pref", 620, 340)
+    boost_panel_fonts(fig1d, title_size=15, axis_title_size=13.5, x_tick_size=13, y_tick_size=12.5, annot_size=14.5, trace_text_size=12.5)
+    fig1d.update_layout(width=620, height=365, margin=dict(l=222, r=36, t=46, b=58))
+    p1d = save_panel(fig1d, "fig1D_esr1_pref", 620, 365)
 
     compose_2x2(
         [("A", p1a), ("B", p1b), ("C", p1c), ("D", p1d)],
@@ -233,8 +273,9 @@ def main() -> None:
     mdm2_scan = genomewide_codependency(df, "MDM2", rankings, method="pearson")
     mdm2_labeled = annotate_partial_n(mdm2_scan, cohort_n=n_lines)
     fig2a = create_codependency_scan_plot(mdm2_labeled, "MDM2", method="pearson", top_n=7, th=th, lang="en")
-    fig2a.update_layout(width=620, height=460, margin=dict(l=118, r=32, t=48, b=54))
-    p2a = save_panel(fig2a, "fig2A_mdm2_scan", 620, 460)
+    boost_panel_fonts(fig2a, title_size=15, axis_title_size=13.5, x_tick_size=13, y_tick_size=13, annot_size=None, trace_text_size=12.5)
+    fig2a.update_layout(width=620, height=470, margin=dict(l=140, r=38, t=50, b=58))
+    p2a = save_panel(fig2a, "fig2A_mdm2_scan", 620, 470)
 
     # ------------------------------------------------------------------
     # Figure 2B: Multi-gene correlation matrix (TP53–MDM2 axis)
@@ -242,8 +283,13 @@ def main() -> None:
     tp53_genes = ["TP53", "CHEK2", "MDM2", "MDM4", "PPM1D", "USP7"]
     corr, counts = gene_correlation_matrix(df, tp53_genes, rankings, method="pearson")
     fig2b = ns["create_correlation_heatmap"](corr, counts, method="pearson")
-    fig2b.update_layout(width=540, height=460, margin=dict(l=20, r=36, t=54, b=20))
-    p2b = save_panel(fig2b, "fig2B_p53_matrix", 540, 460)
+    boost_panel_fonts(fig2b, title_size=15, axis_title_size=14, x_tick_size=13.5, y_tick_size=13.5, annot_size=None, trace_text_size=13)
+    for tr in fig2b.data:
+        if getattr(tr, "colorbar", None) is not None:
+            tr.colorbar.title.font = dict(size=13.5)
+            tr.colorbar.tickfont = dict(size=12.5)
+    fig2b.update_layout(width=540, height=470, margin=dict(l=30, r=42, t=58, b=24))
+    p2b = save_panel(fig2b, "fig2B_p53_matrix", 540, 470)
 
     # ------------------------------------------------------------------
     # Figure 2C: Cell-line scatter (MDM2 vs TP53) with Chronos axis labels
@@ -252,8 +298,9 @@ def main() -> None:
     fig2c = create_gene_pair_scatter(scatter_df, stats, "MDM2", "TP53", th=th, lang="en")
     fig2c.update_xaxes(title_text="MDM2 · Chronos gene effect")
     fig2c.update_yaxes(title_text="TP53 · Chronos gene effect")
-    fig2c.update_layout(width=660, height=460, margin=dict(l=64, r=20, t=46, b=52))
-    p2c = save_panel(fig2c, "fig2C_mdm2_tp53_scatter", 660, 460)
+    boost_panel_fonts(fig2c, title_size=14, axis_title_size=15, x_tick_size=13, y_tick_size=13, legend_size=11.5, annot_size=None)
+    fig2c.update_layout(width=660, height=470, margin=dict(l=68, r=20, t=50, b=58))
+    p2c = save_panel(fig2c, "fig2C_mdm2_tp53_scatter", 660, 470)
 
     # ------------------------------------------------------------------
     # Figure 2D: Cohort-scoped BRAF scan within Skin (n = 75)
@@ -266,15 +313,16 @@ def main() -> None:
     fig2d.update_layout(
         title=dict(
             text=f"<b>BRAF</b> · Skin lineage only (n = {len(skin_df)} lines, {len(braf_skin):,} genes)",
-            font=dict(size=13),
+            font=dict(size=14.5),
             x=0.02,
             xanchor="left",
         ),
         width=620,
-        height=460,
-        margin=dict(l=90, r=32, t=48, b=54),
+        height=470,
+        margin=dict(l=105, r=38, t=50, b=58),
     )
-    p2d = save_panel(fig2d, "fig2D_braf_skin_scan", 620, 460)
+    boost_panel_fonts(fig2d, title_size=14.5, axis_title_size=13.5, x_tick_size=13, y_tick_size=13, annot_size=None, trace_text_size=12.5)
+    p2d = save_panel(fig2d, "fig2D_braf_skin_scan", 620, 470)
 
     compose_2x2(
         [("A", p2a), ("B", p2b), ("C", p2c), ("D", p2d)],
