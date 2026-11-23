@@ -52,8 +52,8 @@ ESSENTIALITY_THRESHOLD = -0.5
 # 1.1.0 的版本 DOI 是 10.5281/zenodo.24424595。概念 DOI 指向这一版。
 # 2026-04-16 的 1.0.0 仍可引用，许可证是当时记录上的 CC-BY-4.0。
 # =============================================================================
-TOOL_VERSION = "1.1.0"
-TOOL_RELEASED = "2026-11-21"
+TOOL_VERSION = "1.2.0"
+TOOL_RELEASED = "2026-11-23"
 TOOL_AUTHORS = "Kan, C."
 TOOL_YEAR = "2026"
 ZENODO_CONCEPT_DOI = "10.5281/zenodo.19607602"

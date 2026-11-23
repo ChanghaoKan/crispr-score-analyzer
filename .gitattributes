@@ -1,0 +1,4 @@
+# Exclude the bundled DepMap matrix (subject to DepMap portal terms) and preprint
+# manuscripts from MIT-licensed source release archives (GitHub Release / Zenodo).
+data/depmap_chronos.npz export-ignore
+preprint/ export-ignore
