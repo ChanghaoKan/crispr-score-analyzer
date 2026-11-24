@@ -187,11 +187,24 @@ if st.session_state.get('theme') not in {'light', 'dark'}:
 THEMES = {
     'light': {
         'bg': '#f5f5f7',
+        'bg_ambient': 'radial-gradient(ellipse 88% 320px at 50% -70px, rgba(0, 113, 227, 0.065), transparent 72%)',
         'bg_secondary': '#fbfbfd',
         'bg_card': '#ffffff',
         'bg_field': '#f5f5f7',
-        'seg_track': 'rgba(118, 118, 128, 0.12)',
+        'seg_track': 'rgba(118, 118, 128, 0.11)',
         'seg_active': '#ffffff',
+        'glass_bg': 'rgba(255, 255, 255, 0.72)',
+        'glass_bg_strong': 'rgba(255, 255, 255, 0.84)',
+        'glass_sidebar': 'rgba(251, 251, 253, 0.78)',
+        'glass_nav': 'rgba(240, 242, 247, 0.72)',
+        'glass_nav_pill': 'rgba(255, 255, 255, 0.96)',
+        'glass_th': 'rgba(251, 251, 253, 0.84)',
+        'glass_rim': 'rgba(15, 23, 42, 0.085)',
+        'glass_highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)',
+        'glass_shadow': '0 8px 26px rgba(15, 23, 42, 0.065), 0 1.5px 4px rgba(15, 23, 42, 0.04)',
+        'glass_popover_shadow': '0 18px 46px rgba(15, 23, 42, 0.13), 0 2px 8px rgba(15, 23, 42, 0.05)',
+        'glass_pending_bg': 'rgba(255, 250, 240, 0.78)',
+        'glass_pending_rim': 'rgba(255, 159, 10, 0.30)',
         'text': '#1d1d1f',
         'text_muted': '#6e6e73',
         'border': '#e5e5ea',
@@ -203,21 +216,37 @@ THEMES = {
         'warning': '#ff9f0a',
         'danger': '#d70015',
         'shadow': '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.025)',
-        'shadow_pill': '0 1px 3px rgba(0, 0, 0, 0.09), 0 1px 1px rgba(0, 0, 0, 0.04)',
+        'shadow_pill': '0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 1.5px rgba(0, 0, 0, 0.04)',
         'plot_bg': '#ffffff',
         'plot_text': '#1d1d1f',
         'plot_axis': '#424245',
         'plot_reference': 'rgba(29,29,31,0.24)',
         'plot_grid': 'rgba(29,29,31,0.06)',
         'plot_scatter_bg': 'rgba(110,110,115,0.22)',
+        'score_low': '#2166ac',
+        'score_mid': '#3c5488',
+        'score_high': '#b2182b',
     },
     'dark': {
         'bg': '#000000',
+        'bg_ambient': 'radial-gradient(ellipse 88% 360px at 50% -70px, rgba(10, 132, 255, 0.11), transparent 72%)',
         'bg_secondary': '#111113',
         'bg_card': '#1c1c1e',
         'bg_field': '#111113',
         'seg_track': 'rgba(118, 118, 128, 0.24)',
         'seg_active': '#2c2c2e',
+        'glass_bg': 'rgba(28, 28, 30, 0.68)',
+        'glass_bg_strong': 'rgba(32, 32, 36, 0.82)',
+        'glass_sidebar': 'rgba(18, 18, 20, 0.76)',
+        'glass_nav': 'rgba(34, 34, 38, 0.64)',
+        'glass_nav_pill': 'rgba(255, 255, 255, 0.14)',
+        'glass_th': 'rgba(22, 22, 24, 0.82)',
+        'glass_rim': 'rgba(255, 255, 255, 0.12)',
+        'glass_highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -0.5px 0 rgba(0, 0, 0, 0.42)',
+        'glass_shadow': '0 10px 30px rgba(0, 0, 0, 0.52), 0 2px 6px rgba(0, 0, 0, 0.36)',
+        'glass_popover_shadow': '0 22px 54px rgba(0, 0, 0, 0.70), 0 3px 10px rgba(0, 0, 0, 0.46)',
+        'glass_pending_bg': 'rgba(48, 38, 18, 0.72)',
+        'glass_pending_rim': 'rgba(255, 214, 10, 0.30)',
         'text': '#f5f5f7',
         'text_muted': '#8e8e93',
         'border': '#2c2c2e',
@@ -229,13 +258,16 @@ THEMES = {
         'warning': '#ffd60a',
         'danger': '#ff453a',
         'shadow': '0 2px 10px rgba(0, 0, 0, 0.45)',
-        'shadow_pill': '0 1px 3px rgba(0, 0, 0, 0.42)',
+        'shadow_pill': '0 2px 8px rgba(0, 0, 0, 0.42)',
         'plot_bg': '#1c1c1e',
         'plot_text': '#f5f5f7',
         'plot_axis': '#aeaeb2',
         'plot_reference': 'rgba(245,245,247,0.24)',
         'plot_grid': 'rgba(255,255,255,0.07)',
         'plot_scatter_bg': 'rgba(174,174,178,0.34)',
+        'score_low': '#67a9cf',
+        'score_mid': '#92c5de',
+        'score_high': '#e06b64',
     }
 }
 
@@ -254,13 +286,21 @@ def inject_css():
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }}
-        .stApp {{ background: {th['bg']}; color: {th['text']}; }}
+        .stApp {{
+            background-color: {th['bg']};
+            background-image: {th['bg_ambient']};
+            background-attachment: fixed;
+            color: {th['text']};
+        }}
         [data-testid="stMainBlockContainer"] {{
             max-width: 1200px; padding: 1.05rem 2.2rem 2.6rem;
         }}
         [data-testid="stVerticalBlock"] {{ gap: 0.72rem; }}
         section[data-testid="stSidebar"] {{
-            background: {th['bg_secondary']}; border-right: 1px solid {th['hairline']};
+            background: {th['glass_sidebar']};
+            backdrop-filter: blur(22px) saturate(180%);
+            -webkit-backdrop-filter: blur(22px) saturate(180%);
+            border-right: 1px solid {th['glass_rim']};
         }}
         [data-testid="stSidebarUserContent"] {{ padding-top: 1rem; }}
         h1, h2, h3, h4, h5, label {{ color: {th['text']} !important; }}
@@ -300,10 +340,12 @@ def inject_css():
         }}
         .hero-sep {{ color: {th['border']}; font-size: 0.85rem; user-select: none; }}
         .hero-version {{
-            flex-shrink: 0; border: 1px solid {th['hairline']}; border-radius: 999px;
-            color: {th['text_muted']}; background: {th['bg_card']};
-            font-size: 0.72rem; font-weight: 540; padding: 0.22rem 0.68rem;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            flex-shrink: 0; border: 1px solid {th['glass_rim']}; border-radius: 999px;
+            color: {th['text_muted']}; background: {th['glass_bg']};
+            backdrop-filter: blur(14px) saturate(170%);
+            -webkit-backdrop-filter: blur(14px) saturate(170%);
+            font-size: 0.72rem; font-weight: 550; padding: 0.24rem 0.72rem;
+            box-shadow: {th['glass_highlight']}, 0 2px 8px rgba(0, 0, 0, 0.04);
         }}
         .scope-note {{
             font-size: 0.79rem; color: {th['accent']}; padding: 0.02rem 0.1rem;
@@ -320,11 +362,20 @@ def inject_css():
         }}
         .status-strip {{
             display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-            padding: 0.5rem 0.82rem; margin: 0.02rem 0;
-            background: {th['bg_card']}; border: 1px solid {th['hairline']};
-            border-radius: 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            padding: 0.52rem 0.86rem; margin: 0.02rem 0;
+            background: {th['glass_bg']};
+            backdrop-filter: blur(16px) saturate(175%);
+            -webkit-backdrop-filter: blur(16px) saturate(175%);
+            border: 1px solid {th['glass_rim']};
+            border-radius: 12px;
+            box-shadow: {th['glass_highlight']}, 0 2px 10px rgba(0, 0, 0, 0.03);
             color: {th['text_muted']}; font-size: 0.8rem;
             font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }}
+        .status-strip:has(.status-dot.pending) {{
+            background: {th['glass_pending_bg']};
+            border-color: {th['glass_pending_rim']};
         }}
         .status-dot {{
             width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
@@ -343,6 +394,62 @@ def inject_css():
         .ready-note {{
             padding: 0.55rem 0.2rem; color: {th['text_muted']};
             font-size: 0.83rem; letter-spacing: 0.005em;
+        }}
+        /* Sticky floating Apple frosted glass navigation dock with spring-sliding glass thumb */
+        [data-testid="stLayoutWrapper"]:has(> .st-key-analysis_nav) {{
+            position: sticky;
+            top: 0.75rem;
+            z-index: 40;
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] {{
+            margin: 0 !important;
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div {{
+            position: relative !important;
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 0 !important;
+            background: {th['glass_nav']} !important;
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid {th['glass_rim']};
+            border-radius: 15px !important;
+            padding: 4px !important;
+            box-shadow: {th['glass_highlight']}, {th['glass_shadow']};
+            overflow: hidden;
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div::before {{
+            content: "";
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 4px;
+            width: calc((100% - 8px) / 4);
+            border-radius: 11px;
+            background: {th['glass_nav_pill']};
+            border: 1px solid {th['glass_rim']};
+            box-shadow: {th['glass_highlight']}, {th['shadow_pill']};
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform;
+            transform: translate3d(0%, 0, 0);
+            transition: transform 0.36s cubic-bezier(0.22, 1.1, 0.36, 1);
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(1)[aria-checked="true"])::before,
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(1)[aria-pressed="true"])::before {{
+            transform: translate3d(0%, 0, 0);
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(2)[aria-checked="true"])::before,
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(2)[aria-pressed="true"])::before {{
+            transform: translate3d(100%, 0, 0);
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(3)[aria-checked="true"])::before,
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(3)[aria-pressed="true"])::before {{
+            transform: translate3d(200%, 0, 0);
+        }}
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(4)[aria-checked="true"])::before,
+        .st-key-analysis_nav [data-testid="stButtonGroup"] > div:has(> button:nth-of-type(4)[aria-pressed="true"])::before {{
+            transform: translate3d(300%, 0, 0);
         }}
         [data-testid="stButtonGroup"] {{ margin: 0.05rem 0 0.1rem; }}
         [data-testid="stButtonGroup"] > div {{
@@ -368,6 +475,30 @@ def inject_css():
             box-shadow: {th['shadow_pill']};
             font-weight: 610;
         }}
+        .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button {{
+            position: relative;
+            z-index: 1;
+            min-height: 2.3rem;
+            width: 100%;
+            border-radius: 11px !important;
+            border: 1px solid transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            font-weight: 550;
+            transition: color 0.2s ease, background-color 0.18s ease;
+        }}
+        .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button:hover:not([aria-checked="true"]):not([aria-pressed="true"]) {{
+            background-color: {th['seg_track']} !important;
+            color: {th['text']} !important;
+        }}
+        .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button[aria-checked="true"],
+        .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
+            background-color: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            color: {th['text']} !important;
+            font-weight: 620;
+        }}
         [data-testid="stVerticalBlockBorderWrapper"] {{
             border-color: {th['hairline']} !important; border-radius: 14px !important;
         }}
@@ -376,7 +507,11 @@ def inject_css():
             background: {th['plot_bg']}; border: 1px solid {th['hairline']};
             border-radius: 14px; overflow: hidden; box-shadow: {th['shadow']};
         }}
-        button {{ border-radius: 9px !important; transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease; }}
+        button {{
+            border-radius: 9px !important;
+            transition: border-color 0.16s ease, background-color 0.16s ease,
+                        color 0.16s ease, box-shadow 0.18s ease, transform 0.16s ease;
+        }}
         .stButton button, .stDownloadButton button, [data-testid="stPopover"] button {{
             min-height: 2.15rem; font-weight: 540; font-size: 0.83rem;
         }}
@@ -385,9 +520,12 @@ def inject_css():
             background: {th['accent']} !important; border-color: {th['accent']} !important;
             color: {th['accent_text']} !important; font-weight: 600 !important;
             letter-spacing: -0.005em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 8px {th['accent']}38 !important;
         }}
         button[kind="primary"]:hover {{
             background: {th['accent_hover']} !important; border-color: {th['accent_hover']} !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 4px 14px {th['accent']}48 !important;
+            transform: translateY(-0.5px);
         }}
         .stTextArea [data-baseweb="textarea"],
         .stTextArea [data-baseweb="base-input"],
@@ -436,13 +574,18 @@ def inject_css():
             border: none !important;
         }}
         .stSelectbox div[data-baseweb="select"] span {{ color: {th['text']}; }}
+        /* Frosted translucent dropdowns & popovers */
         div[data-baseweb="popover"], div[role="listbox"],
         div:has(> [role="listbox"]) {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']} !important; border-radius: 12px !important;
+            background: {th['glass_bg_strong']} !important; color: {th['text']} !important;
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid {th['glass_rim']} !important; border-radius: 14px !important;
+            box-shadow: {th['glass_highlight']}, {th['glass_popover_shadow']} !important;
         }}
         [role="option"] {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
+            background: transparent !important; color: {th['text']} !important;
+            border-radius: 8px;
         }}
         [role="option"][aria-selected="true"], [role="option"][data-focused="true"] {{
             background: {th['accent']}22 !important;
@@ -485,7 +628,10 @@ def inject_css():
         .theme-grid th {{
             position: sticky; top: 0; z-index: 1;
             color: {th['text_muted']}; font-weight: 600; font-size: 0.77rem;
-            letter-spacing: 0.015em; background: {th['bg_secondary']};
+            letter-spacing: 0.015em;
+            background: {th['glass_th']};
+            backdrop-filter: blur(14px) saturate(165%);
+            -webkit-backdrop-filter: blur(14px) saturate(165%);
         }}
         .theme-grid tbody tr:hover {{ background: {th['accent']}12; }}
         .theme-grid tr:last-child td {{ border-bottom: none; }}
@@ -541,13 +687,23 @@ def inject_css():
             color: {th['text']} !important;
             fill: {th['text']} !important;
         }}
-        .theme-grid .score-low {{ color: #64b5ff; font-weight: 680; }}
-        .theme-grid .score-mid {{ color: #cfe3f8; font-weight: 600; }}
-        .theme-grid .score-high {{ color: #ffb0a3; font-weight: 600; }}
+        .theme-grid .score-low {{ color: {th['score_low']}; font-weight: 660; }}
+        .theme-grid .score-mid {{ color: {th['score_mid']}; font-weight: 580; }}
+        .theme-grid .score-high {{ color: {th['score_high']}; font-weight: 620; }}
         [data-testid="stPopoverBody"] {{
-            background: {th['bg_card']} !important; color: {th['text']} !important;
-            border: 1px solid {th['border']} !important; border-radius: 12px !important;
-            box-shadow: {th['shadow']} !important;
+            background: {th['glass_bg_strong']} !important; color: {th['text']} !important;
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid {th['glass_rim']} !important; border-radius: 14px !important;
+            box-shadow: {th['glass_highlight']}, {th['glass_popover_shadow']} !important;
+        }}
+        [data-testid="stPopoverBody"] button {{
+            background-color: {th['glass_bg']} !important;
+            border-color: {th['glass_rim']} !important;
+        }}
+        [data-testid="stPopoverBody"] button:hover {{
+            background-color: {th['glass_nav_pill']} !important;
+            border-color: {th['accent']}66 !important;
         }}
         [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"],
         [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] p {{ color: {th['text_muted']} !important; }}
@@ -555,6 +711,22 @@ def inject_css():
             [data-testid="stMainBlockContainer"] {{ padding: 0.75rem 0.9rem 2rem; }}
             .hero-shell {{ align-items: flex-start; gap: 0.55rem; padding: 0.1rem 0 0.45rem; }}
             .status-time {{ margin-left: 0; }}
+            [data-testid="stLayoutWrapper"]:has(> .st-key-analysis_nav) {{ top: 0.4rem; }}
+        }}
+        @media (max-width: 720px) {{
+            .st-key-analysis_nav [data-testid="stButtonGroup"] > div {{
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 3px !important;
+            }}
+            .st-key-analysis_nav [data-testid="stButtonGroup"] > div::before {{
+                display: none !important;
+            }}
+            .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button[aria-checked="true"],
+            .stApp .st-key-analysis_nav [data-testid="stButtonGroup"] button[aria-pressed="true"] {{
+                background-color: {th['glass_nav_pill']} !important;
+                border-color: {th['glass_rim']} !important;
+                box-shadow: {th['glass_highlight']}, {th['shadow_pill']} !important;
+            }}
         }}
         @media (prefers-reduced-motion: reduce) {{
             *, *::before, *::after {{ scroll-behavior: auto !important; transition: none !important; }}
@@ -609,12 +781,12 @@ def compute_codependency_scan(df_hash: str, _df: pd.DataFrame, query_gene: str, 
 # 绘图配置
 # =============================================================================
 PLOT_COLORS = {
-    # Crisp, colorblind-conscious Apple-calibrated scientific palette
-    'essential': '#d94f3d',
-    'nonessential': '#248a3d',
-    'interest': '#0071e3',
-    'threshold': '#86868b',
-    'boxplot_fill': '#0071e3',
+    # Colorblind-safe Nature Publishing Group (NPG) / CNS publication palette
+    'essential': '#E64B35',
+    'nonessential': '#00A087',
+    'interest': '#3C5488',
+    'threshold': '#7F8C8D',
+    'boxplot_fill': '#3C5488',
 }
 FONT_FAMILY = "-apple-system, BlinkMacSystemFont, Inter, Helvetica Neue, Arial, sans-serif"
 
@@ -838,7 +1010,7 @@ def build_rank_figure(rankings, layers, references, n_cell_lines, point_size=4,
 
 def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', nonessential_gene='PTEN',
                      n_cell_lines=0, show_labels=True, point_size=4, width=640, height=480):
-    interest_color = get_theme()['accent']
+    interest_color = '#67A9CF' if st.session_state.get('theme') == 'dark' else PLOT_COLORS['interest']
     return build_rank_figure(gene_rank_df,
                             [{'genes': genes_of_interest, 'labels': show_labels, 'color': interest_color,
                               'name': ui('Genes of interest', '目标基因')}],
@@ -846,7 +1018,7 @@ def create_rank_plot(gene_rank_df, genes_of_interest, essential_gene='MYC', none
                             show_reference_labels=show_labels, width=width, height=height)
 
 
-def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, bg_color='#8E8E93', hl_color='#0071E3',
+def create_multilayer_rank_plot(gene_rank_df, background_genes, highlight_genes, bg_color='#8E99A2', hl_color='#3C5488',
                                essential_gene='MYC', nonessential_gene='PTEN', n_cell_lines=0, show_labels=True,
                                point_size=None, width=640, height=480):
     bg_only = [g for g in background_genes if g not in highlight_genes]
@@ -874,10 +1046,10 @@ def create_lineage_boxplot(lineage_data, genes, sort_mode='median', show_points=
 
     def box_palette(median_val):
         if median_val < ESSENTIALITY_THRESHOLD:
-            return ('#0a84ff', 'rgba(10,132,255,0.22)') if is_dark else ('#0071e3', 'rgba(0,113,227,0.18)')
+            return ('#67A9CF', 'rgba(103,169,207,0.24)') if is_dark else ('#2166AC', 'rgba(33,102,172,0.20)')
         if median_val < 0:
-            return ('#5aa9ff', 'rgba(90,169,255,0.15)') if is_dark else ('#4e95dc', 'rgba(78,149,220,0.14)')
-        return ('#8e8e93', 'rgba(142,142,147,0.14)') if is_dark else ('#86868b', 'rgba(134,134,139,0.12)')
+            return ('#92C5DE', 'rgba(146,197,222,0.16)') if is_dark else ('#4E84B4', 'rgba(78,132,180,0.16)')
+        return ('#8E95A5', 'rgba(142,149,165,0.14)') if is_dark else ('#8491B4', 'rgba(132,145,180,0.14)')
 
     if compare_mode == 'by_gene':
         fig = go.Figure()
@@ -1363,10 +1535,18 @@ PREFERENCE_MAX_LOLLIPOP_GENES = 6
 
 
 def _preference_scale():
-    """Blue is a lower score than the gene's own all-lineage mean."""
+    """ColorBrewer 7-stop RdBu scale: deep steel blue (< 0) through neutral to crimson (> 0)."""
     if st.session_state.get("theme") == "dark":
-        return [[0.0, "#0a84ff"], [0.5, "#2c2c2e"], [1.0, "#ff6961"]]
-    return [[0.0, "#0071e3"], [0.5, "#f5f5f7"], [1.0, "#d94f3d"]]
+        return [
+            [0.0, "#4393C3"], [0.22, "#67A9CF"], [0.38, "#3B5970"],
+            [0.5, "#24262B"],
+            [0.62, "#6E3F3B"], [0.78, "#D6604D"], [1.0, "#E05A5A"],
+        ]
+    return [
+        [0.0, "#2166AC"], [0.17, "#4393C3"], [0.33, "#92C5DE"],
+        [0.5, "#F7F7F7"],
+        [0.67, "#F4A582"], [0.83, "#D6604D"], [1.0, "#B2182B"],
+    ]
 
 
 def create_preference_plot(table, highlight_lineages=None, top_k=None):
@@ -1421,8 +1601,8 @@ def _add_preference_lollipop(fig, gene_rows, gene, row, highlight_set=None):
     order = part["lineage"].tolist()
     diffs = part["difference"].to_numpy(dtype=float)
     limit = float(np.nanmax(np.abs(diffs))) or 0.1
-    dep_col = "#0a84ff" if is_dark else "#0071e3"
-    res_col = "#ff6961" if is_dark else "#d94f3d"
+    dep_col = "#67A9CF" if is_dark else "#2166AC"
+    res_col = "#E06B64" if is_dark else "#B2182B"
     stems = {dep_col: ([], []), res_col: ([], [])}
     for lineage, diff in zip(order, diffs):
         xs, ys = stems[dep_col if diff < 0 else res_col]
@@ -1564,12 +1744,7 @@ def create_correlation_heatmap(corr: pd.DataFrame, counts: pd.DataFrame, method:
     show_text = len(genes) <= 12
     text_matrix = [[f"{val:.2f}" if np.isfinite(val) else "" for val in row] for row in z] if show_text else None
     metric_label = ui("Pearson r", "Pearson r") if method == "pearson" else ui("Spearman ρ", "Spearman ρ")
-    is_dark = st.session_state.get("theme") == "dark"
-    colorscale = (
-        [[0.0, "#ff6961"], [0.5, "#2c2c2e"], [1.0, "#0a84ff"]]
-        if is_dark else
-        [[0.0, "#d94f3d"], [0.5, "#f5f5f7"], [1.0, "#0071e3"]]
-    )
+    colorscale = _preference_scale()
     cell = 56 if len(genes) <= 8 else (44 if len(genes) <= 14 else 30)
     height = max(360, len(genes) * cell + 115)
     width = min(940, max(480, len(genes) * cell + 215))
@@ -2594,9 +2769,10 @@ dataset_metadata = {
 }
 
 st.session_state.setdefault('analysis_tab', 'rank')
-view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi', 'codep'],
-                            format_func={'rank': t('tab1'), 'box': t('tab2'), 'multi': t('tab3'), 'codep': t('tab4')}.get,
-                            key='analysis_tab', selection_mode='single', label_visibility='collapsed', width='stretch') or 'rank'
+with st.container(border=False, key='analysis_nav'):
+    view = st.segmented_control(ui('Analysis', '分析'), ['rank', 'box', 'multi', 'codep'],
+                                format_func={'rank': t('tab1'), 'box': t('tab2'), 'multi': t('tab3'), 'codep': t('tab4')}.get,
+                                key='analysis_tab', selection_mode='single', label_visibility='collapsed', width='stretch') or 'rank'
 autorun_view = st.session_state.pop('_autorun_view', None)
 allow_initial_autorun = not st.session_state.get('_initial_autorun_done')
 if allow_initial_autorun:
@@ -2767,8 +2943,8 @@ elif view == 'box':
 elif view == 'multi':
     st.session_state.setdefault('multi_bg', 'CDK1, CDK2, CDK4, CDK6, CCNB1, CCND1, CCNE1')
     st.session_state.setdefault('multi_hl', 'PLK1, AURKA')
-    st.session_state.setdefault('multi_bg_color', '#8E8E93')
-    st.session_state.setdefault('multi_hl_color', '#0071E3')
+    st.session_state.setdefault('multi_bg_color', '#8E99A2')
+    st.session_state.setdefault('multi_hl_color', '#3C5488')
     with st.container(border=False, key='multi_input'):
         with st.container(horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
             st.markdown(f'<span class="input-title">{ui("Gene-set layers", "基因集分层")}</span>', unsafe_allow_html=True)

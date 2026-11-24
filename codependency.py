@@ -25,10 +25,10 @@ ESSENTIALITY_THRESHOLD = -0.5
 SCAN_COLUMNS = ["gene", "correlation", "n_shared", "mean_score", "rank", "percentile"]
 SCATTER_COLUMNS = ["cell_line", "cell_line_name", "lineage", "score_x", "score_y"]
 
-# Crisp, colorblind-conscious Apple-calibrated palette for scatter-plot lineages.
+# Nature Publishing Group (NPG) / CNS publication-calibrated palette for scatter lineages.
 LINEAGE_PALETTE = [
-    "#0071e3", "#d94f3d", "#248a3d", "#af52de", "#d98200", "#32ade6",
-    "#5856d6", "#d6336c", "#00a699", "#6d9636", "#a2845e", "#5e9ef5",
+    "#3C5488", "#E64B35", "#00A087", "#4DBBD5", "#F39B7F", "#8491B4",
+    "#91D1C2", "#7E6148", "#B09C85", "#DC0000", "#5C8AB5", "#D4A359",
 ]
 
 
@@ -39,7 +39,7 @@ def _default_theme():
         "plot_axis": "#424245",
         "plot_reference": "rgba(29,29,31,0.24)",
         "plot_grid": "rgba(29,29,31,0.06)",
-        "accent": "#0071e3",
+        "accent": "#3C5488",
     }
 
 
@@ -349,9 +349,22 @@ def create_codependency_scan_plot(
     order = shown["gene"].tolist()
     vals = shown["correlation"].to_numpy(dtype=float)
     limit = max(float(np.nanmax(np.abs(vals))), 0.15)
-    pos_col = "#0a84ff" if is_dark else "#0071e3"
-    neg_col = "#ff6961" if is_dark else "#d94f3d"
-    neutral = "#2c2c2e" if is_dark else "#f5f5f7"
+    # CNS correlation convention: negative = deep steel blue, positive = deep crimson (ColorBrewer RdBu)
+    pos_col = "#E06B64" if is_dark else "#B2182B"
+    neg_col = "#67A9CF" if is_dark else "#2166AC"
+    rd_bu_scale = (
+        [
+            [0.0, "#4393C3"], [0.22, "#67A9CF"], [0.38, "#3B5970"],
+            [0.5, "#24262B"],
+            [0.62, "#6E3F3B"], [0.78, "#D6604D"], [1.0, "#E05A5A"],
+        ]
+        if is_dark else
+        [
+            [0.0, "#2166AC"], [0.17, "#4393C3"], [0.33, "#92C5DE"],
+            [0.5, "#F7F7F7"],
+            [0.67, "#F4A582"], [0.83, "#D6604D"], [1.0, "#B2182B"],
+        ]
+    )
     metric_label = "Pearson r" if method == "pearson" else "Spearman ρ"
 
     stems = {pos_col: ([], []), neg_col: ([], [])}
@@ -376,7 +389,7 @@ def create_codependency_scan_plot(
         cliponaxis=False,
         marker=dict(
             size=10.5, color=vals,
-            colorscale=[[0.0, neg_col], [0.5, neutral], [1.0, pos_col]],
+            colorscale=rd_bu_scale,
             cmid=0, cmin=-limit, cmax=limit, showscale=False, line=dict(width=0),
         ),
         customdata=np.column_stack((shown["n_shared"], shown["mean_score"], shown["rank"])),

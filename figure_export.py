@@ -82,6 +82,11 @@ def prepare_export_figure(fig, full_vector=True):
                                   bgcolor="rgba(0,0,0,0)", borderwidth=0)
     for shape in export_fig.layout.shapes:
         shape.line.color = "#667085"
+    _WHITE_PAPER_RDBU = [
+        [0.0, "#2166AC"], [0.17, "#4393C3"], [0.33, "#92C5DE"],
+        [0.5, "#F7F7F7"],
+        [0.67, "#F4A582"], [0.83, "#D6604D"], [1.0, "#B2182B"],
+    ]
     for trace in export_fig.data:
         if trace.name in {"All genes", "全部基因"}:
             trace.marker.color = "rgba(150,150,150,0.55)"
@@ -91,9 +96,18 @@ def prepare_export_figure(fig, full_vector=True):
                 and getattr(trace.marker, "line", None)
                 and trace.marker.line.color == orig_plot_bg):
             trace.marker.line.color = "white"
-        if trace.type == "heatmap" and getattr(trace, "colorbar", None):
-            trace.colorbar.tickfont = dict(color=_INK)
-            trace.colorbar.title.font = dict(color=_INK)
+        if (hasattr(trace, "marker") and trace.marker
+                and getattr(trace.marker, "colorscale", None)
+                and any(str(c).lower() == "#24262b" for _, c in trace.marker.colorscale)):
+            trace.marker.colorscale = _WHITE_PAPER_RDBU
+        if trace.type == "heatmap":
+            if getattr(trace, "colorscale", None) and any(
+                str(c).lower() == "#24262b" for _, c in trace.colorscale
+            ):
+                trace.colorscale = _WHITE_PAPER_RDBU
+            if getattr(trace, "colorbar", None):
+                trace.colorbar.tickfont = dict(color=_INK)
+                trace.colorbar.title.font = dict(color=_INK)
         if hasattr(trace, "textfont") and trace.type != "heatmap":
             trace.textfont.color = _INK
     return export_fig
