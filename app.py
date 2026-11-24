@@ -228,27 +228,27 @@ THEMES = {
         'score_high': '#b2182b',
     },
     'dark': {
-        'bg': '#000000',
-        'bg_ambient': 'radial-gradient(ellipse 88% 360px at 50% -70px, rgba(10, 132, 255, 0.11), transparent 72%)',
-        'bg_secondary': '#111113',
+        'bg': '#0f0f11',
+        'bg_ambient': 'radial-gradient(ellipse 88% 360px at 50% -70px, rgba(10, 132, 255, 0.095), transparent 72%)',
+        'bg_secondary': '#151518',
         'bg_card': '#1c1c1e',
-        'bg_field': '#111113',
+        'bg_field': '#141417',
         'seg_track': 'rgba(118, 118, 128, 0.24)',
         'seg_active': '#2c2c2e',
-        'glass_bg': 'rgba(28, 28, 30, 0.68)',
-        'glass_bg_strong': 'rgba(32, 32, 36, 0.82)',
-        'glass_sidebar': 'rgba(18, 18, 20, 0.76)',
-        'glass_nav': 'rgba(34, 34, 38, 0.64)',
+        'glass_bg': 'rgba(30, 30, 34, 0.72)',
+        'glass_bg_strong': 'rgba(34, 34, 38, 0.85)',
+        'glass_sidebar': 'rgba(21, 21, 24, 0.80)',
+        'glass_nav': 'rgba(34, 34, 39, 0.70)',
         'glass_nav_pill': 'rgba(255, 255, 255, 0.14)',
-        'glass_th': 'rgba(22, 22, 24, 0.82)',
+        'glass_th': 'rgba(25, 25, 28, 0.86)',
         'glass_rim': 'rgba(255, 255, 255, 0.12)',
         'glass_highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -0.5px 0 rgba(0, 0, 0, 0.42)',
-        'glass_shadow': '0 10px 30px rgba(0, 0, 0, 0.52), 0 2px 6px rgba(0, 0, 0, 0.36)',
-        'glass_popover_shadow': '0 22px 54px rgba(0, 0, 0, 0.70), 0 3px 10px rgba(0, 0, 0, 0.46)',
-        'glass_pending_bg': 'rgba(48, 38, 18, 0.72)',
+        'glass_shadow': '0 10px 30px rgba(0, 0, 0, 0.50), 0 2px 6px rgba(0, 0, 0, 0.34)',
+        'glass_popover_shadow': '0 22px 54px rgba(0, 0, 0, 0.66), 0 3px 10px rgba(0, 0, 0, 0.44)',
+        'glass_pending_bg': 'rgba(48, 38, 18, 0.74)',
         'glass_pending_rim': 'rgba(255, 214, 10, 0.30)',
         'text': '#f5f5f7',
-        'text_muted': '#8e8e93',
+        'text_muted': '#98989d',
         'border': '#2c2c2e',
         'hairline': 'rgba(255, 255, 255, 0.09)',
         'accent': '#0a84ff',
@@ -308,7 +308,12 @@ def inject_css():
         h3 {{ font-size: 1.0rem !important; font-weight: 620 !important; letter-spacing: -0.015em; padding-bottom: 0.1rem !important; }}
         h4 {{ font-size: 0.94rem !important; font-weight: 600 !important; letter-spacing: -0.01em; }}
         p, .stCaption {{ line-height: 1.5; }}
-        [data-testid="stCaptionContainer"] {{ color: {th['text_muted']}; font-size: 0.8rem; }}
+        [data-testid="stCaptionContainer"],
+        [data-testid="stCaptionContainer"] p {{
+            color: {th['text_muted']} !important;
+            opacity: 1 !important;
+            font-size: 0.8rem;
+        }}
         .hero-shell {{
             display: flex; align-items: flex-end; justify-content: space-between;
             flex-wrap: wrap; gap: 0.8rem 1.5rem;
@@ -607,8 +612,24 @@ def inject_css():
         [data-testid="stTooltipIcon"] svg {{
             color: {th['text_muted']} !important; stroke: {th['text_muted']} !important;
         }}
-        [data-testid="stTabs"] button {{ color: {th['text_muted']} !important; font-weight: 560; font-size: 0.86rem; }}
-        [data-testid="stTabs"] button[aria-selected="true"] {{ color: {th['accent']} !important; font-weight: 620; }}
+        [data-testid="stTabs"] [role="tab"],
+        [data-testid="stTabs"] [role="tab"] p {{
+            color: {th['text_muted']} !important; font-weight: 560; font-size: 0.86rem;
+        }}
+        [data-testid="stTabs"] [role="tab"]:hover,
+        [data-testid="stTabs"] [role="tab"]:hover p {{
+            color: {th['text']} !important;
+        }}
+        [data-testid="stTabs"] [role="tab"][aria-selected="true"],
+        [data-testid="stTabs"] [role="tab"][aria-selected="true"] p {{
+            color: {th['accent']} !important; font-weight: 620;
+        }}
+        [data-testid="stTabs"] [data-baseweb="tab-highlight"] {{
+            background-color: {th['accent']} !important;
+        }}
+        [data-testid="stTabs"] [data-baseweb="tab-border"] {{
+            background-color: {th['hairline']} !important;
+        }}
         [data-testid="stExpander"] {{
             border-color: {th['hairline']} !important; border-radius: 12px !important;
             background: {th['bg_card']};
