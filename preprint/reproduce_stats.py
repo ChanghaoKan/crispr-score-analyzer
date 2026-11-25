@@ -124,7 +124,7 @@ def main() -> None:
     print(f"Genes with mean < -0.5  : {(rankings['mean_score'] < -0.5).sum():,}")
     print(f"Mean Chronos range      : {rankings['mean_score'].min():+.3f} to {rankings['mean_score'].max():+.3f}")
 
-    print("\n=== 2. Pan-Cancer Benchmark Rankings (Section 3.1 / Fig. 1A-B) ===")
+    print("\n=== 2. Pan-Cancer Benchmark Rankings (Section 3.1 / Fig. 2A-B) ===")
     for gene in ["MYC", "PTEN", "KRAS", "SOX10", "BRAF", "ESR1", "TP53", "PLK1", "AURKA", "CDK1", "CCNE1"]:
         row = rankings[rankings["gene"] == gene].iloc[0]
         print(
@@ -132,7 +132,7 @@ def main() -> None:
             f"pct={row['percentile']:6.2f}%  n_valid={int(row['n_valid'])}"
         )
 
-    print("\n=== 3. Lineage Preference & Top Cell Lines (Section 3.1 / Fig. 1C-D) ===")
+    print("\n=== 3. Lineage Preference & Top Cell Lines (Section 3.1 / Fig. 2C-D) ===")
     lin_df = get_lineage_frame(df, ["SOX10", "ESR1"], rankings, "lineage")
     pref_df = lineage_preference(lin_df, threshold=-0.5)
     for gene, target_lins in [("SOX10", ["Skin", "Eye"]), ("ESR1", ["Breast", "Ampulla of Vater"])]:
@@ -149,7 +149,7 @@ def main() -> None:
     breast_esr = df[df["lineage"] == "Breast"][["depmap_id", "cell_line_display_name", col_map["ESR1"]]].sort_values(col_map["ESR1"]).head(3)
     print("Top Breast ESR1 models:", [(r["cell_line_display_name"], r["depmap_id"], round(float(r[col_map["ESR1"]]), 3)) for _, r in breast_esr.iterrows()])
 
-    print("\n=== 4. Pan-Cancer MDM2 Scan & MDM2-TP53 Lineage Stratification (Section 3.2 / Fig. 2A-C) ===")
+    print("\n=== 4. Pan-Cancer MDM2 Scan & MDM2-TP53 Lineage Stratification (Section 3.2 / Fig. 3A-C) ===")
     mdm2_scan = genomewide_codependency(df, "MDM2", rankings, method="pearson")
     for label, sub in [("Top pos", mdm2_scan.head(7)), ("Top neg", mdm2_scan.tail(7).iloc[::-1])]:
         items = ", ".join(f"{r['gene']} ({r['correlation']:+.3f}, n={int(r['n_shared'])})" for _, r in sub.iterrows())
@@ -181,7 +181,7 @@ def main() -> None:
     for lin, cnt, rv in lin_corrs[:10]:
         print(f"  {lin:26s} n={cnt:3d}  r={rv:+.3f}")
 
-    print("\n=== 5. BRAF Pan-Cancer vs Skin Scan, SOX10 Partial r, and Exact Two-Sided t-Tests (Section 3.2 / Fig. 2D) ===")
+    print("\n=== 5. BRAF Pan-Cancer vs Skin Scan, SOX10 Partial r, and Exact Two-Sided t-Tests (Section 3.2 / Fig. 3D) ===")
     braf_pan = genomewide_codependency(df, "BRAF", rankings, method="pearson").set_index("gene")
     print("Pan-cancer BRAF partners:", {g: round(float(braf_pan.loc[g, "correlation"]), 3) for g in ["MAPK1", "MAP2K1", "MAP2K2", "SOX10", "DUSP4", "SOX5"]})
 
