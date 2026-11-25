@@ -502,9 +502,9 @@ def build_html() -> str:
   <div class="figure-block">
     <img src="{fig1_uri}" alt="Figure 1" />
     <p class="figure-caption">
-      <strong>Figure 1. Interactive browser interface of CRISPR Score Analyzer across neutral light and deep-charcoal dark themes.</strong>
-      <strong>(A)</strong> Light mode (<code>#f5f5f7</code> canvas) showing the sidebar cohort controls (<code>DepMap Public 26Q3 · Chronos Gene Effect</code>), sticky four-module navigation dock (<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, <em>Co-dependency</em>), gene-list input with <em>Examples</em>/<em>Search</em> popovers, status strip, and solid white-paper NPG ranking curve (labeled <em>Mean CRISPR score</em> in the generic UI to accommodate custom uploads using alternative scoring metrics).
-      <strong>(B)</strong> Scrolled deep-charcoal dark mode (<code>#0f0f11</code> canvas) showing the floating frosted navigation dock over the darkroom plot, colorblind-safe tabular summary (<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, <span class="gene">TP53</span>), export controls, and contextual deep-dive tabs (<em>Lineage preference</em> and <em>Top cell lines</em>).
+      <strong>Figure 1. Interactive browser interface of CRISPR Score Analyzer across neutral light and deep-charcoal dark themes (identical default pan-cancer view).</strong>
+      <strong>(A)</strong> Light mode (<code>#f5f5f7</code> canvas) showing sidebar cohort controls (<code class="wrap-code">DepMap Public 26Q3 &middot; Chronos Gene Effect</code>), sticky four-module navigation dock (<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, <em>Co-dependency</em>), gene-list draft input with <em>Examples</em>/<em>Search</em> popovers, status strip, and solid white-paper NPG ranking curve (labeled <em>Mean CRISPR score</em> in the generic UI to accommodate custom uploads using alternative scoring metrics).
+      <strong>(B)</strong> Deep-charcoal dark mode (<code>#0f0f11</code> canvas) aligned on the same view, pairing stepped frosted surfaces (<code>#151518</code> sidebar, <code>#1c1c1e</code> cards) with darkroom NPG plot colors while keeping all figure exports white-paper by default.
     </p>
   </div>
 

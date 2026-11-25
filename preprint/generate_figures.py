@@ -241,8 +241,8 @@ def main() -> None:
     if ui_light.is_file() and ui_dark.is_file():
         compose_ui_overview(
             [
-                ("A", "Light mode · four-module dock & NPG ranking curve", ui_light),
-                ("B", "Charcoal dark mode (#0f0f11) · floating dock, table & deep-dive tabs", ui_dark),
+                ("A", "Light mode (#f5f5f7) · four-module dock & NPG ranking curve", ui_light),
+                ("B", "Charcoal dark mode (#0f0f11) · identical view in darkroom palette", ui_dark),
             ],
             OUT / "Figure1.png",
         )
