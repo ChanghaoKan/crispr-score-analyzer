@@ -6,7 +6,7 @@
 \* Correspondence: `kanchanghao@szbl.ac.cn`  
 ORCID: [0009-0000-4014-5923](https://orcid.org/0009-0000-4014-5923)
 
-**Category:** Bioinformatics (Application Note · OSF Preprints)
+**Category:** Bioinformatics (Application Note · Preprint)
 
 ---
 

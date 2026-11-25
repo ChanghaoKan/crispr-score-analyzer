@@ -414,7 +414,7 @@ def build_html() -> str:
   <!-- Header & Title -->
   <div class="doc-kicker">
     <span>Bioinformatics &middot; Application Note</span>
-    <span class="kicker-right">OSF Preprints</span>
+    <span class="kicker-right">Preprint</span>
   </div>
 
   <h1 class="title">CRISPR Score Analyzer: an interactive, cohort-scoped browser platform for DepMap gene essentiality and co-dependency analysis</h1>
@@ -682,7 +682,7 @@ def main() -> None:
     header_tpl = """
     <div style="width:100%; font-family:'Liberation Sans',Arial,sans-serif; font-size:7pt; color:#86868b; padding:0 17.5mm; display:flex; justify-content:space-between; align-items:center;">
       <span>Kan (2026) &middot; <em>CRISPR Score Analyzer</em> (v1.2.0)</span>
-      <span>OSF Preprints</span>
+      <span>Preprint</span>
     </div>
     """
     footer_tpl = """
