@@ -30,7 +30,7 @@ from analysis_core import (  # noqa: E402
     lineage_preference,
     read_builtin_matrix,
 )
-from codependency import gene_pair_scatter_frame, genomewide_codependency  # noqa: E402
+from codependency import _pair_correlation, gene_pair_scatter_frame, genomewide_codependency  # noqa: E402
 
 
 def _betacf(a: float, b: float, x: float) -> float:
@@ -116,15 +116,50 @@ def main() -> None:
     rankings, _ = analyze_dataset(df)
     col_map = dict(zip(rankings["gene"], rankings["gene_raw"]))
     non_empty_lin = (df["lineage"].astype(str).str.strip() != "").sum()
+    n_models = len(df)
+    n_complete = int((rankings["n_valid"] == n_models).sum())
+    n_partial = int((rankings["n_valid"] < n_models).sum())
+    n_lt_1000 = int((rankings["n_valid"] < 1000).sum())
+    n_lt_500 = int((rankings["n_valid"] < 500).sum())
 
-    print("=== 1. Matrix Provenance & Cohort Summary ===")
+    print("=== 1. Matrix Provenance, Coverage & Missingness Audit (Section 3.1) ===")
     print(f"Matrix SHA-256 verified : {actual_sha}")
-    print(f"Models x Genes          : {len(df):,} x {len(rankings):,}")
-    print(f"Matched OncotreeLineage : {non_empty_lin:,}/{len(df):,} across {df['lineage'].nunique()} lineages")
+    print(f"Models x Genes          : {n_models:,} x {len(rankings):,}")
+    print(f"Matched OncotreeLineage : {non_empty_lin:,}/{n_models:,} across {df['lineage'].nunique()} lineages")
+    print(f"Complete genes (n={n_models}): {n_complete:,} ({100.0 * n_complete / len(rankings):.2f}%)")
+    print(f"Partial genes (n<{n_models}) : {n_partial:,} ({100.0 * n_partial / len(rankings):.2f}%)")
+    print(f"Min n_valid             : {int(rankings['n_valid'].min())} | n<1000: {n_lt_1000} | n<500: {n_lt_500}")
     print(f"Genes with mean < -0.5  : {(rankings['mean_score'] < -0.5).sum():,}")
     print(f"Mean Chronos range      : {rankings['mean_score'].min():+.3f} to {rankings['mean_score'].max():+.3f}")
 
-    print("\n=== 2. Pan-Cancer Benchmark Rankings (Section 3.1 / Fig. 2A-B) ===")
+    print("\n=== 2. Numerical Equivalence of Chunked Correlation Kernels (Section 3.1) ===")
+    mdm2_scan = genomewide_codependency(df, "MDM2", rankings, method="pearson")
+    mdm2_p = mdm2_scan.set_index("gene")
+    mdm2_sp = genomewide_codependency(df, "MDM2", rankings, method="spearman").set_index("gene")
+    mdm2_vec = df[col_map["MDM2"]].to_numpy(dtype=np.float64)
+    sample_genes = list(dict.fromkeys(
+        list(mdm2_p.head(50).index)
+        + list(mdm2_p.tail(50).index)
+        + list(rankings.loc[rankings["n_valid"] < n_models, "gene"].head(100))
+    ))
+    sample_genes = [g for g in sample_genes if g in mdm2_p.index]
+    max_diff_p = max(
+        abs(float(mdm2_p.loc[g, "correlation"]) - float(df[col_map["MDM2"]].astype(np.float64).corr(df[col_map[g]].astype(np.float64))))
+        for g in sample_genes
+    )
+    sp_subset = sample_genes[:100]
+    max_diff_s = 0.0
+    for g in sp_subset:
+        yv = df[col_map[g]].to_numpy(dtype=np.float64)
+        mask = np.isfinite(mdm2_vec) & np.isfinite(yv)
+        xr = pd.Series(mdm2_vec[mask]).rank(method="average").to_numpy(dtype=np.float64)
+        yr = pd.Series(yv[mask]).rank(method="average").to_numpy(dtype=np.float64)
+        ref_rho = float(np.corrcoef(xr, yr)[0, 1])
+        max_diff_s = max(max_diff_s, abs(float(mdm2_sp.loc[g, "correlation"]) - ref_rho))
+    print(f"Pearson max |delta r|  vs pandas.Series.corr ({len(sample_genes)} genes): {max_diff_p:.3e}")
+    print(f"Spearman max |delta rho| vs exact rank corr  ({len(sp_subset)} genes): {max_diff_s:.3e}")
+
+    print("\n=== 3. Pan-Cancer Benchmark Rankings (Section 3.2 / Fig. 2A-B) ===")
     for gene in ["MYC", "PTEN", "KRAS", "SOX10", "BRAF", "ESR1", "TP53", "PLK1", "AURKA", "CDK1", "CCNE1"]:
         row = rankings[rankings["gene"] == gene].iloc[0]
         print(
@@ -132,7 +167,7 @@ def main() -> None:
             f"pct={row['percentile']:6.2f}%  n_valid={int(row['n_valid'])}"
         )
 
-    print("\n=== 3. Lineage Preference & Top Cell Lines (Section 3.1 / Fig. 2C-D) ===")
+    print("\n=== 4. Lineage Preference & Top Cell Lines (Section 3.2 / Fig. 2C-D) ===")
     lin_df = get_lineage_frame(df, ["SOX10", "ESR1"], rankings, "lineage")
     pref_df = lineage_preference(lin_df, threshold=-0.5)
     for gene, target_lins in [("SOX10", ["Skin", "Eye"]), ("ESR1", ["Breast", "Ampulla of Vater"])]:
@@ -149,8 +184,39 @@ def main() -> None:
     breast_esr = df[df["lineage"] == "Breast"][["depmap_id", "cell_line_display_name", col_map["ESR1"]]].sort_values(col_map["ESR1"]).head(3)
     print("Top Breast ESR1 models:", [(r["cell_line_display_name"], r["depmap_id"], round(float(r[col_map["ESR1"]]), 3)) for _, r in breast_esr.iterrows()])
 
-    print("\n=== 4. Pan-Cancer MDM2 Scan & MDM2-TP53 Lineage Stratification (Section 3.2 / Fig. 3A-C) ===")
-    mdm2_scan = genomewide_codependency(df, "MDM2", rankings, method="pearson")
+    print("\n=== 5. Systematic Co-Dependency Decomposition Across Canonical Axes (Section 3.3 / Table 2) ===")
+    canonical_pairs = [
+        ("MDM2", "TP53", "Lung"),
+        ("MDM2", "PPM1D", "Lung"),
+        ("BRAF", "MAPK1", "Skin"),
+        ("BRAF", "MAP2K1", "Skin"),
+        ("BRAF", "SOX10", "Skin"),
+        ("SOX10", "MITF", "Skin"),
+        ("ESR1", "FOXA1", "Breast"),
+        ("ESR1", "GATA3", "Breast"),
+        ("CDK4", "CCND1", "Breast"),
+        ("KRAS", "RAF1", "Bowel"),
+    ]
+    print(f"{'Pair':13s} {'Lineage':8s} {'n_pan':>5s} {'r_pan':>7s} {'rho_pan':>7s} {'r_within':>8s} {'n_lin':>5s} {'r_lin':>7s} {'rho_lin':>7s}")
+    for g1, g2, lin in canonical_pairs:
+        sub = pd.DataFrame({
+            "lineage": df["lineage"],
+            "x": df[col_map[g1]].astype(float),
+            "y": df[col_map[g2]].astype(float),
+        }).dropna()
+        xv = sub["x"].to_numpy(dtype=np.float64)
+        yv = sub["y"].to_numpy(dtype=np.float64)
+        r_pan = _pair_correlation(xv, yv, "pearson")
+        rho_pan = _pair_correlation(xv, yv, "spearman")
+        xr = (sub["x"] - sub.groupby("lineage")["x"].transform("mean")).to_numpy(dtype=np.float64)
+        yr = (sub["y"] - sub.groupby("lineage")["y"].transform("mean")).to_numpy(dtype=np.float64)
+        r_within = _pair_correlation(xr, yr, "pearson")
+        sl = sub[sub["lineage"] == lin]
+        r_lin = _pair_correlation(sl["x"].to_numpy(dtype=np.float64), sl["y"].to_numpy(dtype=np.float64), "pearson")
+        rho_lin = _pair_correlation(sl["x"].to_numpy(dtype=np.float64), sl["y"].to_numpy(dtype=np.float64), "spearman")
+        print(f"{g1 + '-' + g2:13s} {lin:8s} {len(sub):5d} {r_pan:+7.3f} {rho_pan:+7.3f} {r_within:+8.3f} {len(sl):5d} {r_lin:+7.3f} {rho_lin:+7.3f}")
+
+    print("\n=== 6. Pan-Cancer MDM2 Scan & MDM2-TP53 Lineage Stratification (Section 3.3 / Fig. 3A-C) ===")
     for label, sub in [("Top pos", mdm2_scan.head(7)), ("Top neg", mdm2_scan.tail(7).iloc[::-1])]:
         items = ", ".join(f"{r['gene']} ({r['correlation']:+.3f}, n={int(r['n_shared'])})" for _, r in sub.iterrows())
         print(f"{label}: {items}")
@@ -181,7 +247,7 @@ def main() -> None:
     for lin, cnt, rv in lin_corrs[:10]:
         print(f"  {lin:26s} n={cnt:3d}  r={rv:+.3f}")
 
-    print("\n=== 5. BRAF Pan-Cancer vs Skin Scan, SOX10 Partial r, and Exact Two-Sided t-Tests (Section 3.2 / Fig. 3D) ===")
+    print("\n=== 7. BRAF Pan-Cancer vs Skin Scan, SOX10 Partial r, and Exact Two-Sided t-Tests (Section 3.3 / Fig. 3D) ===")
     braf_pan = genomewide_codependency(df, "BRAF", rankings, method="pearson").set_index("gene")
     print("Pan-cancer BRAF partners:", {g: round(float(braf_pan.loc[g, "correlation"]), 3) for g in ["MAPK1", "MAP2K1", "MAP2K2", "SOX10", "DUSP4", "SOX5"]})
 
