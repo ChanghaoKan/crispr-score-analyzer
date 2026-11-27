@@ -12,11 +12,18 @@ jobs:
   regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[app,dev]"
+      - run: crispr-score-analyzer --version
+      - run: crispr-score-analyzer info
       - run: python -m pytest tests -q

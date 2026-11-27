@@ -440,7 +440,7 @@ class AppSubmissionTests(unittest.TestCase):
 
     def test_codependency_scan_and_matrix_modes(self):
         self.switch_view("codep")
-        self.app.selectbox(key="codep_query").set_value("MYC")
+        self.app.text_input(key="codep_query").set_value("MYC")
         self.app.button(key="codep_run").click().run()
         self.assert_healthy()
         scan_result = self.result("codep_result")
@@ -449,6 +449,21 @@ class AppSubmissionTests(unittest.TestCase):
         self.assertEqual(scan_result["query_gene"], "MYC")
         self.assertEqual(len(scan_result["scan_df"]), len(GENES) - 1)
         self.assertGreaterEqual(len(self.app.get("plotly_chart")), 2)
+
+        # Typing a numbered gene symbol like E2F1 and clearing via header Clear must stay exact.
+        self.app.text_input(key="codep_query").set_value("E2F1").run()
+        self.assert_healthy()
+        self.assertEqual(self.app.text_input(key="codep_query").value, "E2F1")
+        self.app.button(key="codep_clear").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.text_input(key="codep_query").value, "")
+
+        # Search popover filters natively via text_input and writes single selection to codep_query.
+        self.app.text_input(key="codep_codep_query_picker_q").set_value("E2F1").run()
+        self.assert_healthy()
+        self.app.button(key="codep_codep_query_picker_apply").click().run()
+        self.assert_healthy()
+        self.assertEqual(self.app.text_input(key="codep_query").value, "E2F1")
 
         self.app.segmented_control(key="codep_mode").set_value("matrix").run()
         self.assert_healthy()

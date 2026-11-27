@@ -4,6 +4,8 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+build/
+dist/
 venv/
 .venv/
 .cache/

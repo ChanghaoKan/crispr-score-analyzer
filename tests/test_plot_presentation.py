@@ -1,40 +1,31 @@
-"""Presentation checks against the app's real plotting helpers, without network I/O."""
+"""Presentation checks against the core plotting library, without Streamlit or network I/O."""
 
-import ast
-from html import escape
-from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import pytest
 
-from figure_export import prepare_export_figure
+from crispr_score_analyzer import plotting
+from crispr_score_analyzer.figure_export import prepare_export_figure
 
 
 @pytest.fixture
 def plot_helpers():
-    names = {
-        'get_theme', 'ui', 'apply_theme_to_fig', '_rank_label_annotations',
-        '_ranking_fingerprint', '_cached_background_trace',
-        'build_rank_figure', 'create_rank_plot', 'create_multilayer_rank_plot',
-        'create_lineage_boxplot',
-        '_preference_scale', '_add_preference_lollipop', 'create_preference_plot',
-        'create_preference_heatmap', 'create_correlation_heatmap',
+    st_stub = SimpleNamespace(session_state={'lang': 'en', 'theme': 'light'})
+
+    def _state():
+        return {'theme': st_stub.session_state['theme'], 'lang': st_stub.session_state['lang']}
+
+    return {
+        'st': st_stub,
+        'create_rank_plot': lambda *a, **kw: plotting.create_rank_plot(*a, **{**_state(), **kw}),
+        'create_multilayer_rank_plot': lambda *a, **kw: plotting.create_multilayer_rank_plot(*a, **{**_state(), **kw}),
+        'create_lineage_boxplot': lambda *a, **kw: plotting.create_lineage_boxplot(*a, **{**_state(), **kw}),
+        'create_preference_plot': lambda *a, **kw: plotting.create_preference_plot(*a, **{**_state(), **kw}),
+        'create_preference_heatmap': lambda *a, **kw: plotting.create_preference_heatmap(*a, **{**_state(), **kw}),
+        'create_correlation_heatmap': lambda *a, **kw: plotting.create_correlation_heatmap(*a, **{**_state(), **kw}),
     }
-    constants = {'THEMES', 'PLOT_COLORS', 'FONT_FAMILY', 'ESSENTIALITY_THRESHOLD', 'PREFERENCE_MIN_N'}
-    tree = ast.parse((Path(__file__).resolve().parents[1] / 'app.py').read_text())
-    nodes = [node for node in tree.body
-             if (isinstance(node, ast.FunctionDef) and node.name in names)
-             or (isinstance(node, ast.Assign)
-                 and any(isinstance(target, ast.Name) and target.id in constants
-                         for target in node.targets))]
-    namespace = {'go': go, 'np': np, 'pd': pd, 'escape': escape, 'make_subplots': make_subplots,
-                 'st': SimpleNamespace(session_state={'lang': 'en', 'theme': 'light'})}
-    exec(compile(ast.Module(body=nodes, type_ignores=[]), 'app.py', 'exec'), namespace)
-    return namespace
 
 
 @pytest.fixture
