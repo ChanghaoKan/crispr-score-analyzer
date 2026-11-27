@@ -1,20 +1,21 @@
 # CRISPR Score Analyzer
 
-Explore gene dependency in DepMap CRISPR screens through a browser. Locate genes in a cohort-wide ranking, compare cancer lineages, and export figures with their underlying data and analysis settings.
+Explore gene dependency and co-dependency in DepMap CRISPR screens as an installable **Python library**, a scriptable **CLI** (`crispr-score-analyzer`), or an **interactive browser platform**. Locate candidate gene panels on cohort-wide ranking curves, compare cancer lineages, run cohort-scoped genome-wide co-dependency scans, and export white-paper vector figures alongside complete SHA-256 analysis provenance.
 
-[Live app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/) · [Report an issue](https://github.com/ChanghaoKan/crispr-score-analyzer/issues) · [Citation](CITATION.cff)
+[Live app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/) · [Python API & CLI Guide](docs/api.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [JOSS Manuscript Draft](paper/paper.md) · [Report an issue](https://github.com/ChanghaoKan/crispr-score-analyzer/issues) · [Citation](CITATION.cff)
 
 This README describes the source in this checkout. The hosted app may lag behind these changes until its deployment is updated.
 
 ## Features
 
-- Instant first-screen gene-ranking render on the built-in DepMap matrix, unified **Examples** menu and **Search** autocomplete, single-control co-dependency search, cross-view gene transfer, shareable URL parameters, exception-only input match feedback, and a quiet unsaved-edit indicator (**Update chart**) whenever edits differ from the committed result.
+- **Modular Python library (`crispr_score_analyzer`) & CLI (`crispr-score-analyzer`):** Streamlit-free analytical core, HGNC alias resolution, chunked `float64` co-dependency engine, Nature Publishing Group (NPG) / ColorBrewer `RdBu` Plotly figure builders, and white-paper PDF/SVG/300-DPI PNG vector export usable from scripts, notebooks, or shell pipelines ([docs/api.md](docs/api.md)).
+- Instant first-screen gene-ranking render on the built-in DepMap matrix, unified **Examples** menu and native text-filtered **Search** autocomplete, cross-view gene transfer, shareable URL parameters, exception-only input match feedback, and a quiet unsaved-edit indicator (**Update chart**) whenever edits differ from the committed result.
 - Gene dependency rankings within all available cell lines, selected cancer lineages, or optional primary-disease subtypes.
 - Cancer-type comparisons with valid sample counts, median or alphabetical ordering, stacked or 2-column grids, single-axis multi-gene comparison, and optional individual cell-line points.
 - Two-layer gene-set annotation with configurable colors, reference genes (with alias resolution), and compact or wide canvas options.
 - Standalone **Co-dependency** module supporting both **genome-wide single-gene scans** across all ranked genes in the active sidebar scope (including single-lineage cohorts) and **multi-gene correlation matrices** (2–25 genes), each paired with interactive lineage-colored cell-line scatter plots, Pearson/Spearman switching, and figure/CSV exports.
 - Deep-dive tabs below ranking, comparison, and annotation results: **Lineage preference** (lollipop with Top/Bottom 6 focus or compact diverging heatmap, cohort highlighting, median difference, `% < -0.5`, and figure export) and **Top cell lines** (most/least dependent cell-line models with CSV export).
-- English and Chinese interfaces with instant top-of-sidebar language and light/dark theme controls, compact hero statistics, and scrollable result tables with localized headers.
+- English and Chinese interfaces with instant top-of-sidebar language and neutral Light (`#f5f5f7`) / deep-charcoal Dark (`#0f0f11`) theme controls, compact hero statistics, and scrollable result tables with localized headers.
 - Custom score-matrix uploads with explicit gene-column mapping and downloadable validation records.
 - PDF, SVG, and PNG figures; result tables; and a ZIP containing rankings, observations, `lineage_preference.csv`, diagnostics, and provenance.
 
@@ -22,7 +23,7 @@ This README describes the source in this checkout. The hosted app may lag behind
 
 Open the [live app](https://crispr-score-analyzer-szbl-denglab.streamlit.app/) to use the deployed version without a local installation.
 
-For local use, install Python **3.10 or newer**, then run:
+### Install the Python library, CLI, and web UI (Python 3.10+)
 
 ```bash
 git clone https://github.com/ChanghaoKan/crispr-score-analyzer.git
@@ -30,13 +31,42 @@ cd crispr-score-analyzer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+
+# Option A: Core Python library + CLI only (no Streamlit required)
+python -m pip install -e .
+
+# Option B: Full installation with interactive Streamlit web app and pytest
+python -m pip install -e ".[app,dev]"
+```
+
+On Windows, create the environment with `python -m venv .venv` and activate it using `.venv\Scripts\Activate.ps1` in PowerShell.
+
+### Launch the web interface
+
+```bash
+crispr-score-analyzer app
+# or directly:
 python -m streamlit run app.py
 ```
 
-On Windows, create the environment with `python -m venv .venv` and activate it using `.venv\Scripts\Activate.ps1` in PowerShell. Open the local URL printed by Streamlit, normally `http://localhost:8501`.
+Open the local URL printed by Streamlit, normally `http://localhost:8501`.
 
-The built-in matrix is stored in the repository as `data/depmap_chronos.npz`. Opening the app reads that file from disk. It does not download the score matrix from Hugging Face. The application uses Streamlit, pandas, NumPy, Plotly, Pillow, and Kaleido; dependency constraints are in [requirements.txt](requirements.txt). Streamlit 1.64 or newer is required for on-demand CSV generation. Kaleido is pinned to `0.2.1`, which includes its own rendering engine.
+### Run from the CLI or Python
+
+```bash
+# Inspect dataset metadata (or omit --input inside a repo checkout to inspect DepMap 26Q3)
+crispr-score-analyzer info --input path/to/scores.csv
+
+# Cohort-scoped gene ranking with vector SVG and provenance ZIP
+crispr-score-analyzer rank --input path/to/scores.csv --genes "KRAS,SOX10,BRAF,HER2" --cohort Skin --output-dir out/ --plot-format svg --bundle
+
+# Single-lineage genome-wide co-dependency scan
+crispr-score-analyzer codep --input path/to/scores.csv --query BRAF --cohort Skin --method pearson --output out/braf_skin.csv --plot out/braf_skin.svg
+```
+
+See [docs/api.md](docs/api.md) for a self-contained synthetic-CSV Python quickstart and full module reference.
+
+The built-in matrix is stored in the repository checkout as `data/depmap_chronos.npz` (excluded from MIT Python wheels/sdists and release archives). Opening the app reads that file from disk without downloading the score matrix at runtime. Core library dependencies are pandas, NumPy, Plotly, Pillow, and Kaleido (`0.2.1`); Streamlit `>=1.64.0` is an optional extra (`[app]`) and remains listed in [requirements.txt](requirements.txt) for Streamlit Community Cloud.
 
 ## Usage
 
@@ -178,14 +208,14 @@ For gene-ranking and gene-set annotation views, observation data covers the sele
 
 ## Tests and development
 
-Install application dependencies as above, then install the test runner and run the full suite from the repository root:
+Install the package with UI and test extras, then run the full suite from the repository root:
 
 ```bash
-python -m pip install pytest
+python -m pip install -e ".[app,dev]"
 python -m pytest tests -q
 ```
 
-The suite covers parsing, ranking and missingness, draft and submitted-result state, cohort changes, localized table formatting without loss of CSV precision, on-demand bundle generation, export cache invalidation, citation wording, and actual SVG/PDF/PNG rendering. Tests use small deterministic fixtures. They do not fetch DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
+The suite covers CSV/NPZ parsing, ranking and missingness, HGNC alias and suggestion ranking, Streamlit-free plotting, CLI subcommands, draft and submitted-result state, cohort changes, localized table formatting without loss of CSV precision, on-demand bundle generation, export cache invalidation, citation wording, and actual SVG/PDF/PNG rendering. Tests use small deterministic synthetic fixtures and never download DepMap data. Rendering tests need permission to launch Kaleido's bundled renderer.
 
 For a check that excludes the actual image-rendering test:
 
@@ -193,7 +223,7 @@ For a check that excludes the actual image-rendering test:
 python -m pytest tests -q -k "not actual_svg_is_vector_pdf_is_valid_and_png_has_dpi"
 ```
 
-GitHub Actions runs the full suite on Python 3.12. Automated checks do not replace visual review of the deployed app or validation of a custom dataset.
+GitHub Actions installs the package, runs CLI smoke checks, and executes the full test suite on Python 3.11 and 3.12. Automated checks do not replace visual review of the deployed app or validation of a custom dataset.
 
 ## Citation
 
@@ -209,16 +239,16 @@ Also cite the underlying DepMap release and relevant methodology. The bundled ma
 
 ## Contributing and contact
 
-Report bugs and request features through [GitHub Issues](https://github.com/ChanghaoKan/crispr-score-analyzer/issues). Include reproduction steps, relevant package versions, and a small synthetic example when reporting a data problem. Pull requests should describe the behavior changed and the checks performed.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, architecture guidelines, and pull-request checks. Report bugs and request features through [GitHub Issues](https://github.com/ChanghaoKan/crispr-score-analyzer/issues). Include reproduction steps, relevant package versions (`crispr-score-analyzer info`), and a small synthetic example when reporting a data problem.
 
 Maintainer: [Changhao Kan](https://github.com/ChanghaoKan), Institute of Molecular Physiology, Shenzhen Bay Laboratory ([ORCID: 0009-0000-4014-5923](https://orcid.org/0009-0000-4014-5923) · `kanchanghao@szbl.ac.cn`).
 
 ## License, data terms, and acknowledgements
 
-The application source code is licensed under the [MIT License](License). The bundled `data/depmap_chronos.npz` matrix is **not** MIT-licensed and is excluded from MIT release source archives (GitHub Releases and Zenodo) via `.gitattributes`. Access to and use of the bundled DepMap Public 26Q3 matrix in this repository and the hosted web instance are governed by the **Broad Institute DepMap Terms and Conditions** (non-commercial research use only; commercial use requires a separate license from Broad Institute or its contributors). In compliance with DepMap's *Continuity of Terms of Use* clause, the full DepMap Terms and Conditions are reposted in [data/DEPMAP_TERMS.md](data/DEPMAP_TERMS.md) and inside the hosted web application.
+The application source code is licensed under the [MIT License](License). The bundled `data/depmap_chronos.npz` matrix is **not** MIT-licensed and is excluded from Python wheels/sdists (`pyproject.toml`) and MIT release source archives (GitHub Releases and Zenodo, via `.gitattributes`). Access to and use of the bundled DepMap Public 26Q3 matrix in this repository and the hosted web instance are governed by the **Broad Institute DepMap Terms and Conditions** (non-commercial research use only; commercial use requires a separate license from Broad Institute or its contributors). In compliance with DepMap's *Continuity of Terms of Use* clause, the full DepMap Terms and Conditions are reposted in [data/DEPMAP_TERMS.md](data/DEPMAP_TERMS.md) and inside the hosted web application.
 
 Thanks to the DepMap Consortium for the dependency data, and to Dr. Lin Deng and Dr. Zixi Wang (Institute of Molecular Physiology, Shenzhen Bay Laboratory) for their constructive suggestions and feedback.
 
 ### Development assistance
 
-[Claude (Anthropic)](https://www.anthropic.com/claude) and [Codex (OpenAI)](https://openai.com/codex/) provided AI development assistance. Codex assisted with code and interface improvements, testing, and documentation. The maintainer is responsible for reviewing these contributions and validating the software's scientific use.
+Large language model coding assistants ([Claude (Anthropic)](https://www.anthropic.com/claude), [Codex (OpenAI)](https://openai.com/codex/), and Gemini/Antigravity coding agents) assisted with modular refactoring, interface improvements, automated testing, and documentation. The maintainer conceives the scientific specifications, reviews all changes, and validates every scientific output.
