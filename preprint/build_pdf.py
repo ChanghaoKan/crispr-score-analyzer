@@ -365,16 +365,16 @@ def build_html() -> str:
   .scope-list {{
     background: #f5f5f7;
     border-radius: 4.5pt;
-    padding: 5pt 10pt 5pt 19pt;
-    margin: 3pt 0 5.5pt 0;
+    padding: 4.5pt 9.5pt 4.5pt 18.5pt;
+    margin: 2.5pt 0 4.5pt 0;
     break-inside: avoid;
     page-break-inside: avoid;
   }}
 
   .scope-list li {{
-    font-size: 7.9pt;
-    line-height: 1.35;
-    margin-bottom: 2.2pt;
+    font-size: 7.75pt;
+    line-height: 1.32;
+    margin-bottom: 1.8pt;
   }}
 
   .scope-list li:last-child {{
@@ -383,9 +383,9 @@ def build_html() -> str:
 
   /* Disclosures */
   .disclosure-block p {{
-    font-size: 7.85pt;
-    line-height: 1.34;
-    margin-bottom: 2.6pt;
+    font-size: 7.65pt;
+    line-height: 1.30;
+    margin-bottom: 2.0pt;
     text-align: left;
     hyphens: none;
   }}
@@ -394,16 +394,16 @@ def build_html() -> str:
   ul.references {{
     list-style: none;
     padding-left: 0;
-    margin: 3pt 0 0 0;
+    margin: 2.5pt 0 0 0;
   }}
 
   ul.references li {{
-    font-size: 7.5pt;
-    line-height: 1.32;
+    font-size: 7.35pt;
+    line-height: 1.29;
     color: #424245;
     padding-left: 13pt;
     text-indent: -13pt;
-    margin-bottom: 2.2pt;
+    margin-bottom: 1.7pt;
     text-align: left;
     hyphens: none;
   }}
@@ -417,7 +417,7 @@ def build_html() -> str:
     <span class="kicker-right">Preprint</span>
   </div>
 
-  <h1 class="title">CRISPR Score Analyzer: an interactive, cohort-scoped browser platform for DepMap gene essentiality and co-dependency analysis</h1>
+  <h1 class="title">CRISPR Score Analyzer: a cohort-scoped Python library, CLI, and interactive platform for DepMap gene essentiality and co-dependency analysis</h1>
 
   <div class="author-block">
     <p class="author-name">Changhao Kan<sup>1,*</sup></p>
@@ -432,18 +432,18 @@ def build_html() -> str:
   <div class="abstract-card">
     <div class="abstract-label">Abstract</div>
     <p>
-      <strong>Summary:</strong> Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) are widely used to prioritize candidate cancer targets, evaluate lineage-restricted vulnerabilities, and examine functional gene relationships. Tasks beyond single-gene portal lookups (placing multi-gene candidate panels on a cohort-wide essentiality curve, separating pan-cancer essentiality from lineage-specific dependency, pairing sensitive and resistant cell lines for wet-lab validation, running single-lineage genome-wide co-dependency scans, and exporting vector figures with analysis provenance) still typically require ad-hoc scripting. We present <strong>CRISPR Score Analyzer (v1.2.0)</strong>, an open-source Python/Streamlit browser platform bundling the DepMap Public 26Q3 Chronos gene effect matrix (1,361 cancer cell lines &times; 18,434 genes across 30 Oncotree lineages) and 40,402 unambiguous HGNC alias mappings, with support for validated custom CSV uploads. Across four modules (<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, and <em>Co-dependency</em>), users can analyze pan-cancer or lineage-restricted cohorts, run chunked vectorized Pearson or Spearman scans in seconds using NumPy and pandas without SciPy, view colorblind-safe Nature Publishing Group (NPG) and 7-stop ColorBrewer <code>RdBu</code> figures across light and deep-charcoal dark themes, and export white-paper PDF/SVG/300-DPI PNG figures alongside SHA-256 ZIP provenance bundles. Benchmark examples recover lineage-selective dependencies (<span class="gene">SOX10</span> in skin, <span class="gene">ESR1</span> in ER-positive breast models), the inverse correlation between <span class="gene">MDM2</span> and <span class="gene">TP53</span> Chronos gene-effect profiles across cancer cell lines (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), and higher descriptive <span class="gene">BRAF</span>–MAPK correlations within skin cancer cell lines (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>).
+      <strong>Summary:</strong> Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) are widely used to prioritize candidate cancer targets, evaluate lineage-restricted vulnerabilities, and examine functional gene relationships. Tasks beyond single-gene portal lookups (placing multi-gene candidate panels on a cohort-wide essentiality curve, separating pan-cancer essentiality from lineage-specific dependency, pairing sensitive and resistant cell lines for wet-lab validation, running single-lineage genome-wide co-dependency scans, and exporting vector figures with analysis provenance) still typically require ad-hoc scripting. We present <strong>CRISPR Score Analyzer</strong>, an open-source Python package (<code>crispr-score-analyzer</code>) exposing a Streamlit-free analytical and plotting library, a reproducible command-line interface (<code>crispr-score-analyzer</code>), and an interactive browser platform bundling the DepMap Public 26Q3 Chronos gene effect matrix (1,361 cancer cell lines &times; 18,434 genes across 30 Oncotree lineages) and 40,402 unambiguous HGNC alias mappings, with support for validated custom CSV uploads. Across four workflows (<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, and <em>Co-dependency</em>), users can analyze pan-cancer or lineage-restricted cohorts interactively or from scripts, run chunked vectorized Pearson or Spearman scans in seconds using NumPy and pandas without SciPy, render colorblind-safe Nature Publishing Group (NPG) and 7-stop ColorBrewer <code>RdBu</code> figures across light and deep-charcoal dark themes, and export white-paper PDF/SVG/300-DPI PNG figures alongside SHA-256 ZIP provenance bundles. Benchmark examples recover lineage-selective dependencies (<span class="gene">SOX10</span> in skin, <span class="gene">ESR1</span> in ER-positive breast models), the inverse correlation between <span class="gene">MDM2</span> and <span class="gene">TP53</span> Chronos gene-effect profiles across cancer cell lines (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>), and higher descriptive <span class="gene">BRAF</span>–MAPK correlations within skin cancer cell lines (<span class="gene">MAPK1</span> <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.798</span>).
     </p>
     <p class="avail">
-      <strong>Availability and Implementation:</strong> Source code for v1.2.0 is freely available under the MIT license at
+      <strong>Availability and Implementation:</strong> Source code is freely available under the MIT license at
       <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/ChanghaoKan/crispr-score-analyzer</a>
-      (software release tag <code>v1.2.0</code>: <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a>; commit <code>5c18f9b</code>; Zenodo version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>).
+      (archived software release <code>v1.2.0</code>: <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a>; commit <code>5c18f9b</code>; Zenodo version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>).
       A hosted web instance runs at
       <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>.
-      MIT source archives exclude the bundled DepMap Public 26Q3 matrix, which is governed separately by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in full in <code>data/DEPMAP_TERMS.md</code>). The updated browser UI, CNS plotting palettes, manuscript figures, and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v2</code> (with analytical kernels unchanged from <code>v1.2.0</code>). Exact reproduction from a clean Python 3.12 environment requires checking out <code>preprint-v2</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (SHA-256 <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding via <code>scripts/build_builtin_matrix.py</code>), installing <code>requirements.txt</code>, and running both scripts.
+      MIT Python wheels/sdists and release source archives exclude the bundled DepMap Public 26Q3 matrix, which is governed separately by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in full in <code>data/DEPMAP_TERMS.md</code>). The modular <code>crispr_score_analyzer</code> library, PEP 621 <code>pyproject.toml</code> packaging, CLI, updated browser UI/CNS plotting palettes, manuscript figures, and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v3</code> (with analytical computation kernels unchanged from <code>v1.2.0</code>). Exact reproduction from a clean Python 3.12 environment requires checking out <code>preprint-v3</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (SHA-256 <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding via <code>scripts/build_builtin_matrix.py</code>), installing via <code>pip install -e ".[app,dev]"</code> (or <code>requirements.txt</code>), and running both scripts.
     </p>
     <p class="keywords">
-      <strong>Keywords:</strong> DepMap; CRISPR-Cas9 screen; Chronos gene effect; gene essentiality; co-dependency; cancer cell lines; reproducibility
+      <strong>Keywords:</strong> DepMap; CRISPR-Cas9 screen; Chronos gene effect; gene essentiality; co-dependency; Python library; reproducibility
     </p>
   </div>
 
@@ -462,21 +462,24 @@ def build_html() -> str:
     <li><strong>Reproducible publication export:</strong> Generating vector-editable figures (PDF/SVG) alongside exact numeric tables, data checksums, input-matching diagnostics, and environment metadata remains fragmented across web portals.</li>
   </ol>
   <p>
-    We developed <strong>CRISPR Score Analyzer</strong>, an open-source browser application built around explicit input-state isolation, transparent descriptive statistics, colorblind-safe vector figure export, and self-contained provenance archiving.
+    We developed <strong>CRISPR Score Analyzer</strong>, an open-source Python library, command-line tool, and interactive browser platform built around modular computation, explicit input-state isolation, transparent descriptive statistics, colorblind-safe vector figure export, and self-contained provenance archiving.
   </p>
 
   <!-- Section 2 -->
   <h2><span class="sec-num">2.</span>Implementation and Core Capabilities</h2>
 
-  <h3>2.1 Bundled Reference Data, Construction, Licensing, and Symbol Resolution</h3>
+  <h3>2.1 Modular Architecture, Bundled Reference Data, Licensing, and Symbol Resolution</h3>
+  <p>
+    CRISPR Score Analyzer separates reusable scientific computation from interactive UI state inside a <code>pip</code>-installable PEP 621 Python package (<code>crispr_score_analyzer</code>, defined in <code>pyproject.toml</code>, requiring only pandas, NumPy, Plotly, Kaleido, and Pillow for headless library and CLI use, with Streamlit as an optional <code>[app]</code> extra for <code>app.py</code>). Four Streamlit-free modules—<code>analysis_core</code> (data loading, schema validation, HGNC alias resolution, ranking, lineage preference, and ZIP bundling), <code>codependency</code> (chunked <code>float64</code> genome-wide Pearson/Spearman scans and scatter builders), <code>plotting</code> (NPG/<code>RdBu</code> Plotly figure builders), and <code>figure_export</code> (deterministic white-paper vector/300-DPI export)—power both a scriptable CLI (<code>crispr-score-analyzer</code> with <code>info</code>, <code>rank</code>, <code>codep</code>, and <code>app</code> subcommands, documented in <code>docs/api.md</code>) and the bilingual (English/Chinese) Streamlit frontend, while thin root shims preserve backward compatibility.
+  </p>
   <p style="text-align:left; hyphens:none;">
-    CRISPR Score Analyzer is written in Python (Streamlit, pandas, NumPy, Plotly, Kaleido, and Pillow) with English and Chinese interface support. For deterministic startup without remote downloads, the repository bundles a compact <code>float32</code> binary matrix (<code>data/depmap_chronos.npz</code>, 88 MB; maximum absolute <code>float32</code> rounding deviation <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes) built from the <strong>DepMap Public 26Q3</strong> release (released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). Using <code>scripts/build_builtin_matrix.py</code>, official <code>CRISPRGeneEffect.csv</code> (497,139,964 bytes; MD5 <code>a0a87b48137996f620437604b8c2eb79</code>) and <code>Model.csv</code> (789,805 bytes; MD5 <code>a7423dbf345fcf5a822ab5fc7e854e5c</code>), retrieved on 2026-11-21, were validated for unique <code>ModelID</code> rows and <code>SYMBOL (Entrez ID)</code> headers. All <strong>1,361 cancer cell lines</strong> and <strong>18,434 genes</strong> in <code>CRISPRGeneEffect.csv</code> were retained verbatim without row filtering and left-joined on <code>ModelID</code> against deduplicated <code>Model.csv</code> to attach <code>OncotreeLineage</code> (1,361/1,361 matched across <strong>30 Oncotree lineages</strong>) and <code>CellLineName</code> (falling back to <code>ModelID</code> when blank), with SHA-256 and MD5 checksums recorded in <code>data/depmap_chronos.provenance.json</code>.
+    For deterministic local and hosted startup without remote downloads, the repository checkout includes a compact <code>float32</code> binary matrix (<code>data/depmap_chronos.npz</code>, 88 MB; maximum absolute <code>float32</code> rounding deviation <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes) built from <strong>DepMap Public 26Q3</strong> (released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). Using <code>scripts/build_builtin_matrix.py</code>, official <code>CRISPRGeneEffect.csv</code> (497,139,964 bytes; MD5 <code>a0a87b48137996f620437604b8c2eb79</code>) and <code>Model.csv</code> (789,805 bytes; MD5 <code>a7423dbf345fcf5a822ab5fc7e854e5c</code>), retrieved on 2026-11-21, were validated for unique <code>ModelID</code> rows and <code>SYMBOL (Entrez ID)</code> headers. All <strong>1,361 cancer cell lines</strong> and <strong>18,434 genes</strong> in <code>CRISPRGeneEffect.csv</code> were retained verbatim without row filtering and left-joined on <code>ModelID</code> against deduplicated <code>Model.csv</code> to attach <code>OncotreeLineage</code> (1,361/1,361 matched across <strong>30 Oncotree lineages</strong>) and <code>CellLineName</code> (falling back to <code>ModelID</code> when blank), with SHA-256 and MD5 checksums recorded in <code>data/depmap_chronos.provenance.json</code>.
   </p>
   <p>
-    Software and data licensing are kept strictly separate. The MIT license covers only application source code, whereas rehosting <code>data/depmap_chronos.npz</code> in the GitHub repository and hosted Streamlit instance is governed by the Broad Institute DepMap Terms and Conditions (non-commercial research use only; commercial use requires a separate Broad license; full terms are reposted in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web app per DepMap’s <em>Continuity of Terms of Use</em> clause). MIT GitHub and Zenodo source release archives exclude the matrix via <code>.gitattributes</code>. Optional subtype filtering (<code>OncotreePrimaryDisease</code> / <code>primary_disease</code>) activates automatically when present in custom uploaded CSVs.
+    Software and data licensing are kept strictly separate. The MIT license covers only application source code (plus the CC0/public-domain HGNC alias map bundled in wheels), whereas rehosting <code>data/depmap_chronos.npz</code> in the GitHub repository and hosted Streamlit instance is governed by the Broad Institute DepMap Terms and Conditions (non-commercial research use only; commercial use requires a separate Broad license; full terms are reposted in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web app per DepMap’s <em>Continuity of Terms of Use</em> clause). Python wheels/sdists (<code>pyproject.toml</code>) and MIT GitHub/Zenodo source release archives (<code>.gitattributes</code>) strictly exclude <code>data/depmap_chronos.npz</code>. Optional subtype filtering (<code>OncotreePrimaryDisease</code> / <code>primary_disease</code>) activates automatically when present in custom uploaded CSVs.
   </p>
   <p>
-    Researchers can also upload custom UTF-8 CRISPR score CSV matrices. To prevent numeric metadata columns from being parsed as genes, automatic gene detection strictly requires DepMap-style <code>SYMBOL (Entrez ID)</code> headers; plain-symbol tables require explicit manual score-column selection in the sidebar. Ambiguous duplicate gene symbols and repeated metadata columns are excluded automatically and logged in a downloadable <code>diagnostics.csv</code> report.
+    Researchers can also pass or upload custom UTF-8 CRISPR score CSV matrices. To prevent numeric metadata columns from being parsed as genes, automatic gene detection strictly requires DepMap-style <code>SYMBOL (Entrez ID)</code> headers; plain-symbol tables require explicit manual score-column selection (via the sidebar or CLI <code>--gene-columns</code>). Ambiguous duplicate gene symbols and repeated metadata columns are excluded automatically and logged in a downloadable <code>diagnostics.csv</code> report.
   </p>
   <p>
     Gene-list inputs accept arbitrary ASCII or full-width delimiters (newlines, spaces, tabs, commas, and semicolons), <code>.txt/.csv/.tsv</code> file uploads, and pasted DepMap headers (e.g., <code>MYC (4609)</code>). An offline HGNC symbol map (<code>data/gene_aliases.json</code>, <strong>40,402</strong> unambiguous previous-symbol and alias mappings; Seal <em>et al.</em>, 2023) resolves legacy names (such as <span class="nowrap"><span class="gene">HER2</span>&nbsp;&rarr;&nbsp;<span class="gene">ERBB2</span></span>) automatically. Input matching reports resolved aliases, deduplicated entries, and unmatched queries explicitly before and after execution while leaving exact matches unflagged.
@@ -492,7 +495,7 @@ def build_html() -> str:
     <li><strong>Gene-set annotation:</strong> Plots a background gene set beneath a prioritized highlight layer on the cohort ranking curve with configurable colors, enabling pathway-level positioning without conflating visual inspection with formal enrichment testing.</li>
     <li><strong>Co-dependency:</strong> Provides two complementary modes with instant switching between <strong>Pearson <em>r</em></strong> and <strong>Spearman <em>&rho;</em></strong>:
       <ul class="sublist">
-        <li><em>Genome-wide scan (1 gene):</em> Correlates a single query gene (via a searchable dropdown supporting approved symbols and HGNC aliases) against every other ranked gene in the active sidebar scope using exact pairwise-complete finite observations in <code>float64</code> precision across 2,048-gene column chunks. Pairs must satisfy <code>min_shared</code>&nbsp;=&nbsp;min(10, max(3, <code>n_valid</code>)) (<span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span> for cohorts of at least 10 lines) and non-zero variance; Spearman <em>&rho;</em> resolves ties via average ranks using NumPy and pandas without SciPy. Outputs include a diverging top-partner lollipop chart, top-50 positive and negative tables showing <code>n_shared</code>, one-click transfer of top partners to a correlation matrix, and full-genome CSV export.</li>
+        <li><em>Genome-wide scan (1 gene):</em> Correlates a single query gene (entered via a native text field paired with a deterministic prefix/HGNC-alias search popover to avoid combobox and IME key-interception issues on numbered symbols such as <span class="gene">TEAD1</span>) against every other ranked gene in the active sidebar scope using exact pairwise-complete finite observations in <code>float64</code> precision across 2,048-gene column chunks. Pairs must satisfy <code>min_shared</code>&nbsp;=&nbsp;min(10, max(3, <code>n_valid</code>)) (<span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span> for cohorts of at least 10 lines) and non-zero variance; Spearman <em>&rho;</em> resolves ties via average ranks using NumPy and pandas without SciPy. Outputs include a diverging top-partner lollipop chart, top-50 positive and negative tables showing <code>n_shared</code>, one-click transfer of top partners to a correlation matrix, and full-genome CSV export.</li>
         <li><em>Multi-gene matrix (2–25 genes):</em> Computes an interactive pairwise correlation heatmap paired with a <strong>lineage-colored cell-line scatter plot</strong>, ordinary least-squares trendline, and both Pearson <em>r</em> and Spearman <em>&rho;</em> statistics for any selected gene pair.</li>
       </ul>
     </li>
@@ -510,14 +513,14 @@ def build_html() -> str:
 
   <!-- Table 1 -->
   <div class="table-block">
-    <p class="table-caption"><strong>Table 1.</strong> Workflow comparison across CRISPR Score Analyzer and existing DepMap web interfaces, verified November 2026 on equivalent gene-ranking, lineage-comparison, and co-dependency tasks.</p>
+    <p class="table-caption"><strong>Table 1.</strong> Workflow comparison across CRISPR Score Analyzer and existing DepMap interfaces, verified November 2026 on equivalent gene-ranking, lineage-comparison, and co-dependency tasks.</p>
     <table class="cmp-table">
       <thead>
         <tr>
           <th>Workflow dimension</th>
           <th>DepMap Portal (26Q3; depmap.org/portal)</th>
           <th>shinyDepMap (eLife 2021; shinyapps.io/depmap)</th>
-          <th class="col-csa">CRISPR Score Analyzer (v1.2.0 / <code>preprint-v2</code>)</th>
+          <th class="col-csa">CRISPR Score Analyzer (v1.2.0 / <code>preprint-v3</code>)</th>
         </tr>
       </thead>
       <tbody>
@@ -564,6 +567,12 @@ def build_html() -> str:
           <td class="csa-col">40,402 unambiguous offline mappings (batch &amp; single)</td>
         </tr>
         <tr>
+          <td class="cap-col">Programmatic Python API &amp; scriptable CLI</td>
+          <td>Web portal / manual file download</td>
+          <td>R Shiny web app only</td>
+          <td class="csa-col"><code>pip</code>-installable Streamlit-free Python library + CLI</td>
+        </tr>
+        <tr>
           <td class="cap-col">Colorblind-safe figures, themes &amp; provenance export</td>
           <td>Separate chart and CSV downloads</td>
           <td>Separate PNG and CSV</td>
@@ -584,7 +593,7 @@ def build_html() -> str:
     To prevent mismatch between displayed outputs and edited inputs, gene-list edits remain uncommitted drafts until explicitly run, and changes to the dataset, column mapping, or sidebar scope invalidate prior results and exports. An on-demand <strong>Complete analysis ZIP</strong> bundles <code>selected_results.csv</code>, <code>full_rankings.csv</code>, <code>plot_data.csv</code>, <code>lineage_preference.csv</code>, <code>diagnostics.csv</code>, and <code>metadata.json</code> (recording data SHA-256, release version, Zenodo DOI, cohort parameters, input matching, and Python package versions).
   </p>
   <p>
-    On a 2-vCPU Linux container (Python 3.12.16, NumPy 2.5.5, pandas 2.3.3, Streamlit 1.67.0, Plotly 6.9.0, Kaleido 0.2.1), median wall-clock times across three runs on the bundled 88 MB DepMap Public 26Q3 matrix are <strong>1.01 s</strong> for matrix loading (0.97–1.33 s), <strong>0.41 s</strong> for ranking all 18,434 genes (0.38–0.73 s), and <strong>0.82 s</strong> (Pearson <em>r</em>, 0.66–0.85 s) or <strong>6.21 s</strong> (Spearman <em>&rho;</em>, 6.12–6.77 s) for a pan-cancer genome-wide co-dependency scan across 18,433 partner genes. Analytical and export behavior is verified by <strong>90 automated tests</strong> covering CSV parsing, missing/infinite handling, exact pairwise correlation parity, UI state isolation, citation integrity, and vector/DPI figure exports via GitHub Actions continuous integration.
+    On a 2-vCPU Linux container (Python 3.12.16, NumPy 2.5.5, pandas 2.3.3, Streamlit 1.67.0, Plotly 6.9.0, Kaleido 0.2.1), median wall-clock times across three runs on the bundled 88 MB DepMap Public 26Q3 matrix are <strong>1.01 s</strong> for matrix loading (0.97–1.33 s), <strong>0.41 s</strong> for ranking all 18,434 genes (0.38–0.73 s), and <strong>0.82 s</strong> (Pearson <em>r</em>, 0.66–0.85 s) or <strong>6.21 s</strong> (Spearman <em>&rho;</em>, 6.12–6.77 s) for a pan-cancer genome-wide co-dependency scan across 18,433 partner genes. Analytical, library, CLI, UI, and export behavior is verified offline on deterministic synthetic fixtures by <strong>98 automated tests</strong> across Python 3.11 and 3.12 via GitHub Actions continuous integration.
   </p>
 
   <!-- Section 3 -->
@@ -593,6 +602,10 @@ def build_html() -> str:
   <h3>3.1 Separating Pan-Cancer Essentiality from Lineage-Selective Vulnerability</h3>
   <p>
     On initial launch with DepMap Public 26Q3 (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span> cell lines; 1,712 genes with pan-cancer mean <span class="nowrap">&lt;&nbsp;&minus;0.5</span>, range &minus;5.250 to +0.398), CRISPR Score Analyzer displays a default five-gene panel (<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, <span class="gene">TP53</span>) anchored by <span class="gene">MYC</span> (mean &minus;1.971, rank 187, 1.01%) and <span class="gene">PTEN</span> (mean +0.377, rank 18,428, 99.97%) (<strong>Figure 2A</strong>). Across all lineages, <span class="gene">KRAS</span> falls below the &minus;0.5 screening reference (mean &minus;0.729, rank 1,263, 6.85%), whereas tumor suppressor <span class="gene">TP53</span> sits at the positive extreme (mean +0.381, rank 18,430, 99.98%), consistent with prior DepMap reports of knockout-induced proliferation advantage in <span class="gene">TP53</span>-wild-type models (Tsherniak <em>et al.</em>, 2017; Dempster <em>et al.</em>, 2021), although somatic mutation calls are not bundled in the default matrix. By contrast, two established lineage-restricted dependencies appear modest or near-neutral in pan-cancer means: <span class="gene">SOX10</span> (mean &minus;0.347, rank 2,225, 12.07%) and <span class="gene">ESR1</span> (mean &minus;0.065, rank 7,347, 39.86%).
+  </p>
+
+  <p>
+    The <strong>Lineage preference</strong> tab separates mean shifts from sample-size effects and distributional skew (<strong>Figure 2C, D</strong>, noting gene-specific x-axis scales). Relative to its all-lineage mean (&minus;0.347), <span class="gene">SOX10</span> shows a consistent skin-lineage shift (<span class="nowrap">mean&nbsp;=&nbsp;&minus;1.487</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;1.140</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;1.368</span>, <span class="nowrap">78.7%&nbsp;&lt;&nbsp;&minus;0.5</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>). In ocular models (Eye, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;15</span>), the mean shift (<span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.535</span>, <span class="nowrap">mean&nbsp;=&nbsp;&minus;0.882</span>) exceeds the median shift (<span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.174</span>), reflecting strong dependency restricted to a uveal melanoma subset (e.g., <code>Omm2.5</code> &minus;2.752, <code>UPMM3</code> &minus;2.113) alongside near-neutral retinoblastoma and retinal pigment epithelial lines. For <span class="gene">ESR1</span>, Breast (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>) yields a modest lineage-mean shift (<span class="nowrap">mean&nbsp;=&nbsp;&minus;0.285</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.220</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.061</span>, <span class="nowrap">17.9%&nbsp;&lt;&nbsp;&minus;0.5</span>), followed closely in Figure 2D by a small Ampulla of Vater group (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;9</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.174</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.059</span>). Because the bundled matrix stores only <code>OncotreeLineage</code> without breast receptor or PAM50 subtype annotations, lineage-level means compress ER-positive luminal dependency into a modest average. Checking the <strong>Top cell lines</strong> tab resolves this masking by surfacing established ER-positive models (<code>HCC1428</code> [<code>ACH-000352</code>, &minus;1.912], <code>T-47D</code> [<code>ACH-000147</code>, &minus;1.845], <code>MDA-MB-415</code> [<code>ACH-000876</code>, &minus;1.636]) alongside resistant negative controls, while custom CSV uploads containing <code>OncotreePrimaryDisease</code> enable subtype-level filtering. In the <strong>Gene-set annotation</strong> module, mitotic kinases <span class="gene">PLK1</span> (mean &minus;2.691, rank 38, 0.21%) and <span class="gene">AURKA</span> (mean &minus;1.236, rank 626, 3.40%) can be overlaid onto a seven-gene cell-cycle CDK/cyclin background (<span class="gene">CDK1</span> &minus;2.588 through <span class="gene">CCNE1</span> &minus;0.194; <strong>Figure 2B</strong>).
   </p>
 
   <!-- Figure 2: Ranking & Lineage Preference -->
@@ -605,10 +618,6 @@ def build_html() -> str:
       <strong>(C, D)</strong> Diverging lineage preference lollipops (top and bottom 4 lineages with <span class="nowrap"><em>n</em>&nbsp;&ge;&nbsp;5</span>, sample sizes shown on y-axis; note gene-specific x-axis scales) showing mean Chronos difference relative to each gene’s all-lineage mean for <span class="gene">SOX10</span> (<strong>C</strong>, Skin and Eye shifts) and <span class="gene">ESR1</span> (<strong>D</strong>, Breast alongside small-sample Ampulla of Vater <span class="nowrap"><em>n</em>&nbsp;=&nbsp;9</span>).
     </p>
   </div>
-
-  <p>
-    The <strong>Lineage preference</strong> tab separates mean shifts from sample-size effects and distributional skew (<strong>Figure 2C, D</strong>, noting gene-specific x-axis scales). Relative to its all-lineage mean (&minus;0.347), <span class="gene">SOX10</span> shows a consistent skin-lineage shift (<span class="nowrap">mean&nbsp;=&nbsp;&minus;1.487</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;1.140</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;1.368</span>, <span class="nowrap">78.7%&nbsp;&lt;&nbsp;&minus;0.5</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>). In ocular models (Eye, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;15</span>), the mean shift (<span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.535</span>, <span class="nowrap">mean&nbsp;=&nbsp;&minus;0.882</span>) exceeds the median shift (<span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.174</span>), reflecting strong dependency restricted to a uveal melanoma subset (e.g., <code>Omm2.5</code> &minus;2.752, <code>UPMM3</code> &minus;2.113) alongside near-neutral retinoblastoma and retinal pigment epithelial lines. For <span class="gene">ESR1</span>, Breast (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>) yields a modest lineage-mean shift (<span class="nowrap">mean&nbsp;=&nbsp;&minus;0.285</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.220</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.061</span>, <span class="nowrap">17.9%&nbsp;&lt;&nbsp;&minus;0.5</span>), followed closely in Figure 2D by a small Ampulla of Vater group (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;9</span>, <span class="nowrap">&Delta;&nbsp;=&nbsp;&minus;0.174</span>, <span class="nowrap">median&nbsp;&Delta;&nbsp;=&nbsp;&minus;0.059</span>). Because the bundled matrix stores only <code>OncotreeLineage</code> without breast receptor or PAM50 subtype annotations, lineage-level means compress ER-positive luminal dependency into a modest average. Checking the <strong>Top cell lines</strong> tab resolves this masking by surfacing established ER-positive models (<code>HCC1428</code> [<code>ACH-000352</code>, &minus;1.912], <code>T-47D</code> [<code>ACH-000147</code>, &minus;1.845], <code>MDA-MB-415</code> [<code>ACH-000876</code>, &minus;1.636]) alongside resistant negative controls, while custom CSV uploads containing <code>OncotreePrimaryDisease</code> enable subtype-level filtering. In the <strong>Gene-set annotation</strong> module, mitotic kinases <span class="gene">PLK1</span> (mean &minus;2.691, rank 38, 0.21%) and <span class="gene">AURKA</span> (mean &minus;1.236, rank 626, 3.40%) can be overlaid onto a seven-gene cell-cycle CDK/cyclin background (<span class="gene">CDK1</span> &minus;2.588 through <span class="gene">CCNE1</span> &minus;0.194; <strong>Figure 2B</strong>).
-  </p>
 
   <h3>3.2 Benchmarking Pan-Cancer and Single-Lineage Co-Dependency Exploration</h3>
   <p>
@@ -648,11 +657,12 @@ def build_html() -> str:
     <h2>Acknowledgements and Disclosures</h2>
     <div class="disclosure-block">
       <p><strong>Acknowledgements:</strong> The author thanks Dr. Lin Deng and Dr. Zixi Wang (Institute of Molecular Physiology, Shenzhen Bay Laboratory) for their constructive suggestions and feedback.</p>
+      <p><strong>Ethics Statement:</strong> This work analyzes publicly available, de-identified cancer cell-line dependency scores from DepMap Public 26Q3 and synthetic software test fixtures; no new human subjects, clinical patient records, or animal experiments were involved, and institutional ethics approval is not applicable.</p>
       <p><strong>Data Source and Terms:</strong> Reference dependency data derive from DepMap Public 26Q3 Chronos Gene Effect scores (released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). The bundled matrix is governed by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in full in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web app), separate from the MIT-licensed application code.</p>
-      <p><strong>AI Assistance Disclosure:</strong> Large language model assistants (Claude, Codex, and related coding agents) were used to assist with software engineering, automated testing, and manuscript editing. All scientific specifications, biological case studies, verification, and final manuscript decisions were reviewed and approved by the author.</p>
+      <p><strong>AI Assistance Disclosure:</strong> Large language model coding assistants (Claude, Codex, and Gemini/Antigravity coding agents) were used to assist with modular software engineering, automated testing, and manuscript editing. All scientific specifications, biological case studies, verification, and final manuscript decisions were reviewed and approved by the author.</p>
       <p><strong>Funding:</strong> This work received no specific external funding.</p>
       <p><strong>Competing Interests:</strong> The author declares no competing financial or non-financial interests.</p>
-      <p><strong>Data and Code Availability:</strong> The MIT-licensed software release (<code>v1.2.0</code>, commit <code>5c18f9b</code>) is hosted at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a> and archived on Zenodo (version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>); the hosted web tool is accessible at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Because MIT release source archives exclude <code>data/depmap_chronos.npz</code> under DepMap terms, the updated UI/CNS plotting palettes together with the manuscript figure and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v2</code> (analytical computation kernels are unchanged from <code>v1.2.0</code>). From a clean Python 3.12 environment, all quantitative figures (Figure 2 and Figure 3, plus re-compositing Figure 1 from bundled UI captures <code>ui_light.png</code> and <code>ui_dark.png</code>) and statistics can be reproduced via <code class="wrap-code">git clone https://github.com/ChanghaoKan/crispr-score-analyzer.git &amp;&amp; cd crispr-score-analyzer &amp;&amp; git checkout preprint-v2 &amp;&amp; python -m venv .venv &amp;&amp; .venv/bin/pip install -r requirements.txt &amp;&amp; .venv/bin/python preprint/generate_figures.py &amp;&amp; .venv/bin/python preprint/reproduce_stats.py</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (<code>matrix_sha256</code>: <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding from official 26Q3 files via <code>scripts/build_builtin_matrix.py</code>).</p>
+      <p><strong>Data and Code Availability:</strong> The MIT-licensed software release (<code>v1.2.0</code>, commit <code>5c18f9b</code>) is hosted at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a> and archived on Zenodo (version 1.2.0 DOI: <a href="https://doi.org/10.5281/zenodo.24458535"><code>10.5281/zenodo.24458535</code></a>; concept DOI: <code>10.5281/zenodo.19607602</code>); the hosted web tool is accessible at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Because Python distribution wheels/sdists and MIT release archives exclude <code>data/depmap_chronos.npz</code> under DepMap terms, the modular <code>crispr_score_analyzer</code> library, CLI, updated UI/CNS plotting palettes, and manuscript figure and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v3</code> (analytical computation kernels are unchanged from <code>v1.2.0</code>). From a clean Python 3.12 environment, all quantitative figures (Figure 2 and Figure 3, plus re-compositing Figure 1 from bundled UI captures <code>ui_light.png</code> and <code>ui_dark.png</code>) and statistics can be reproduced via <code class="wrap-code">git clone https://github.com/ChanghaoKan/crispr-score-analyzer.git &amp;&amp; cd crispr-score-analyzer &amp;&amp; git checkout preprint-v3 &amp;&amp; python -m venv .venv &amp;&amp; .venv/bin/pip install -e ".[app,dev]" &amp;&amp; .venv/bin/python preprint/generate_figures.py &amp;&amp; .venv/bin/python preprint/reproduce_stats.py</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (<code>matrix_sha256</code>: <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding from official 26Q3 files via <code>scripts/build_builtin_matrix.py</code>).</p>
     </div>
   </div>
 
@@ -681,7 +691,7 @@ def main() -> None:
 
     header_tpl = """
     <div style="width:100%; font-family:'Liberation Sans',Arial,sans-serif; font-size:7pt; color:#86868b; padding:0 17.5mm; display:flex; justify-content:space-between; align-items:center;">
-      <span>Kan (2026) &middot; <em>CRISPR Score Analyzer</em> (v1.2.0)</span>
+      <span>Kan (2026) &middot; <em>CRISPR Score Analyzer</em></span>
       <span>Preprint</span>
     </div>
     """
