@@ -4,17 +4,20 @@
 Run from the repository root:
     python preprint/generate_figures.py
 
-Composes Figure 1 (live Light and Charcoal Darkroom browser interface panels when
-ui_light.png and ui_dark.png are present) and regenerates all quantitative panels
-for Figure 2 and Figure 3 directly from data/depmap_chronos.npz using the exact
-analysis and CNS (NPG + ColorBrewer RdBu) plotting helpers from analysis_core.py,
-codependency.py, app.py, and figure_export.py.
+Generates Figure 1 (vector software architecture and analytical workflow
+schematic, exported to Figure1.svg and 300-DPI Figure1.png) and regenerates all
+quantitative panels for Figure 2 and Figure 3 directly from
+data/depmap_chronos.npz using the exact analysis and plotting routines from
+crispr_score_analyzer.
 """
 
 from __future__ import annotations
 
 import ast
+import shutil
+import subprocess
 import sys
+import tempfile
 from html import escape
 from pathlib import Path
 from types import SimpleNamespace
@@ -142,47 +145,189 @@ def compose_2x2(
     print(f"Composed {out_path.name} ({canvas.size[0]}x{canvas.size[1]} px, {out_path.stat().st_size // 1024} KB)")
 
 
-def compose_ui_overview(
-    panels: list[tuple[str, str, Path]],
-    out_path: Path,
-    canvas_w: int = 2400,
-    pad_x: int = 38,
-    pad_y: int = 34,
-    gap_x: int = 36,
-) -> None:
-    """Arrange two live browser UI captures side-by-side with crisp borders and A/B titles."""
-    col_w = (canvas_w - 2 * pad_x - gap_x) // 2
-    imgs = []
-    for label, subtitle, path in panels:
-        im = Image.open(path).convert("RGB")
-        scale = col_w / im.width
-        resized = im.resize((col_w, int(round(im.height * scale))), Image.Resampling.LANCZOS)
-        imgs.append((label, subtitle, resized))
+def build_architecture_figure1(svg_path: Path, png_path: Path) -> None:
+    """Generate Figure 1: eLife-style vector architecture and workflow schematic."""
+    svg = """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="510" viewBox="0 0 1180 510">
+  <defs>
+    <marker id="arrow-indigo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#3C5488"/>
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#4A5568"/>
+    </marker>
+    <style>
+      .stage-letter { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; fill: #1A1D21; }
+      .stage-title { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 13.5px; font-weight: 700; fill: #1A1D21; }
+      .stage-title-core { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 13.5px; font-weight: 700; fill: #3C5488; }
+      .stage-sub { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 11px; fill: #5A6577; }
+      .box-title { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 12.5px; font-weight: 700; fill: #1A1D21; }
+      .box-body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 11.2px; fill: #374151; }
+      .box-note { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10.2px; fill: #5A6577; }
+      .mono-tag { font-family: "Liberation Mono", "Courier New", monospace; font-size: 11.2px; font-weight: 700; fill: #3C5488; }
+      .sub-divider { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10px; font-weight: 700; fill: #5A6577; letter-spacing: 0.7px; }
+    </style>
+  </defs>
 
-    row_h = max(im.height for _, _, im in imgs)
-    label_band = 54
-    canvas_h = pad_y + label_band + row_h + pad_y
-    canvas = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
-    draw = ImageDraw.Draw(canvas)
-    font_label = load_label_font(44)
-    font_sub = load_label_font(26)
+  <!-- Pure white background -->
+  <rect x="0" y="0" width="1180" height="510" fill="#FFFFFF"/>
 
-    for idx, (label, subtitle, im) in enumerate(imgs):
-        x = pad_x + idx * (col_w + gap_x)
-        y = pad_y
-        draw.text((x + 4, y), label, fill=(29, 29, 31), font=font_label)
-        draw.text((x + 48, y + 12), subtitle, fill=(72, 72, 78), font=font_sub)
-        img_y = y + label_band
-        canvas.paste(im, (x, img_y))
-        # Crisp 2px neutral frame around each viewport capture
-        draw.rectangle(
-            [x, img_y, x + im.width - 1, img_y + im.height - 1],
-            outline=(210, 212, 218),
-            width=2,
+  <!-- Stage Headers -->
+  <text x="20" y="28" class="stage-letter">A</text>
+  <text x="41" y="27" class="stage-title">Inputs and harmonization</text>
+  <line x1="20" y1="38" x2="305" y2="38" stroke="#CBD5E1" stroke-width="1.1"/>
+
+  <text x="365" y="28" class="stage-letter" style="fill:#3C5488;">B</text>
+  <text x="386" y="27" class="stage-title-core">Shared analytical core</text>
+  <text x="820" y="27" text-anchor="end" class="stage-sub">NumPy / pandas · no SciPy</text>
+  <line x1="365" y1="38" x2="820" y2="38" stroke="#3C5488" stroke-width="1.4"/>
+
+  <text x="880" y="28" class="stage-letter">C</text>
+  <text x="901" y="27" class="stage-title">Interfaces and outputs</text>
+  <line x1="880" y1="38" x2="1160" y2="38" stroke="#CBD5E1" stroke-width="1.1"/>
+
+  <!-- ==================== COLUMN A: INPUTS ==================== -->
+  <!-- Box A1 -->
+  <rect x="20" y="54" width="285" height="132" rx="4" fill="#F8F9FB" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="20" y="54" width="4" height="132" rx="2" fill="#3C5488"/>
+  <text x="36" y="80" class="box-title">Built-in DepMap Public 26Q3</text>
+  <text x="36" y="103" class="box-body">Chronos gene effect matrix</text>
+  <text x="36" y="123" class="box-body">1,361 cancer cell lines · 30 lineages</text>
+  <text x="36" y="143" class="box-body">18,434 genes · float32 binary storage</text>
+  <text x="36" y="166" class="box-note">Non-commercial DepMap Terms</text>
+
+  <!-- Box A2 -->
+  <rect x="20" y="204" width="285" height="132" rx="4" fill="#F8F9FB" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="20" y="204" width="4" height="132" rx="2" fill="#3C5488"/>
+  <text x="36" y="230" class="box-title">Custom CRISPR screen matrices</text>
+  <text x="36" y="253" class="box-body">User-supplied UTF-8 CSV tables</text>
+  <text x="36" y="273" class="box-body">Strict gene-header schema guard</text>
+  <text x="36" y="293" class="box-body">Duplicate &amp; missingness diagnostics</text>
+  <text x="36" y="316" class="box-note">Optional disease-subtype filtering</text>
+
+  <!-- Box A3 -->
+  <rect x="20" y="354" width="285" height="132" rx="4" fill="#F8F9FB" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="20" y="354" width="4" height="132" rx="2" fill="#3C5488"/>
+  <text x="36" y="380" class="box-title">Offline HGNC harmonization</text>
+  <text x="36" y="403" class="box-body">40,402 unambiguous alias mappings</text>
+  <text x="36" y="423" class="box-body">Batch lists &amp; DepMap-style headers</text>
+  <text x="36" y="443" class="box-body">Explicit alias &amp; unmatched audit log</text>
+  <text x="36" y="466" class="box-note">Zero external network fetches</text>
+
+  <!-- Converging Bus Arrows A -> B -->
+  <line x1="305" y1="120" x2="335" y2="120" stroke="#3C5488" stroke-width="1.35"/>
+  <line x1="305" y1="270" x2="335" y2="270" stroke="#3C5488" stroke-width="1.35"/>
+  <line x1="305" y1="420" x2="335" y2="420" stroke="#3C5488" stroke-width="1.35"/>
+  <line x1="335" y1="120" x2="335" y2="420" stroke="#3C5488" stroke-width="1.35"/>
+  <line x1="335" y1="270" x2="361" y2="270" stroke="#3C5488" stroke-width="1.45" marker-end="url(#arrow-indigo)"/>
+
+  <!-- ==================== COLUMN B: SHARED CORE ==================== -->
+  <rect x="365" y="54" width="455" height="432" rx="5" fill="#F3F6FA" stroke="#3C5488" stroke-width="1.25"/>
+  <text x="383" y="77" class="mono-tag">crispr_score_analyzer</text>
+  <text x="537" y="77" class="stage-sub">·  float64 descriptive estimators</text>
+
+  <!-- Module B1 -->
+  <rect x="381" y="92" width="423" height="118" rx="4" fill="#FFFFFF" stroke="#B8C5DC" stroke-width="1.05"/>
+  <text x="397" y="116" class="box-title">1. Cohort-scoped essentiality ranking</text>
+  <text x="397" y="140" class="box-body">Active cohort mean <tspan font-style="italic">x&#772;</tspan><tspan dy="3" font-size="8.5">g,C</tspan><tspan dy="-3"> and empirical percentile </tspan><tspan font-style="italic">P</tspan><tspan dy="3" font-size="8.5">g,C</tspan></text>
+  <text x="397" y="163" class="box-body">Reference anchors (<tspan font-style="italic">MYC</tspan>, <tspan font-style="italic">PTEN</tspan>) and −0.5 visual guide</text>
+  <text x="397" y="186" class="box-body">Multi-gene batch curves and two-layer gene-set overlays</text>
+
+  <!-- Module B2 -->
+  <rect x="381" y="225" width="423" height="118" rx="4" fill="#FFFFFF" stroke="#B8C5DC" stroke-width="1.05"/>
+  <text x="397" y="249" class="box-title">2. Lineage selectivity and subtype skew</text>
+  <text x="397" y="273" class="box-body">Joint mean shift &#916;<tspan font-style="italic">&#956;</tspan>, median shift &#916;med, and fraction <tspan font-style="italic">f</tspan> (&lt; −0.5)</text>
+  <text x="397" y="296" class="box-body">Distinguishes uniform lineage effects from bimodal subtypes</text>
+  <text x="397" y="319" class="box-body">Paired most- and least-dependent cell-line model tables</text>
+
+  <!-- Module B3 -->
+  <rect x="381" y="358" width="423" height="118" rx="4" fill="#FFFFFF" stroke="#B8C5DC" stroke-width="1.05"/>
+  <text x="397" y="382" class="box-title">3. Pairwise-complete co-dependency engine</text>
+  <text x="397" y="406" class="box-body">2,048-column float64 block scans with zero imputation</text>
+  <text x="397" y="429" class="box-body">Exact BLAS Pearson <tspan font-style="italic">r</tspan> and average-rank Spearman <tspan font-style="italic">&#961;</tspan> with <tspan font-style="italic">n</tspan><tspan dy="3" font-size="8.5">shared</tspan></text>
+  <text x="397" y="452" class="box-body">Multi-gene correlation matrix (2–25 genes) and lineage scatter</text>
+
+  <!-- Branching Bus Arrows B -> C -->
+  <line x1="820" y1="270" x2="848" y2="270" stroke="#4A5568" stroke-width="1.35"/>
+  <line x1="848" y1="100" x2="848" y2="440" stroke="#4A5568" stroke-width="1.35"/>
+  <line x1="848" y1="100" x2="876" y2="100" stroke="#4A5568" stroke-width="1.35" marker-end="url(#arrow-slate)"/>
+  <line x1="848" y1="205" x2="876" y2="205" stroke="#4A5568" stroke-width="1.35" marker-end="url(#arrow-slate)"/>
+  <line x1="848" y1="335" x2="876" y2="335" stroke="#4A5568" stroke-width="1.35" marker-end="url(#arrow-slate)"/>
+  <line x1="848" y1="440" x2="876" y2="440" stroke="#4A5568" stroke-width="1.35" marker-end="url(#arrow-slate)"/>
+
+  <!-- ==================== COLUMN C: INTERFACES & OUTPUTS ==================== -->
+  <!-- Box C1 -->
+  <rect x="880" y="54" width="280" height="92" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="880" y="54" width="4" height="92" rx="2" fill="#00796B"/>
+  <text x="896" y="79" class="box-title">Interactive browser platform</text>
+  <text x="896" y="102" class="box-body">Streamlit web application (EN / ZH)</text>
+  <text x="896" y="123" class="box-body">Cohort filters, drill-downs &amp; scatter</text>
+
+  <!-- Box C2 -->
+  <rect x="880" y="160" width="280" height="92" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="880" y="160" width="4" height="92" rx="2" fill="#00796B"/>
+  <text x="896" y="185" class="box-title">Python API and CLI</text>
+  <text x="896" y="208" class="box-body">Scriptable multi-omic analysis pipelines</text>
+  <text x="896" y="229" class="box-body">Subcommands: info, rank, codep, app</text>
+
+  <!-- Sub-group Divider -->
+  <text x="880" y="276" class="sub-divider">REPRODUCIBLE OUTPUTS</text>
+  <line x1="1032" y1="272" x2="1160" y2="272" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- Box C3 -->
+  <rect x="880" y="290" width="280" height="92" rx="4" fill="#F8F9FB" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="880" y="290" width="4" height="92" rx="2" fill="#4A5568"/>
+  <text x="896" y="315" class="box-title">Publication vector graphics</text>
+  <text x="896" y="338" class="box-body">White-background PDF, SVG &amp; PNG</text>
+  <text x="896" y="359" class="box-body">Colorblind-safe NPG &amp; RdBu palettes</text>
+
+  <!-- Box C4 -->
+  <rect x="880" y="394" width="280" height="92" rx="4" fill="#F8F9FB" stroke="#CBD5E1" stroke-width="1.1"/>
+  <rect x="880" y="394" width="4" height="92" rx="2" fill="#4A5568"/>
+  <text x="896" y="419" class="box-title">Self-contained provenance ZIP</text>
+  <text x="896" y="442" class="box-body">Ranked tables &amp; schema diagnostics</text>
+  <text x="896" y="463" class="box-body">Cohort scope, versions &amp; SHA-256 log</text>
+</svg>
+"""
+    svg_path.write_text(svg, encoding="utf-8")
+    print(f"Wrote {svg_path.name} ({svg_path.stat().st_size // 1024} KB)")
+
+    chrome = shutil.which("google-chrome") or shutil.which("chromium") or shutil.which("chromium-browser")
+    if chrome:
+        html_doc = (
+            "<!DOCTYPE html><html><body style='margin:0;padding:0;background:#fff;overflow:hidden;'>"
+            f"{svg}</body></html>"
         )
-
-    canvas.save(out_path, format="PNG", dpi=(300, 300), optimize=True)
-    print(f"Composed {out_path.name} ({canvas.size[0]}x{canvas.size[1]} px, {out_path.stat().st_size // 1024} KB)")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", encoding="utf-8", delete=False) as tf:
+            tf.write(html_doc)
+            html_path = Path(tf.name)
+        try:
+            raw_png = png_path.with_suffix(".raw.png")
+            subprocess.run(
+                [
+                    chrome,
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-gpu",
+                    "--hide-scrollbars",
+                    "--window-size=1180,510",
+                    "--force-device-scale-factor=2",
+                    f"--screenshot={raw_png}",
+                    html_path.as_uri(),
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            im = Image.open(raw_png).convert("RGB")
+            im = im.crop((0, 0, min(im.width, 2360), min(im.height, 1020)))
+            im.save(png_path, format="PNG", dpi=(300, 300), optimize=True)
+            raw_png.unlink(missing_ok=True)
+            print(f"Rendered {png_path.name} ({im.size[0]}x{im.size[1]} px, {png_path.stat().st_size // 1024} KB)")
+        finally:
+            html_path.unlink(missing_ok=True)
+    else:
+        print(f"Chrome not found; kept vector {svg_path.name} without PNG rasterization.")
 
 
 def annotate_partial_n(scan_df: pd.DataFrame, cohort_n: int) -> pd.DataFrame:
@@ -234,18 +379,9 @@ def main() -> None:
     th = ns["get_theme"]()
 
     # ------------------------------------------------------------------
-    # Figure 1: Live browser interface overview (Light & Charcoal Darkroom)
+    # Figure 1: Vector software architecture and analytical workflow
     # ------------------------------------------------------------------
-    ui_light = OUT / "ui_light.png"
-    ui_dark = OUT / "ui_dark.png"
-    if ui_light.is_file() and ui_dark.is_file():
-        compose_ui_overview(
-            [
-                ("A", "Light mode (#f5f5f7) · four-module dock & NPG ranking curve", ui_light),
-                ("B", "Charcoal dark mode (#0f0f11) · identical view in darkroom palette", ui_dark),
-            ],
-            OUT / "Figure1.png",
-        )
+    build_architecture_figure1(OUT / "Figure1.svg", OUT / "Figure1.png")
 
     df = read_builtin_matrix(ROOT / "data" / "depmap_chronos.npz")
     rankings, _ = analyze_dataset(df)

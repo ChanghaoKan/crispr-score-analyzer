@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build preprint/manuscript.pdf in standard plain-white academic manuscript style.
+"""Build preprint/manuscript.pdf in clean plain-white academic manuscript style.
 
 Typesets standard Times-metric serif (Liberation Serif), 1-inch margins,
-1.5-spaced prose, unstructured abstract, unshaded display equations,
-booktabs-style three-line tables, frameless embedded figures, and plain
-centered page numbers via headless Chromium / Playwright.
+1.5-spaced eLife-structured prose, unstructured abstract, vector Figure 1
+architecture schematic, unshaded display equations, booktabs-style three-line
+tables, frameless figures, and plain centered page numbers via headless
+Chromium / Playwright.
 
 Run from the repository root:
     python3 preprint/build_pdf.py
@@ -23,12 +24,16 @@ OUTPUT_PDF = PREPRINT_DIR / "manuscript.pdf"
 
 
 def img_to_data_uri(path: Path) -> str:
+    mime = "image/svg+xml" if path.suffix.lower() == ".svg" else "image/png"
     data = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f"data:image/png;base64,{data}"
+    return f"data:{mime};base64,{data}"
 
 
 def build_html() -> str:
-    fig1_uri = img_to_data_uri(FIGURES_DIR / "Figure1.png")
+    fig1_path = FIGURES_DIR / "Figure1.svg"
+    if not fig1_path.is_file():
+        fig1_path = FIGURES_DIR / "Figure1.png"
+    fig1_uri = img_to_data_uri(fig1_path)
     fig2_uri = img_to_data_uri(FIGURES_DIR / "Figure2.png")
     fig3_uri = img_to_data_uri(FIGURES_DIR / "Figure3.png")
 
@@ -267,9 +272,8 @@ def build_html() -> str:
     white-space: nowrap;
   }}
 
-  code.wrap-code {{
+  code.code-brk {{
     white-space: normal;
-    overflow-wrap: anywhere;
   }}
 
   a {{
@@ -342,7 +346,7 @@ def build_html() -> str:
   }}
 
   table.three-line td.csa-col {{
-    width: 30%;
+    width: 32%;
   }}
 
   table.three-line code {{
@@ -352,10 +356,6 @@ def build_html() -> str:
   table.three-line.compact thead th,
   table.three-line.compact tbody td {{
     padding: 3.6pt 3.2pt;
-  }}
-
-  code.code-brk {{
-    white-space: normal;
   }}
 
   /* Frameless Embedded Figures on White Paper */
@@ -394,7 +394,7 @@ def build_html() -> str:
     font-size: 8.4pt;
   }}
 
-  /* Declarations */
+  /* Additional Information */
   .declarations-block p {{
     font-size: 10.2pt;
     line-height: 1.45;
@@ -445,241 +445,152 @@ def build_html() -> str:
     </p>
   </div>
 
-  <!-- Unstructured Abstract (282 words) -->
+  <!-- Unstructured Abstract -->
   <div class="abstract-section">
     <h2 class="abstract-heading">Abstract</h2>
     <p>
-      Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map (DepMap) provide a primary reference for prioritizing cancer vulnerabilities and mapping functional gene relationships, yet analyses beyond single-gene portal lookups encounter three recurring methodological limitations: pan-cancer averages dilute lineage- and subtype-restricted dependencies, multi-library integration introduces uneven gene coverage across cell lines, and pan-cancer co-essentiality profiles conflate pathway co-functionality with baseline differences between tumor lineages. Here we present CRISPR Score Analyzer, an open-source Python library (<code>crispr_score_analyzer</code>), command-line interface (<code>crispr-score-analyzer</code>), and interactive browser platform built on a shared analytical core over DepMap Public 26Q3 Chronos scores (1,361 cell lines across 30 Oncotree lineages and 18,434 genes) and validated user-supplied matrices. The engine implements cohort-scoped essentiality ranking, joint mean and median lineage-selectivity decomposition, exact pairwise-complete <code>float64</code> Pearson and average-rank Spearman scans in 2,048-column blocks without SciPy, offline HGNC alias resolution (40,402 mappings), vector figure export, and SHA-256 provenance archiving. Across DepMap Public 26Q3, 1,352 genes (7.33%) have incomplete coverage (<code>n_valid</code> down to 218), motivating explicit pairwise overlap (<code>n_shared</code>) reporting alongside every correlation. Chunked kernels agree with direct reference calculations to machine precision (maximum absolute difference <span class="nowrap">7.77&nbsp;&times;&nbsp;10<sup>&minus;16</sup></span> for Pearson <em>r</em>; <span class="nowrap">5.55&nbsp;&times;&nbsp;10<sup>&minus;17</sup></span> for Spearman <em>&rho;</em>) and execute a pan-cancer Pearson scan in 0.74&nbsp;s or a single-lineage Skin scan (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>) in 0.10&nbsp;s. Across ten canonical cancer gene pairs, cohort scoping separates pan-lineage epistatic axes (<span class="gene">MDM2</span>–<span class="gene">TP53</span>, pan-cancer <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>; lineage-demeaned <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.648</span>) from context-restricted modules whose pan-cancer rank correlations collapse toward zero (<span class="gene">BRAF</span>–<span class="gene">MAP2K1</span> pan-cancer <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.097</span> vs. Skin <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.605</span>; <span class="gene">ESR1</span>–<span class="gene">GATA3</span> pan-cancer <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.253</span> vs. Breast <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.596</span>). MIT-licensed code is available at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/<wbr />ChanghaoKan/<wbr />crispr-score-analyzer</a> (Zenodo DOI: <a href="https://doi.org/10.5281/zenodo.24458535">10.5281/zenodo.24458535</a>; tag <code>preprint-v5</code>), with a hosted web application at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.<wbr />streamlit.app/</a>.
+      Genome-scale CRISPR-Cas9 loss-of-function screens in the Cancer Dependency Map, or DepMap, provide a standard reference for prioritizing cancer vulnerabilities and mapping functional gene relationships. Beyond single-gene portal queries, however, exploratory analyses routinely confront three methodological problems: pan-cancer averages dilute lineage- and subtype-restricted dependencies, multi-library integration produces uneven gene coverage across cell lines, and pan-cancer co-essentiality profiles conflate pathway co-functionality with baseline differences between tumor lineages. Here we present CRISPR Score Analyzer, an open-source Python package, command-line interface, and browser platform built on a single analytical core over DepMap Public 26Q3 Chronos scores spanning 1,361 cancer cell lines, 30 Oncotree lineages, and 18,434 genes, alongside validated custom screen matrices. The analytical engine provides cohort-scoped essentiality ranking, joint mean and median lineage-selectivity decomposition, exact pairwise-complete <code>float64</code> Pearson and average-rank Spearman genome-wide scans in 2,048-column blocks without SciPy, offline HGNC symbol harmonization across 40,402 alias mappings, vector graphics export, and provenance archiving. Auditing DepMap Public 26Q3 shows that 1,352 genes, or 7.33% of the matrix, lack full cell-line coverage with <code>n_valid</code> falling as low as 218, motivating explicit pairwise overlap reporting alongside every correlation. Chunked kernels agree with direct reference calculations to machine precision, within <span class="nowrap">7.77&nbsp;&times;&nbsp;10<sup>&minus;16</sup></span> for Pearson <em>r</em> and <span class="nowrap">5.55&nbsp;&times;&nbsp;10<sup>&minus;17</sup></span> for Spearman <em>&rho;</em>, and complete a pan-cancer Pearson scan in 0.74&nbsp;s or a single-lineage Skin scan in 0.10&nbsp;s. Across ten canonical cancer gene pairs, cohort scoping separates pan-lineage epistatic axes such as <span class="gene">MDM2</span>–<span class="gene">TP53</span> from context-restricted modules whose pan-cancer rank correlations collapse toward zero, including <span class="gene">BRAF</span>–<span class="gene">MAP2K1</span> and <span class="gene">ESR1</span>–<span class="gene">GATA3</span>. Source code is available under the MIT license at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/<wbr />ChanghaoKan/<wbr />crispr-score-analyzer</a> with a hosted application at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.<wbr />streamlit.app/</a>.
     </p>
     <p class="keywords">
       <strong>Keywords:</strong> DepMap; CRISPR-Cas9 screen; Chronos gene effect; gene essentiality; co-dependency; functional genomics
     </p>
   </div>
 
-  <!-- Section 1 -->
+  <!-- Section 1: Introduction -->
   <h2>1. Introduction</h2>
   <p>
-    Pooled genome-scale CRISPR-Cas9 loss-of-function screens across human cancer cell lines have become a primary experimental reference for identifying lineage-specific vulnerabilities and mapping functional gene relationships (Meyers <em>et al.</em>, 2017; Pacini <em>et al.</em>, 2021). Within the Cancer Dependency Map (DepMap; Tsherniak <em>et al.</em>, 2017), copy-number- and growth-kinetics-corrected Chronos gene effect scores (Dempster <em>et al.</em>, 2021) allow candidate genes nominated by transcriptomics, proteomics, or focused genetic screens to be positioned rapidly against pan-cancer essentiality distributions.
+    Pooled genome-scale CRISPR-Cas9 loss-of-function screens across human cancer cell lines provide a primary experimental reference for identifying lineage-specific vulnerabilities and mapping functional gene relationships (Meyers <em>et al.</em>, 2017; Pacini <em>et al.</em>, 2021). Within the Cancer Dependency Map, or DepMap (Tsherniak <em>et al.</em>, 2017), copy-number- and growth-kinetics-corrected Chronos gene effect scores (Dempster <em>et al.</em>, 2021) allow candidate genes nominated by transcriptomics, proteomics, or focused genetic screens to be evaluated rapidly against pan-cancer essentiality distributions.
   </p>
   <p>
-    Routine exploration of these matrices, however, exposes three recurring analytical limitations once analysis moves beyond single-gene portal lookups. First, pan-cancer summary statistics frequently obscure lineage-restricted and subtype-restricted dependencies: an oncogene or lineage transcription factor strongly essential in one tumor type can appear near-neutral when averaged across more than a thousand models, while intra-lineage heterogeneity can induce substantial divergence between lineage means and medians. Second, integrating CRISPR screens conducted with different sgRNA libraries introduces uneven gene coverage across cell-line subsets (Pacini <em>et al.</em>, 2021), so genome-wide correlation rankings computed without tracking pairwise sample overlap can place sparsely profiled genes alongside full-cohort associations. Third, pan-cancer co-essentiality profiles conflate direct pathway co-functionality with baseline mean differences across tumor lineages. Global covariance-whitening and dimensionality-reduction methods address correlated sample structure when constructing whole-genome co-essentiality networks (Boyle <em>et al.</em>, 2018; Wainberg <em>et al.</em>, 2021; Gheorghe &amp; Hart, 2022), yet rely on offline matrix transformations rather than direct inspection within a user-defined lineage or disease subset. Existing interactive platforms, including the DepMap Portal (<a href="https://depmap.org/portal/">https://depmap.org/portal/</a>) and shinyDepMap (Shimada <em>et al.</em>, 2021), serve single-gene inspection and global overviews well, whereas multi-gene batch positioning, single-lineage co-dependency scanning, cell-line model selection, and reproducible scripted execution remain fragmented across separate portals and custom notebooks.
+    Moving beyond single-gene portal lookups, however, exposes three recurring analytical limitations. First, pan-cancer averages frequently obscure lineage- and subtype-restricted dependencies: an oncogene or lineage transcription factor strongly essential in one tumor type can appear near-neutral across more than a thousand models, while intra-lineage heterogeneity can separate lineage means from medians. Second, integrating screens conducted with different sgRNA libraries introduces uneven gene coverage across cell-line subsets (Pacini <em>et al.</em>, 2021), so genome-wide correlation rankings computed without tracking pairwise sample overlap can place sparsely profiled genes alongside full-cohort associations. Third, pan-cancer co-essentiality profiles conflate direct pathway co-functionality with baseline mean differences between tumor lineages. Covariance-whitening and dimensionality-reduction approaches address correlated sample structure when building whole-genome co-essentiality networks (Boyle <em>et al.</em>, 2018; Wainberg <em>et al.</em>, 2021; Gheorghe &amp; Hart, 2022), yet rely on offline matrix transformations rather than direct inspection within a user-defined lineage or disease subset. Existing web resources such as the DepMap Portal (<a href="https://depmap.org/portal/">https://depmap.org/portal/</a>) and shinyDepMap (Shimada <em>et al.</em>, 2021) serve single-gene queries and global overviews well, whereas multi-gene batch positioning, single-lineage co-dependency scanning, paired cell-line selection, and reproducible scripted execution remain fragmented across separate interfaces and custom scripts.
   </p>
   <p>
-    Here we describe CRISPR Score Analyzer, an open-source Python library (<code class="code-brk">crispr_<wbr />score_<wbr />analyzer</code>), command-line interface (<code>crispr-score-analyzer</code>), and interactive browser platform sharing a single analytical core over the DepMap Public 26Q3 Chronos dataset (1,361 cell lines across 30 Oncotree lineages and 18,434 genes) as well as validated user-supplied CSV matrices. Rather than introducing a latent-factor normalization model, the software provides transparent, cohort-scoped descriptive estimators: exact pairwise-complete Pearson and Spearman scanning without imputation, joint mean and median lineage-selectivity summaries linked directly to individual cell-line identities, offline HGNC symbol harmonization, and self-contained provenance bundles. Using DepMap Public 26Q3, we audit gene-coverage missingness, verify numerical accuracy and runtime scaling of the chunked correlation kernels, and systematically evaluate pan-cancer versus cohort-scoped co-dependency across ten canonical cancer gene pairs spanning pan-lineage epistatic axes, lineage-restricted signaling cascades, and subtype-dependent transcriptional modules.
+    Here we describe CRISPR Score Analyzer, an open-source Python library (<code class="code-brk">crispr_<wbr />score_<wbr />analyzer</code>), command-line interface (<code>crispr-score-analyzer</code>), and interactive browser platform built on a shared analytical core over DepMap Public 26Q3 Chronos scores and validated custom matrices. Rather than introducing a latent-factor normalization model, the software provides transparent, cohort-scoped descriptive estimators: exact pairwise-complete Pearson and Spearman scanning without imputation, joint mean and median lineage-selectivity summaries linked directly to individual cell-line identities, offline HGNC symbol harmonization, and self-contained provenance archives. Using DepMap Public 26Q3, we audit gene-coverage missingness, verify numerical accuracy and runtime scaling of the chunked correlation kernels, and benchmark pan-cancer against cohort-scoped co-dependency across ten canonical cancer gene pairs spanning pan-lineage epistatic axes, lineage-restricted signaling cascades, and subtype-dependent transcriptional modules.
   </p>
 
-  <!-- Section 2 -->
-  <h2>2. Materials and Methods</h2>
+  <!-- Section 2: Results (eLife order) -->
+  <h2>2. Results</h2>
 
-  <h3>2.1 Reference Matrix Curation, Schema Validation, and Nomenclature Harmonization</h3>
+  <h3>2.1 Architecture and analytical scope of CRISPR Score Analyzer</h3>
   <p>
-    To enable reproducible local and hosted execution without external network fetches at runtime, the repository includes a compressed <code>float32</code> binary matrix (<code>data/depmap_chronos.npz</code>, 88&nbsp;MB) compiled from DepMap Public 26Q3 (DepMap, 2026; released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/<wbr />t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/<wbr />portal/data_page/</a>). Using <code class="code-brk">scripts/<wbr />build_builtin_matrix.py</code>, the upstream <code>CRISPRGeneEffect.csv</code> (497,139,964&nbsp;bytes; MD5 <code>a0a87b48137996f620437604b8c2eb79</code>) and <code>Model.csv</code> (789,805&nbsp;bytes; MD5 <code>a7423dbf345fcf5a822ab5fc7e854e5c</code>), retrieved on 2026-11-21, were validated for unique <code>ModelID</code> rows and DepMap-formatted <code>SYMBOL (Entrez ID)</code> headers. All 1,361 cancer cell lines and 18,434 genes were retained verbatim without row filtering and left-joined on <code>ModelID</code> against deduplicated <code>Model.csv</code> to attach <code>OncotreeLineage</code> (1,361/1,361 matched across 30 Oncotree lineages) and <code>CellLineName</code> (defaulting to <code>ModelID</code> where blank). Storage quantization to <code>float32</code> introduces a maximum absolute rounding error of <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes while reducing file size more than fivefold; upstream and compiled SHA-256/MD5 digests are recorded in <code class="code-brk">data/<wbr />depmap_chronos.provenance.json</code>.
-  </p>
-  <p>
-    Software and dataset licensing are kept strictly separate. The MIT license governs application source code and the CC0/public-domain HGNC alias map bundled in Python wheels, whereas rehosting <code>data/depmap_chronos.npz</code> in the GitHub repository and hosted web instance falls under the Broad Institute DepMap Terms and Conditions (non-commercial research use only; full text reproduced in <code>data/DEPMAP_TERMS.md</code> and inside the web interface under DepMap’s <em>Continuity of Terms of Use</em> clause). Python wheel/sdist builds (<code>pyproject.toml</code>) and MIT GitHub/Zenodo source archives (<code>.gitattributes</code>) exclude <code>data/depmap_chronos.npz</code>.
-  </p>
-  <p>
-    For custom UTF-8 CSV CRISPR score matrices, automatic gene-column recognition strictly requires <code>SYMBOL (Entrez ID)</code> headers so that numeric metadata fields are not silently parsed as genes; plain-symbol tables require explicit column selection through the sidebar or CLI (<code>--gene-columns</code>). Ambiguous duplicate gene symbols and repeated metadata columns are excluded automatically and itemized in a downloadable <code>diagnostics.csv</code> file. Optional disease-subtype filtering (<code>OncotreePrimaryDisease</code> or <code>primary_disease</code>) activates automatically whenever present in uploaded tables. Gene queries accept arbitrary whitespace or punctuation delimiters, <code>.txt</code>/<code>.csv</code>/<code>.tsv</code> lists, and pasted DepMap headers (e.g., <code>MYC (4609)</code>), and are harmonized offline via <code>data/gene_aliases.json</code>, containing 40,402 unambiguous HGNC previous-symbol and alias mappings (Seal <em>et al.</em>, 2023; e.g., <span class="gene">HER2</span>&nbsp;&rarr;&nbsp;<span class="gene">ERBB2</span>). Resolved aliases, duplicates, and unmatched identifiers are reported explicitly alongside each run.
+    CRISPR Score Analyzer separates analytical computation from user-interface presentation through a modular, Streamlit-free Python library (<code class="code-brk">crispr_<wbr />score_<wbr />analyzer</code>; archived at release <code>v1.2.0</code>, Kan, 2026) that drives both a scriptable CLI and a bilingual browser application (Figure 1). All cohort-scoped essentiality rankings, lineage-selectivity decompositions, and pairwise-complete co-dependency scans run in <code>float64</code> precision on top of NumPy and pandas without requiring SciPy. Offline HGNC alias resolution harmonizes batch gene queries across 40,402 unambiguous symbol mappings, while plotting and export routines produce white-background vector graphics and self-contained provenance archives. Relative to existing interactive DepMap portals, the platform unifies multi-gene cohort positioning, single-step lineage-scoped co-dependency scanning, joint mean–median skew diagnostics, custom screen ingestion, and scripted Python execution on identical estimators (Table 1).
   </p>
 
-  <h3>2.2 Cohort-Scoped Essentiality and Lineage-Selectivity Estimators</h3>
-  <p>
-    Let <span class="math"><b>X</b> &isin; (&#8477; &cup; {{NA}})<sup><i>M</i>&times;<i>G</i></sup></span> denote the cell-line-by-gene Chronos matrix, and let <span class="math"><i>C</i> &sube; {{1, &hellip;, <i>M</i>}}</span> be the active cohort defined by the selected cancer lineages (and optional disease subtypes). For each gene <span class="math"><i>g</i></span> with finite observation set <span class="math"><i>C</i><sub><i>g</i></sub> = {{<i>i</i> &isin; <i>C</i> : <i>x</i><sub><i>ig</i></sub> &isin; &#8477;}}</span> and sample count <span class="math"><i>n</i><sub><i>g,C</i></sub> = |<i>C</i><sub><i>g</i></sub>| &gt; 0</span>, cohort-scoped essentiality is summarized by its arithmetic mean in <code>float64</code> precision and ascending empirical percentile rank across all <span class="math"><i>G</i><sub><i>C</i></sub></span> valid genes:
-  </p>
-
-  <div class="eq-row">
-    <div class="eq-body">
-      <span class="overline"><i>x</i></span><sub><i>g,C</i></sub> =
-      <span class="frac"><span class="num">1</span><span class="den"><i>n</i><sub><i>g,C</i></sub></span></span>
-      <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>C</i><sub><i>g</i></sub></span></span>
-      <i>x</i><sub><i>ig</i></sub>,
-      <span class="eq-gap"></span>
-      <i>P</i><sub><i>g,C</i></sub> =
-      <span class="frac"><span class="num">100 &middot; rank(<span class="overline"><i>x</i></span><sub><i>g,C</i></sub>)</span><span class="den"><i>G</i><sub><i>C</i></sub></span></span>
-    </div>
-    <div class="eq-num">(1)</div>
-  </div>
-
-  <p>
-    Non-finite entries (<code>NaN</code>, &plusmn;&infin;) are excluded from sums and tracked separately in <code>n_missing</code> and <code>diagnostics.csv</code>. Because Chronos scores are scaled such that non-essential genes center near 0 and core essential genes center near &minus;1 (Dempster <em>et al.</em>, 2021), a dashed reference line at &minus;0.5 and two configurable reference anchors (default <span class="gene">MYC</span> and <span class="gene">PTEN</span>) orient multi-gene ranking curves and two-layer gene-set overlays without implying a binary essentiality classifier.
-  </p>
-  <p>
-    To quantify lineage selectivity while diagnosing intra-lineage skew, the lineage-preference estimator compares each lineage <span class="math">&ell;</span> meeting <span class="math"><i>n</i><sub><i>g</i>,&ell;</sub> &ge; 5</span> against the full-dataset distribution of gene <span class="math"><i>g</i></span> (independent of active sidebar filters) using three complementary statistics:
-  </p>
-
-  <div class="eq-row">
-    <div class="eq-body">
-      &Delta;<i>&mu;</i><sub><i>g</i>,&ell;</sub> = <span class="overline"><i>x</i></span><sub><i>g</i>,&ell;</sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i>,all</sub>,
-      <span class="eq-gap"></span>
-      &Delta;med<sub><i>g</i>,&ell;</sub> = med<sub><i>g</i>,&ell;</sub> &minus; med<sub><i>g</i>,all</sub>,
-      <span class="eq-gap"></span>
-      <i>f</i><sub><i>g</i>,&ell;</sub> =
-      <span class="frac"><span class="num">1</span><span class="den"><i>n</i><sub><i>g</i>,&ell;</sub></span></span>
-      <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>C</i><sub><i>g</i>,&ell;</sub></span></span>
-      <b>I</b>(<i>x</i><sub><i>ig</i></sub> &lt; &minus;0.5)
-    </div>
-    <div class="eq-num">(2)</div>
-  </div>
-
-  <p>
-    where <span class="math">med</span> denotes the sample median and <span class="math"><b>I</b>(&middot;)</span> is the indicator function. Comparing <span class="math">&Delta;<i>&mu;</i><sub><i>g</i>,&ell;</sub></span> with <span class="math">&Delta;med<sub><i>g</i>,&ell;</sub></span> distinguishes broadly shared lineage dependencies (where mean and median shifts align) from subtype-restricted or bimodal vulnerabilities (where a sensitive subpopulation pulls <span class="math">&Delta;<i>&mu;</i><sub><i>g</i>,&ell;</sub></span> well below <span class="math">&Delta;med<sub><i>g</i>,&ell;</sub></span>). Paired cell-line tables surface the most and least dependent individual models (display name and <code>ModelID</code>) within <span class="math"><i>C</i></span> for direct experimental selection.
-  </p>
-
-  <h3>2.3 Pairwise-Complete Vectorized Co-Dependency Estimation</h3>
-  <p>
-    Given a query gene <span class="math"><i>q</i></span> and candidate partner <span class="math"><i>g</i> &ne; <i>q</i></span> within active cohort <span class="math"><i>C</i></span>, let <span class="math"><i>S</i><sub><i>q,g</i></sub> = {{<i>i</i> &isin; <i>C</i> : <i>x</i><sub><i>iq</i></sub>, <i>x</i><sub><i>ig</i></sub> &isin; &#8477;}}</span> be the shared finite cell-line index set with overlap size <span class="math"><i>n</i><sub><i>q,g</i></sub> = |<i>S</i><sub><i>q,g</i></sub>|</span>. Correlations are computed strictly over <span class="math"><i>S</i><sub><i>q,g</i></sub></span> without missing-value imputation whenever <span class="math"><i>n</i><sub><i>q,g</i></sub> &ge; <i>n</i><sub>min</sub> = min(10, max(3, <i>n</i><sub><i>q,C</i></sub>))</span> and both vectors have strictly positive sample variance over <span class="math"><i>S</i><sub><i>q,g</i></sub></span>:
-  </p>
-
-  <div class="eq-row">
-    <div class="eq-body">
-      <i>r</i><sub><i>q,g</i></sub>(<i>C</i>) =
-      <span class="frac frac-tall">
-        <span class="num">
-          <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>
-          (<i>x</i><sub><i>iq</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup>)(<i>x</i><sub><i>ig</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup>)
-        </span>
-        <span class="den">
-          <span style="font-size:13.5pt; vertical-align:-0.08em;">[</span>&thinsp;<span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>(<i>x</i><sub><i>iq</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup>)<sup>2</sup>
-          &thinsp;&middot;&thinsp;
-          <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>(<i>x</i><sub><i>ig</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup>)<sup>2</sup>&thinsp;<span style="font-size:13.5pt; vertical-align:-0.08em;">]</span><sup>1/2</sup>
-        </span>
-      </span>
-    </div>
-    <div class="eq-num">(3)</div>
-  </div>
-
-  <p>
-    where <span class="math"><span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup></span> and <span class="math"><span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup></span> denote means computed over <span class="math"><i>S</i><sub><i>q,g</i></sub></span>. Rank correlation <span class="math"><i>&rho;</i><sub><i>q,g</i></sub>(<i>C</i>)</span> applies the same formula after replacing <span class="math"><i>x</i><sub>&middot;<i>q</i></sub></span> and <span class="math"><i>x</i><sub>&middot;<i>g</i></sub></span> with average-tie midranks on <span class="math"><i>S</i><sub><i>q,g</i></sub></span>.
-  </p>
-  <p>
-    To achieve interactive latency while keeping peak memory bounded and avoiding SciPy runtime dependencies, <code>genomewide_codependency</code> processes candidate genes in 2,048-column <code>float64</code> blocks after restricting rows to finite observations of <span class="math"><i>q</i></span>. Within each block, columns complete over <span class="math"><i>C</i><sub><i>q</i></sub></span> are evaluated via a single centered BLAS matrix–vector inner product, whereas columns with missing entries use masked pairwise means and variances for Pearson <em>r</em> and per-column exact pairwise midrank evaluation for Spearman <em>&rho;</em>. Time complexity is <span class="math"><i>O</i>(|<i>C</i>|<i>G</i>)</span> for Pearson scanning with <span class="math"><i>O</i>(2048&nbsp;&middot;&nbsp;|<i>C</i>|)</span> temporary memory. For multi-gene panels (2–25 genes), the same pairwise estimator populates a symmetric correlation matrix linked to lineage-colored cell-line scatter plots reporting both Pearson <em>r</em> and Spearman <em>&rho;</em>.
-  </p>
-
-  <h3>2.4 Software Architecture, Provenance, and Benchmark Protocol</h3>
-  <p>
-    All analytical kernels are packaged in a Streamlit-free PEP 621 library (<code>crispr_score_analyzer</code>, defined in <code>pyproject.toml</code>, requiring only NumPy, pandas, Plotly, Kaleido, and Pillow; archived at release <code>v1.2.0</code>, Kan, 2026) organized into four modules: <code>analysis_core</code>, <code>codependency</code>, <code>plotting</code>, and <code>figure_export</code>. This shared core drives both a scriptable CLI (<code>crispr-score-analyzer</code> exposing <code>info</code>, <code>rank</code>, <code>codep</code>, and <code>app</code> subcommands; documented in <code>docs/api.md</code>) and a bilingual (English/Chinese) Streamlit web interface (Figure 1; Table 1). All interactive figures and white-background PDF, SVG, and 300-DPI PNG exports use colorblind-safe Nature Publishing Group (NPG) categorical hues and a 7-stop ColorBrewer <code>RdBu</code> diverging scale; interactive scatter curves use WebGL (<code>Scattergl</code>) and convert traces to vector paths on export. To prevent stale-state inconsistencies, input edits remain isolated until executed and cohort changes invalidate downstream tables and exports. Each session can export a self-contained provenance ZIP containing <code>selected_results.csv</code>, <code>full_rankings.csv</code>, <code>plot_data.csv</code>, <code>lineage_preference.csv</code>, <code>diagnostics.csv</code>, and <code>metadata.json</code> (data SHA-256, software version, Zenodo DOI, cohort scope, alias resolution log, and package versions). Software correctness is verified offline on deterministic synthetic fixtures by 98 automated unit, API, CLI, UI, and export tests across Python 3.11 and 3.12 via GitHub Actions.
-  </p>
-
-  <!-- Figure 1 -->
+  <!-- Figure 1 (Vector SVG architecture schematic) -->
   <div class="figure-block fig1">
     <img src="{fig1_uri}" alt="Figure 1" />
     <p class="figure-caption">
-      <strong>Figure 1. Browser interface of CRISPR Score Analyzer operating on the DepMap Public 26Q3 pan-cancer cohort.</strong>
-      <strong>(A)</strong> Light display mode showing sidebar dataset and lineage-scope controls, four-module navigation (<em>Gene ranking</em>, <em>Cancer-type comparison</em>, <em>Gene-set annotation</em>, <em>Co-dependency</em>), batch gene-list input with alias diagnostics, and the pan-cancer ranking curve for five benchmark genes (y-axis labeled <em>Mean CRISPR score</em> in the generic interface to accommodate custom score matrices).
-      <strong>(B)</strong> Dark display mode aligned on the identical cohort view; all downloadable PDF, SVG, and PNG exports standardize to a white background.
+      <strong>Figure 1. Software architecture and analytical workflow of CRISPR Score Analyzer.</strong>
+      <strong>A.</strong> Data ingestion and offline nomenclature layer supporting the bundled DepMap Public 26Q3 Chronos matrix, validated user-supplied UTF-8 CSV screens, and 40,402 unambiguous HGNC alias mappings.
+      <strong>B.</strong> Shared <code>crispr_score_analyzer</code> Python analytical core executing <code>float64</code> cohort-scoped essentiality ranking, joint mean and median lineage-selectivity decomposition, and 2,048-column pairwise-complete Pearson and Spearman co-dependency scans without SciPy.
+      <strong>C.</strong> Dual execution interfaces—a bilingual Streamlit browser platform and a scriptable Python API and CLI—producing white-background vector figures and self-contained SHA-256 provenance archives.
     </p>
   </div>
 
   <!-- Table 1 -->
   <div class="table-block">
     <p class="table-caption">
-      <strong>Table 1.</strong> Comparison of analytical and reproducibility capabilities across CRISPR Score Analyzer and existing DepMap interfaces (verified November 2026).
+      <strong>Table 1.</strong> Comparison of analytical and reproducibility capabilities across CRISPR Score Analyzer and existing DepMap interfaces, verified November 2026.
     </p>
     <table class="three-line">
       <thead>
         <tr>
           <th>Analytical capability</th>
-          <th>DepMap Portal (26Q3; depmap.org/portal)</th>
-          <th>shinyDepMap (eLife 2021; shinyapps.io/depmap)</th>
-          <th>CRISPR Score Analyzer (<code>v1.2.0</code> / <code>preprint-v5</code>)</th>
+          <th>DepMap Portal (26Q3)</th>
+          <th>shinyDepMap (eLife 2021)</th>
+          <th>CRISPR Score Analyzer (<code>v1.2.0</code> / <code>preprint-v6</code>)</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td class="cap-col">Multi-gene panel placement on cohort curve</td>
-          <td>Single-gene default (<code>Gene Page</code>)</td>
-          <td>Efficacy vs. selectivity scatter (<code>Efficacy &amp; Selectivity</code>)</td>
+          <td>Single-gene default</td>
+          <td>Efficacy vs. selectivity scatter</td>
           <td class="csa-col">Batch ranking and two-layer gene-set annotation</td>
         </tr>
         <tr>
           <td class="cap-col">Cohort-scoped genome-wide co-dependency scan</td>
-          <td>Pan-cancer default; subsets via multi-step <code>Custom Analysis</code></td>
-          <td>Pan-cancer clusters (<code>Connectivity</code>)</td>
-          <td class="csa-col">Single-step scoped scan (exact pairwise Pearson <em>r</em> &amp; Spearman <em>&rho;</em>)</td>
+          <td>Pan-cancer default; multi-step subsetting</td>
+          <td>Pan-cancer connectivity clusters</td>
+          <td class="csa-col">Single-step scoped scan with exact pairwise Pearson <em>r</em> and Spearman <em>&rho;</em></td>
         </tr>
         <tr>
-          <td class="cap-col">Pairwise multi-gene matrix &amp; lineage scatter</td>
-          <td><code>Data Explorer 2</code> / <code>Custom Analysis</code> small multiples</td>
+          <td class="cap-col">Pairwise multi-gene matrix and lineage scatter</td>
+          <td>Multi-panel explorer</td>
           <td>Cluster network view</td>
           <td class="csa-col">2–25 gene heatmap linked to lineage-colored scatter</td>
         </tr>
         <tr>
-          <td class="cap-col">Lineage selectivity &amp; intra-lineage skew</td>
-          <td>Per-gene lineage &amp; subtype plots</td>
+          <td class="cap-col">Lineage selectivity and intra-lineage skew</td>
+          <td>Per-gene lineage and subtype plots</td>
           <td>Not provided</td>
-          <td class="csa-col">Joint &Delta;<em>&mu;</em>, &Delta;med, and fraction &lt; &minus;0.5 lollipop/heatmap</td>
+          <td class="csa-col">Joint &Delta;<em>&mu;</em>, &Delta;med, and fraction &lt; &minus;0.5 lollipop and heatmap</td>
         </tr>
         <tr>
-          <td class="cap-col">Sensitive &amp; resistant cell-line selection</td>
-          <td>Table filtering on <code>Gene Page</code></td>
-          <td>Top sensitive cell lines</td>
-          <td class="csa-col">Paired most/least dependent tables with <code>ModelID</code> &amp; CSV export</td>
+          <td class="cap-col">Sensitive and resistant cell-line selection</td>
+          <td>Table filtering on gene page</td>
+          <td>Top sensitive lines</td>
+          <td class="csa-col">Paired most- and least-dependent tables with <code>ModelID</code> export</td>
         </tr>
         <tr>
-          <td class="cap-col">Custom matrix ingestion &amp; schema audit</td>
-          <td>Single-feature custom vector</td>
+          <td class="cap-col">Custom matrix ingestion and schema audit</td>
+          <td>Single-feature vector</td>
           <td>Not supported</td>
-          <td class="csa-col">Full UTF-8 CSV matrix, strict schema guard &amp; <code>diagnostics.csv</code></td>
+          <td class="csa-col">Full UTF-8 CSV matrix with schema guard and diagnostics</td>
         </tr>
         <tr>
           <td class="cap-col">Offline batch HGNC harmonization</td>
           <td>Online single-gene search</td>
           <td>Not provided</td>
-          <td class="csa-col">40,402 unambiguous offline mappings (batch &amp; single)</td>
+          <td class="csa-col">40,402 unambiguous offline mappings for batch and single queries</td>
         </tr>
         <tr>
-          <td class="cap-col">Scriptable Python API, CLI &amp; provenance</td>
-          <td>Web portal / manual bulk downloads</td>
-          <td>R Shiny web application only</td>
-          <td class="csa-col"><code>pip</code>-installable Python library, CLI, vector export &amp; SHA-256 ZIP</td>
+          <td class="cap-col">Scriptable Python API, CLI, and provenance</td>
+          <td>Web portal and bulk downloads</td>
+          <td>R Shiny web app only</td>
+          <td class="csa-col">Installable Python library, CLI, vector export, and SHA-256 archive</td>
         </tr>
       </tbody>
     </table>
   </div>
 
+  <h3>2.2 Coverage heterogeneity, numerical fidelity, and runtime scaling in DepMap Public 26Q3</h3>
   <p>
-    All quantitative metrics reported in Section&nbsp;3 are reproduced offline by <code class="code-brk">preprint/<wbr />reproduce_stats.py</code> without SciPy. For post-hoc evaluation of single-lineage co-dependency scans, two-sided Pearson <em>p</em>-values are computed from the exact Student-<em>t</em> distribution (<span class="math">df = <i>n</i><sub><i>q,g</i></sub> &minus; 2</span>) via continued-fraction evaluation of the regularized incomplete beta function, accompanied by Bonferroni and Benjamini–Hochberg false discovery rate (FDR) adjustments and ordinary least-squares (OLS) partial correlations on complete observations.
+    Auditing the DepMap Public 26Q3 Chronos matrix across 1,361 cancer cell lines and 18,434 genes reveals substantial gene-level missingness arising from multi-library integration. Pan-cancer gene means span &minus;5.250 to +0.398, with 1,712 genes falling below &minus;0.5. Although 17,082 genes, or 92.67%, are profiled across all 1,361 cell lines, 1,352 genes, or 7.33%, have incomplete coverage ranging down to <span class="nowrap"><code>n_valid</code>&nbsp;=&nbsp;218</span>. Within this incomplete subset, 648 genes are assayed in fewer than 1,000 cell lines and 519 in fewer than 500. In genome-wide correlation scans over such heterogeneous matrices, failing to preserve exact pairwise overlap or omitting <code>n_shared</code> from ranked outputs risks conflating sparse sub-cohort associations with full-panel correlations.
+  </p>
+  <p>
+    We verified numerical equivalence of the chunked <code>float64</code> correlation engine against direct reference evaluations using <code>pandas.Series.corr</code> for Pearson <em>r</em> and pairwise midrank <code>numpy.corrcoef</code> for Spearman <em>&rho;</em> across top, bottom, and partially observed partners of <span class="gene">MDM2</span>—193 genes for Pearson and 100 for Spearman. Maximum absolute deviations were <span class="nowrap">7.77&nbsp;&times;&nbsp;10<sup>&minus;16</sup></span> for Pearson <em>r</em> and <span class="nowrap">5.55&nbsp;&times;&nbsp;10<sup>&minus;17</sup></span> for Spearman <em>&rho;</em>, confirming machine-precision agreement across both complete and incomplete gene columns. On a 2-vCPU Linux environment, median wall-clock runtimes across three replicates were 1.01&nbsp;s to load the binary matrix and 0.41&nbsp;s to rank all 18,434 genes. A genome-wide pan-cancer scan across all 1,361 models and 18,433 partner genes finished in 0.74&nbsp;s for Pearson <em>r</em> and 6.19&nbsp;s for Spearman <em>&rho;</em>. Restricting the cohort to a single lineage, Skin (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>), reduced scan runtimes to 0.10&nbsp;s for Pearson and 0.44&nbsp;s for Spearman, enabling interactive exploration across both metrics.
   </p>
 
-  <!-- Section 3 -->
-  <h2>3. Results</h2>
-
-  <h3>3.1 Coverage Heterogeneity, Numerical Accuracy, and Runtime Scaling in DepMap Public 26Q3</h3>
+  <h3>2.3 Lineage-selectivity decomposition resolves subtype-driven skew</h3>
   <p>
-    Auditing the bundled DepMap Public 26Q3 matrix (1,361 cell lines &times; 18,434 genes; 1,712 genes with pan-cancer mean <span class="nowrap">&lt;&nbsp;&minus;0.5</span>, overall mean range &minus;5.250 to +0.398) reveals substantial gene-level missingness resulting from multi-library integration. Whereas 17,082 genes (92.67%) are profiled across all 1,361 cell lines, 1,352 genes (7.33%) have incomplete coverage ranging down to <span class="nowrap"><code>n_valid</code>&nbsp;=&nbsp;218</span>, including 648 genes assayed in fewer than 1,000 cell lines and 519 in fewer than 500. In correlation scans over such heterogeneous matrices, failing to preserve exact pairwise overlap or omitting <code>n_shared</code> from outputs risks equating sparse sub-cohort correlations with full-panel associations.
-  </p>
-  <p>
-    We verified numerical equivalence of the chunked <code>float64</code> correlation engine against direct reference evaluations (<code>pandas.Series.corr</code> for Pearson <em>r</em> and pairwise midrank <code>numpy.corrcoef</code> for Spearman <em>&rho;</em>) across top, bottom, and partially observed partners of <span class="gene">MDM2</span> (193 genes for Pearson, 100 for Spearman). Maximum absolute deviations were <span class="nowrap">7.77&nbsp;&times;&nbsp;10<sup>&minus;16</sup></span> for Pearson <em>r</em> and <span class="nowrap">5.55&nbsp;&times;&nbsp;10<sup>&minus;17</sup></span> for Spearman <em>&rho;</em>, confirming machine-precision fidelity across both complete and incomplete gene columns. On a 2-vCPU Linux environment (Python 3.12.16, NumPy 2.5.5, pandas 2.3.3), median wall-clock runtimes across three replicates were 1.01&nbsp;s (0.97–1.33&nbsp;s) to load the 88&nbsp;MB matrix and 0.41&nbsp;s (0.38–0.73&nbsp;s) to rank all 18,434 genes. A genome-wide pan-cancer scan (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>, 18,433 partner genes) completed in 0.74&nbsp;s (0.73–0.85&nbsp;s) for Pearson <em>r</em> and 6.19&nbsp;s (6.02–6.26&nbsp;s) for Spearman <em>&rho;</em>; restricting to a single lineage (Skin, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>) reduced scan times to 0.10&nbsp;s (Pearson) and 0.44&nbsp;s (Spearman), supporting interactive exploration across both metrics.
-  </p>
-
-  <h3>3.2 Lineage-Selectivity Decomposition and Subtype-Driven Skew</h3>
-  <p>
-    Placing a five-gene benchmark panel (<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, <span class="gene">TP53</span>) on the pan-cancer Chronos ranking curve (Figure 2A) illustrates how global averages compress context-restricted vulnerabilities. Relative to reference anchors <span class="gene">MYC</span> (mean &minus;1.971, rank 187, 1.01%) and <span class="gene">PTEN</span> (mean +0.377, rank 18,428, 99.97%), <span class="gene">KRAS</span> falls below the &minus;0.5 screening reference across all lineages (mean &minus;0.729, rank 1,263, 6.85%), whereas <span class="gene">TP53</span> lies at the positive extreme (mean +0.381, rank 18,430, 99.98%), reflecting positive growth-rate effects upon tumor-suppressor knockout in <span class="gene">TP53</span>-wild-type lines (Dempster <em>et al.</em>, 2021). By contrast, two canonical lineage-dependent targets appear modest or near-neutral in pan-cancer means: <span class="gene">SOX10</span> (mean &minus;0.347, rank 2,225, 12.07%) and <span class="gene">ESR1</span> (mean &minus;0.065, rank 7,347, 39.86%). Two-layer gene-set annotation similarly positions mitotic kinases <span class="gene">PLK1</span> (mean &minus;2.691, rank 38, 0.21%) and <span class="gene">AURKA</span> (mean &minus;1.236, rank 626, 3.40%) against seven cell-cycle CDK/cyclin genes (<span class="gene">CDK1</span> &minus;2.588 through <span class="gene">CCNE1</span> &minus;0.194; Figure 2B).
-  </p>
-  <p>
-    Evaluating &Delta;<em>&mu;</em> jointly with &Delta;med and <span class="math"><i>f</i><sub><i>g</i>,&ell;</sub></span> (Figure 2C, D) separates uniform lineage essentiality from subtype-restricted bimodality. For <span class="gene">SOX10</span>, Skin (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>) exhibits concordant mean and median shifts (<span class="nowrap">mean&nbsp;=&nbsp;&minus;1.487</span>, <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;1.140</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;1.368</span>, <span class="nowrap">78.7%&nbsp;&lt;&nbsp;&minus;0.5</span>), consistent with broad neural-crest dependency in cutaneous melanoma. In Eye (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;15</span>), however, the mean shift (<span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.535</span>, <span class="nowrap">mean&nbsp;=&nbsp;&minus;0.882</span>, <span class="nowrap">46.7%&nbsp;&lt;&nbsp;&minus;0.5</span>) is more than threefold stronger than the median shift (<span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.174</span>), flagging a bimodal distribution driven by uveal melanoma models (<code>Omm2.5</code> [<code>ACH-002018</code>, &minus;2.752], <code>UPMM3</code> [<code>ACH-002925</code>, &minus;2.113], <code>WM3772F</code> [<code>ACH-002687</code>, &minus;1.678]) mixed with near-neutral retinoblastoma lines. A comparable subtype-masking effect appears for <span class="gene">ESR1</span> in Breast (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>, <span class="nowrap">mean&nbsp;=&nbsp;&minus;0.285</span>, <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.220</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.061</span>, <span class="nowrap">17.9%&nbsp;&lt;&nbsp;&minus;0.5</span>), where Oncotree lineage grouping pools ER-positive luminal models with ER-negative subtypes and produces a lineage shift only slightly larger than a small Ampulla of Vater group (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;9</span>, <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.174</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.059</span>). Inspecting the ranked cell-line table immediately resolves this aggregation by identifying strongly dependent ER-positive luminal models (<code>HCC1428</code> [<code>ACH-000352</code>, &minus;1.912], <code>T-47D</code> [<code>ACH-000147</code>, &minus;1.845], <code>MDA-MB-415</code> [<code>ACH-000876</code>, &minus;1.636]) alongside resistant negative controls.
+    Positioning a five-gene benchmark panel—<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, and <span class="gene">TP53</span>—on the pan-cancer Chronos ranking curve illustrates how global averages compress context-restricted vulnerabilities (Figure 2A). Relative to reference anchors <span class="gene">MYC</span> at mean &minus;1.971 (rank 187, 1.01%) and <span class="gene">PTEN</span> at mean +0.377 (rank 18,428, 99.97%), <span class="gene">KRAS</span> falls below the &minus;0.5 visual reference across all lineages at mean &minus;0.729 (rank 1,263, 6.85%), whereas <span class="gene">TP53</span> sits at the positive extreme at mean +0.381 (rank 18,430, 99.98%), reflecting positive growth-rate effects upon tumor-suppressor knockout in <span class="gene">TP53</span>-wild-type lines (Dempster <em>et al.</em>, 2021). By contrast, two canonical lineage-dependent targets appear modest or near-neutral in pan-cancer averages: <span class="gene">SOX10</span> averages &minus;0.347 (rank 2,225, 12.07%) and <span class="gene">ESR1</span> averages &minus;0.065 (rank 7,347, 39.86%). Two-layer gene-set annotation similarly positions mitotic kinases <span class="gene">PLK1</span> at mean &minus;2.691 (rank 38, 0.21%) and <span class="gene">AURKA</span> at mean &minus;1.236 (rank 626, 3.40%) against seven cell-cycle CDK and cyclin genes ranging from <span class="gene">CDK1</span> at &minus;2.588 to <span class="gene">CCNE1</span> at &minus;0.194 (Figure 2B).
   </p>
 
   <!-- Figure 2 -->
   <div class="figure-block fig2">
     <img src="{fig2_uri}" alt="Figure 2" />
     <p class="figure-caption">
-      <strong>Figure 2. Multi-gene essentiality positioning and lineage-selectivity decomposition in DepMap Public 26Q3 (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span> cell lines, 18,434 genes).</strong>
-      <strong>(A)</strong> Pan-cancer mean Chronos gene effect curve positioning five benchmark genes (<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, <span class="gene">TP53</span>) relative to <span class="gene">MYC</span>/<span class="gene">PTEN</span> anchors and the &minus;0.5 reference line.
-      <strong>(B)</strong> Two-layer gene-set annotation overlaying <span class="gene">PLK1</span> and <span class="gene">AURKA</span> onto seven cell-cycle CDK/cyclin genes (<span class="gene">CDK1</span>, <span class="gene">CDK2</span>, <span class="gene">CDK4</span>, <span class="gene">CDK6</span>, <span class="gene">CCNB1</span>, <span class="gene">CCND1</span>, <span class="gene">CCNE1</span>).
-      <strong>(C, D)</strong> Lineage-preference lollipop plots (top and bottom 4 lineages with <span class="nowrap"><em>n</em>&nbsp;&ge;&nbsp;5</span>; gene-specific x-axis scales) displaying mean Chronos shifts &Delta;<em>&mu;</em> relative to each gene’s all-lineage mean for <span class="gene">SOX10</span> (<strong>C</strong>) and <span class="gene">ESR1</span> (<strong>D</strong>).
+      <strong>Figure 2. Multi-gene essentiality positioning and lineage-selectivity decomposition in DepMap Public 26Q3.</strong>
+      <strong>A.</strong> Pan-cancer mean Chronos gene effect curve across 1,361 cell lines and 18,434 genes positioning five benchmark genes (<span class="gene">KRAS</span>, <span class="gene">SOX10</span>, <span class="gene">BRAF</span>, <span class="gene">ESR1</span>, <span class="gene">TP53</span>) relative to <span class="gene">MYC</span> and <span class="gene">PTEN</span> anchors and the &minus;0.5 reference guide.
+      <strong>B.</strong> Two-layer gene-set annotation overlaying <span class="gene">PLK1</span> and <span class="gene">AURKA</span> onto seven cell-cycle CDK and cyclin genes (<span class="gene">CDK1</span>, <span class="gene">CDK2</span>, <span class="gene">CDK4</span>, <span class="gene">CDK6</span>, <span class="gene">CCNB1</span>, <span class="gene">CCND1</span>, <span class="gene">CCNE1</span>).
+      <strong>C, D.</strong> Lineage-preference lollipop plots showing top and bottom four lineages with <span class="nowrap"><em>n</em>&nbsp;&ge;&nbsp;5</span> on gene-specific scales, displaying mean Chronos shifts &Delta;<em>&mu;</em> relative to each gene’s all-lineage mean for <span class="gene">SOX10</span> (<strong>C</strong>) and <span class="gene">ESR1</span> (<strong>D</strong>).
     </p>
   </div>
 
-  <h3>3.3 Pan-Cancer Versus Cohort-Scoped Co-Dependency Across Canonical Cancer Axes</h3>
   <p>
-    To quantify how cohort scope alters co-dependency inference, we evaluated ten established cancer gene pairs across three estimation regimes in DepMap Public 26Q3: pan-cancer Pearson <em>r</em> and Spearman <em>&rho;</em> (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>), pooled within-lineage Pearson correlation after subtracting lineage means (<span class="math"><i>r</i><sub>within</sub></span> across all 30 lineages), and single-lineage Pearson <em>r</em> and Spearman <em>&rho;</em> within each pair’s primary biological context (Table 2).
+    Evaluating mean shift &Delta;<em>&mu;</em> jointly with median shift &Delta;med and sensitive fraction <span class="math"><i>f</i><sub><i>g</i>,&ell;</sub></span> separates uniform lineage essentiality from subtype-restricted bimodality (Figure 2C, D). For <span class="gene">SOX10</span>, Skin (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>) shows concordant mean and median shifts—mean &minus;1.487, <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;1.140</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;1.368</span>, and 78.7% of lines below &minus;0.5—consistent with broad neural-crest dependency in cutaneous melanoma. In Eye (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;15</span>), however, the mean shift of <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.535</span> (mean &minus;0.882, 46.7% below &minus;0.5) is more than threefold stronger than the median shift of <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.174</span>. This divergence flags a bimodal distribution driven by strongly dependent uveal melanoma models such as <code>Omm2.5</code> at &minus;2.752, <code>UPMM3</code> at &minus;2.113, and <code>WM3772F</code> at &minus;1.678 mixed with near-neutral retinoblastoma lines. A comparable subtype-masking effect arises for <span class="gene">ESR1</span> in Breast (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>), where Oncotree lineage grouping pools ER-positive luminal models with ER-negative subtypes. The resulting Breast shift—mean &minus;0.285, <span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.220</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.061</span>, and 17.9% of lines below &minus;0.5—is only slightly larger than a nine-line Ampulla of Vater group (<span class="nowrap">&Delta;<em>&mu;</em>&nbsp;=&nbsp;&minus;0.174</span>, <span class="nowrap">&Delta;med&nbsp;=&nbsp;&minus;0.059</span>). Inspecting the ranked cell-line table resolves this aggregation immediately by surfacing strongly dependent ER-positive luminal models led by <code>HCC1428</code> at &minus;1.912, <code>T-47D</code> at &minus;1.845, and <code>MDA-MB-415</code> at &minus;1.636 alongside resistant controls.
+  </p>
+
+  <h3>2.4 Cohort scope reshapes co-dependency inference across canonical cancer axes</h3>
+  <p>
+    To quantify how cohort scope alters co-dependency inference, we benchmarked ten established cancer gene pairs across three estimation regimes in DepMap Public 26Q3: pan-cancer Pearson <em>r</em> and Spearman <em>&rho;</em> across all 1,361 models, pooled within-lineage Pearson correlation <span class="math"><i>r</i><sub>within</sub></span> after subtracting lineage means across all 30 lineages, and single-lineage Pearson <em>r</em> and Spearman <em>&rho;</em> within each pair’s primary biological context (Table 2).
   </p>
 
   <!-- Table 2 -->
   <div class="table-block">
     <p class="table-caption">
-      <strong>Table 2.</strong> Comparison of pan-cancer, lineage-demeaned, and target-lineage co-dependency across ten canonical cancer gene pairs in DepMap Public 26Q3 (all pan-cancer pairs <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>).
+      <strong>Table 2.</strong> Pan-cancer, lineage-demeaned, and target-lineage co-dependency across ten canonical cancer gene pairs in DepMap Public 26Q3 (all pan-cancer pairs <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>).
     </p>
     <table class="three-line compact">
       <thead>
@@ -800,10 +711,10 @@ def build_html() -> str:
   </div>
 
   <p>
-    The benchmark separates three distinct statistical behaviors. First, pan-lineage epistatic pairs (<span class="gene">MDM2</span>–<span class="gene">TP53</span>, <span class="gene">MDM2</span>–<span class="gene">PPM1D</span>) exhibit tight agreement among pan-cancer <em>r</em>, pan-cancer <em>&rho;</em>, and lineage-demeaned <span class="math"><i>r</i><sub>within</sub></span> (<span class="gene">MDM2</span>–<span class="gene">TP53</span>: &minus;0.702, &minus;0.704, &minus;0.648). In a genome-wide pan-cancer scan of <span class="gene">MDM2</span> across 18,433 genes (Figure 3A), top positive partners include <span class="gene">PPM1D</span> (+0.664), <span class="gene">MDM4</span> (+0.614), <span class="gene">USP7</span> (+0.522), <span class="gene">DDX31</span> (+0.466), and <span class="gene">UBE2D3</span> (+0.398, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>), whereas top anti-correlated partners recover the p53 tumor-suppressor axis (<span class="gene">TP53</span> &minus;0.702, <span class="gene">TP53BP1</span> &minus;0.589, <span class="gene">USP28</span> &minus;0.531, <span class="gene">CDKN1A</span> &minus;0.530, <span class="gene">CHEK2</span> &minus;0.491, <span class="gene">ATM</span> &minus;0.461, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;1,361</span>). Reporting <code>n_shared</code> directly on the figure flags rank-6 positive hit <span class="gene">TERF1</span> (+0.395) as partially covered (<span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;228</span>), distinguishing it from full-panel associations. Multi-gene matrix inspection of the six-gene regulatory axis resolves its two-block inverse structure (Figure 3B), and lineage-stratified analysis confirms negative <span class="gene">MDM2</span>–<span class="gene">TP53</span> correlation across all 23/23 lineages with <span class="nowrap"><em>n</em>&nbsp;&ge;&nbsp;15</span> (median <span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.680</span>; e.g., Ovary/Fallopian Tube &minus;0.818 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;62</span>], Lung &minus;0.802 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;126</span>], Skin &minus;0.793 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>], Breast &minus;0.719 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;67</span>], Bowel &minus;0.674 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;85</span>], CNS/Brain &minus;0.663 [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;133</span>]; Figure 3C).
+    The benchmark separates three distinct statistical regimes. First, pan-lineage epistatic pairs such as <span class="gene">MDM2</span>–<span class="gene">TP53</span> and <span class="gene">MDM2</span>–<span class="gene">PPM1D</span> show close agreement across pan-cancer <em>r</em>, pan-cancer <em>&rho;</em>, and lineage-demeaned <span class="math"><i>r</i><sub>within</sub></span>: for <span class="gene">MDM2</span>–<span class="gene">TP53</span>, the three estimators yield &minus;0.702, &minus;0.704, and &minus;0.648. In a genome-wide pan-cancer scan of <span class="gene">MDM2</span> across 18,433 genes (Figure 3A), top positive partners include <span class="gene">PPM1D</span> (+0.664), <span class="gene">MDM4</span> (+0.614), <span class="gene">USP7</span> (+0.522), <span class="gene">DDX31</span> (+0.466), and <span class="gene">UBE2D3</span> (+0.398), whereas top anti-correlated partners recover the p53 tumor-suppressor axis—<span class="gene">TP53</span> (&minus;0.702), <span class="gene">TP53BP1</span> (&minus;0.589), <span class="gene">USP28</span> (&minus;0.531), <span class="gene">CDKN1A</span> (&minus;0.530), <span class="gene">CHEK2</span> (&minus;0.491), and <span class="gene">ATM</span> (&minus;0.461)—all profiled across all 1,361 cell lines. Annotating <code>n_shared</code> directly on the figure flags rank-6 positive hit <span class="gene">TERF1</span> (+0.395) as partially covered across only 228 shared lines, immediately separating it from full-cohort associations. Multi-gene matrix inspection of the six-gene regulatory axis resolves its two-block inverse structure (Figure 3B). Across all 23 lineages containing at least 15 models, <span class="gene">MDM2</span> and <span class="gene">TP53</span> remained negatively correlated, with a median Pearson <em>r</em> of &minus;0.680 spanning &minus;0.892 in Liver to &minus;0.246 in Cervix (Figure 3C).
   </p>
   <p>
-    Second, context-restricted signaling and transcriptional modules suffer strong attenuation in pan-cancer screens, reflected directly in divergence between pan-cancer Pearson <em>r</em> and Spearman <em>&rho;</em>. When a pathway operates in a small fraction of cell lines, extreme scores in the active lineage generate moderate Pearson covariance while &gt;90% of non-expressing lines contribute rank noise near zero, collapsing pan-cancer <em>&rho;</em> toward zero (<span class="gene">BRAF</span>–<span class="gene">MAP2K1</span>: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.391</span> vs. <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.097</span>; <span class="gene">ESR1</span>–<span class="gene">GATA3</span>: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.253</span> vs. <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.095</span>; <span class="gene">ESR1</span>–<span class="gene">FOXA1</span>: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.324</span> vs. <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.111</span>). Restricting the cohort to the relevant lineage restores parametric and rank concordance simultaneously (<span class="gene">BRAF</span>–<span class="gene">MAP2K1</span> in Skin: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.552</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.605</span>; <span class="gene">ESR1</span>–<span class="gene">GATA3</span> in Breast: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.596</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.372</span>; <span class="gene">CDK4</span>–<span class="gene">CCND1</span> in Breast: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.704</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.635</span>; <span class="gene">KRAS</span>–<span class="gene">RAF1</span> in Bowel: <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.530</span>, <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.461</span>).
+    Second, context-restricted signaling and transcriptional modules suffer sharp attenuation in pan-cancer screens, visible directly in divergence between pan-cancer Pearson <em>r</em> and Spearman <em>&rho;</em>. When a pathway operates in a small minority of cell lines, extreme scores in the active lineage generate moderate Pearson covariance while more than 90% of non-expressing lines contribute rank noise near zero, collapsing pan-cancer <em>&rho;</em> toward zero. Thus pan-cancer <em>r</em> and <em>&rho;</em> diverge from +0.391 to +0.097 for <span class="gene">BRAF</span>–<span class="gene">MAP2K1</span>, from +0.253 to +0.095 for <span class="gene">ESR1</span>–<span class="gene">GATA3</span>, and from +0.324 to +0.111 for <span class="gene">ESR1</span>–<span class="gene">FOXA1</span>. Restricting the cohort to the relevant lineage restores parametric and rank concordance simultaneously, elevating <span class="gene">BRAF</span>–<span class="gene">MAP2K1</span> in Skin to <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.552</span> and <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.605</span>, <span class="gene">ESR1</span>–<span class="gene">GATA3</span> in Breast to <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.596</span> and <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.372</span>, <span class="gene">CDK4</span>–<span class="gene">CCND1</span> in Breast to <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.704</span> and <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.635</span>, and <span class="gene">KRAS</span>–<span class="gene">RAF1</span> in Bowel to <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.530</span> and <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.461</span>.
   </p>
 
   <!-- Figure 3 -->
@@ -811,40 +722,134 @@ def build_html() -> str:
     <img src="{fig3_uri}" alt="Figure 3" />
     <p class="figure-caption">
       <strong>Figure 3. Pan-cancer and lineage-scoped genome-wide co-dependency benchmarks in DepMap Public 26Q3.</strong>
-      <strong>(A)</strong> Pan-cancer Pearson <em>r</em> scan of <span class="gene">MDM2</span> across 18,433 partner genes (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>), showing top 7 positive (<span class="gene">PPM1D</span>, <span class="gene">MDM4</span>, <span class="gene">USP7</span>, <span class="gene">DDX31</span>, <span class="gene">UBE2D3</span>, <span class="gene">TERF1</span> [<span class="nowrap"><em>n</em>&nbsp;=&nbsp;228</span>], <span class="gene">PPM1G</span>) and top 7 negative (<span class="gene">TP53</span>, <span class="gene">TP53BP1</span>, <span class="gene">USP28</span>, <span class="gene">CDKN1A</span>, <span class="gene">CHEK2</span>, <span class="gene">ATM</span>, <span class="gene">UBE2K</span>) partners.
-      <strong>(B)</strong> Pairwise Pearson correlation heatmap for the six-gene <span class="gene">TP53</span>–<span class="gene">MDM2</span> regulatory panel.
-      <strong>(C)</strong> Lineage-colored cell-line scatter plot of <span class="gene">MDM2</span> vs. <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>, Spearman <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;&minus;0.704</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>) with OLS trendline.
-      <strong>(D)</strong> Single-lineage genome-wide <span class="gene">BRAF</span> scan restricted to Skin models (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>, 17,785 partners with <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>), showing elevated MAPK cascade correlations (<span class="gene">MAPK1</span> +0.80, <span class="gene">MAP2K1</span> +0.55, <span class="gene">MAP2K2</span> +0.55) alongside melanoma lineage factors (<span class="gene">SOX10</span> +0.63, <span class="gene">SOX5</span> +0.56) and exploratory hits near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>.
+      <strong>A.</strong> Pan-cancer Pearson <em>r</em> scan of <span class="gene">MDM2</span> across 18,433 partner genes (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>), displaying the top seven positive (<span class="gene">PPM1D</span>, <span class="gene">MDM4</span>, <span class="gene">USP7</span>, <span class="gene">DDX31</span>, <span class="gene">UBE2D3</span>, partially profiled <span class="gene">TERF1</span> at <span class="nowrap"><em>n</em>&nbsp;=&nbsp;228</span>, <span class="gene">PPM1G</span>) and top seven negative (<span class="gene">TP53</span>, <span class="gene">TP53BP1</span>, <span class="gene">USP28</span>, <span class="gene">CDKN1A</span>, <span class="gene">CHEK2</span>, <span class="gene">ATM</span>, <span class="gene">UBE2K</span>) partners.
+      <strong>B.</strong> Pairwise Pearson correlation heatmap for the six-gene <span class="gene">TP53</span>–<span class="gene">MDM2</span> regulatory panel.
+      <strong>C.</strong> Lineage-colored cell-line scatter plot of <span class="gene">MDM2</span> versus <span class="gene">TP53</span> (<span class="nowrap"><em>r</em>&nbsp;=&nbsp;&minus;0.702</span>, Spearman <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;&minus;0.704</span>, <span class="nowrap"><em>n</em>&nbsp;=&nbsp;1,361</span>) with OLS trendline.
+      <strong>D.</strong> Single-lineage genome-wide <span class="gene">BRAF</span> scan restricted to Skin models (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>, 17,785 eligible partners), showing elevated MAPK cascade correlations alongside melanoma lineage factors and exploratory hits near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>.
     </p>
   </div>
 
   <p>
-    Third, between-lineage baseline co-enrichment inflates pan-cancer Pearson correlations for lineage-restricted transcription factors (<span class="gene">SOX10</span>–<span class="gene">MITF</span>: pan-cancer <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.492</span> drops to <span class="nowrap"><span class="math"><i>r</i><sub>within</sub></span>&nbsp;=&nbsp;+0.286</span> after lineage demeaning and <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.153</span>; <span class="gene">BRAF</span>–<span class="gene">SOX10</span>: +0.544 drops to <span class="nowrap"><span class="math"><i>r</i><sub>within</sub></span>&nbsp;=&nbsp;+0.294</span>). Single-lineage scoping, however, does not automatically remove intra-lineage subtype confounding. In the Skin-restricted <span class="gene">BRAF</span> scan (<span class="nowrap"><em>n</em>&nbsp;=&nbsp;75</span>, 17,785 partner genes meeting <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>, 648 sparser genes excluded; Figure 3D), MAPK effectors strengthen relative to pan-cancer values (<span class="gene">MAPK1</span> +0.644&nbsp;&rarr;&nbsp;+0.798, <span class="gene">MAP2K1</span> +0.391&nbsp;&rarr;&nbsp;+0.552, <span class="gene">MAP2K2</span> +0.271&nbsp;&rarr;&nbsp;+0.550), while <span class="gene">SOX10</span> (+0.633) and <span class="gene">SOX5</span> (+0.562) remain among the top hits alongside <span class="gene">UBQLN1</span> (+0.526), <span class="gene">AKIRIN1</span> (+0.496), and negatively correlated <span class="gene">STYXL1</span> (&minus;0.534, all <span class="nowrap"><code>n_shared</code>&nbsp;=&nbsp;75</span>). Regressing both <span class="gene">BRAF</span> and each partner on <span class="gene">SOX10</span> via OLS across all 75 complete Skin models retains MAPK cascade correlations (<span class="gene">MAPK1</span> partial <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.665</span>, <span class="gene">MAP2K1</span> +0.467, <span class="gene">MAP2K2</span> +0.398), indicating that <span class="gene">SOX10</span> co-ranking arises from Oncotree Skin heterogeneity spanning <span class="gene">SOX10</span>-high cutaneous melanoma and <span class="gene">SOX10</span>-low non-melanoma or dedifferentiated lines (e.g., <code>HSC-5</code>, <code>MCC26</code>, <code>RVH421_DAB_R</code>). Post-hoc two-sided Pearson <em>t</em>-tests across all 17,785 Skin tests further separate <span class="gene">MAPK1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;9.72&nbsp;&times;&nbsp;10<sup>&minus;18</sup></span>, Bonferroni <span class="nowrap">1.73&nbsp;&times;&nbsp;10<sup>&minus;13</sup></span>) from candidates near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span> such as <span class="gene">STYXL1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;8.28&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span>, Bonferroni 0.015, BH FDR 0.0025), <span class="gene">UBQLN1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;1.29&nbsp;&times;&nbsp;10<sup>&minus;6</sup></span>, Bonferroni 0.023, BH FDR 0.0033), and <span class="gene">AKIRIN1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;5.95&nbsp;&times;&nbsp;10<sup>&minus;6</sup></span>, Bonferroni 0.106, BH FDR 0.0132), showing why moderate single-lineage correlations warrant independent validation rather than immediate mechanistic interpretation.
+    Third, between-lineage baseline co-enrichment inflates pan-cancer Pearson correlations for lineage-restricted transcription factors. After lineage demeaning, <span class="gene">SOX10</span>–<span class="gene">MITF</span> drops from pan-cancer <span class="nowrap"><em>r</em>&nbsp;=&nbsp;+0.492</span> to <span class="nowrap"><span class="math"><i>r</i><sub>within</sub></span>&nbsp;=&nbsp;+0.286</span> alongside pan-cancer <span class="nowrap"><em>&rho;</em>&nbsp;=&nbsp;+0.153</span>, and <span class="gene">BRAF</span>–<span class="gene">SOX10</span> drops from +0.544 to <span class="nowrap"><span class="math"><i>r</i><sub>within</sub></span>&nbsp;=&nbsp;+0.294</span>. Single-lineage scoping, however, does not automatically remove intra-lineage subtype confounding. In the Skin-restricted <span class="gene">BRAF</span> scan across 75 models and 17,785 eligible partners with <span class="nowrap"><code>n_shared</code>&nbsp;&ge;&nbsp;10</span>—excluding 648 sparser genes (Figure 3D)—MAPK effectors strengthen markedly relative to pan-cancer values: <span class="gene">MAPK1</span> rises from +0.644 to +0.798, <span class="gene">MAP2K1</span> from +0.391 to +0.552, and <span class="gene">MAP2K2</span> from +0.271 to +0.550. Yet melanoma lineage factors <span class="gene">SOX10</span> (+0.633) and <span class="gene">SOX5</span> (+0.562) remain among the top hits alongside exploratory candidates near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>, including <span class="gene">STYXL1</span> (&minus;0.534), <span class="gene">UBQLN1</span> (+0.526), and <span class="gene">AKIRIN1</span> (+0.496), all complete across 75 models. Regressing both <span class="gene">BRAF</span> and each partner on <span class="gene">SOX10</span> via ordinary least squares across all 75 Skin lines retains strong MAPK cascade partial correlations—+0.665 for <span class="gene">MAPK1</span>, +0.467 for <span class="gene">MAP2K1</span>, and +0.398 for <span class="gene">MAP2K2</span>—indicating that <span class="gene">SOX10</span> co-ranking stems from Oncotree Skin pooling of <span class="gene">SOX10</span>-high cutaneous melanoma with <span class="gene">SOX10</span>-low non-melanoma or dedifferentiated lines. Post-hoc two-sided Pearson <em>t</em>-tests across all 17,785 Skin pairs further separate <span class="gene">MAPK1</span> (<span class="nowrap"><em>p</em>&nbsp;=&nbsp;9.72&nbsp;&times;&nbsp;10<sup>&minus;18</sup></span>, Bonferroni <span class="nowrap">1.73&nbsp;&times;&nbsp;10<sup>&minus;13</sup></span>) from the three moderate candidates near <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>, which span nominal <em>p</em> from <span class="nowrap">8.28&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> to <span class="nowrap">5.95&nbsp;&times;&nbsp;10<sup>&minus;6</sup></span>, Bonferroni-adjusted <em>p</em> from 0.015 to 0.106, and Benjamini–Hochberg FDR from 0.0025 to 0.0132, illustrating why moderate single-lineage correlations warrant independent validation rather than immediate mechanistic interpretation.
   </p>
 
-  <!-- Section 4 -->
-  <h2>4. Discussion</h2>
+  <!-- Section 3: Discussion -->
+  <h2>3. Discussion</h2>
   <p>
-    Co-essentiality analyses of large-scale CRISPR screens balance global statistical normalization against local interpretability. Covariance-whitening methods such as generalized least squares (Wainberg <em>et al.</em>, 2021), olfactory-receptor principal-component removal (Boyle <em>et al.</em>, 2018), and PCA-whitened network pipelines (Gheorghe &amp; Hart, 2022) effectively suppress shared technical variance and dominant mitochondrial or proliferation axes when constructing genome-wide functional networks. Global linear whitening, however, alters the native Chronos scale and can obscure whether a correlation arises across tissues or within a small subset of cell lines. Cohort-scoped descriptive analysis serves a complementary role: operating directly on unwhitened Chronos scores inside an explicit lineage or disease subset, reporting both Pearson <em>r</em> and Spearman <em>&rho;</em> alongside exact <code>n_shared</code>, and linking aggregate correlations to individual cell-line scatter plots lets investigators inspect biological context before proceeding to network modeling or wet-lab validation.
+    Co-essentiality analyses of large-scale CRISPR screens trade off global statistical normalization against local biological interpretability. Covariance-whitening methods such as generalized least squares (Wainberg <em>et al.</em>, 2021), olfactory-receptor principal-component removal (Boyle <em>et al.</em>, 2018), and PCA-whitened network pipelines (Gheorghe &amp; Hart, 2022) effectively suppress shared technical variance and dominant mitochondrial or proliferation axes when constructing genome-wide functional networks. Global linear whitening, however, transforms the native Chronos scale and can obscure whether an association holds across tissues or arises from a small subset of models. Cohort-scoped descriptive analysis serves a complementary purpose: operating directly on unwhitened Chronos scores within an explicit lineage or disease subset, reporting both Pearson <em>r</em> and Spearman <em>&rho;</em> alongside exact <code>n_shared</code>, and linking aggregate correlations directly to individual cell-line scatter plots lets investigators inspect biological context before proceeding to network modeling or wet-lab follow-up.
   </p>
   <p>
-    The DepMap Public 26Q3 benchmarks also delineate clear boundaries on interpreting descriptive outputs. Cohort ranks, lineage mean and median shifts, and pairwise correlations summarize empirical screen behavior rather than formal tests of differential dependency, selectivity, or synthetic lethality, and the &minus;0.5 line serves solely as a visual screening reference rather than a common-essential classifier. As seen for <span class="gene">ESR1</span> in Breast, <span class="gene">SOX10</span> in Eye, and <span class="gene">BRAF</span>–<span class="gene">SOX10</span> in Skin, Oncotree lineage labels pool distinct molecular subtypes (luminal versus basal breast models; cutaneous melanoma versus non-melanoma skin models), while scanning ~18,000 genes across <span class="nowrap"><em>n</em>&nbsp;&approx;&nbsp;75</span> cell lines introduces substantial multiple-testing variance around <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>. Moreover, the bundled 26Q3 matrix intentionally stores only <code>OncotreeLineage</code> and cell-line identifiers without somatic mutation, transcriptomic, or receptor/PAM50 covariates, and uploaded custom tables are assumed to contain one row per unique cell line without silent row deduplication.
+    The DepMap Public 26Q3 benchmarks also clarify practical boundaries on interpreting descriptive outputs. Cohort ranks, lineage mean and median shifts, and pairwise correlations summarize empirical screen behavior rather than formal tests of differential dependency, selectivity, or synthetic lethality, and the &minus;0.5 line serves solely as a visual screening reference rather than a common-essential classifier. As illustrated by <span class="gene">ESR1</span> in Breast, <span class="gene">SOX10</span> in Eye, and <span class="gene">BRAF</span>–<span class="gene">SOX10</span> in Skin, Oncotree lineage labels pool distinct molecular subtypes, while scanning roughly 18,000 genes across 75 cell lines introduces substantial multiple-testing variance around <span class="nowrap">|<em>r</em>|&nbsp;&approx;&nbsp;0.50</span>. Furthermore, the bundled 26Q3 matrix intentionally stores only Oncotree lineage and cell-line identifiers without somatic mutation, expression, or receptor covariates, and user-uploaded custom tables are assumed to contain one row per unique cell line without silent row deduplication.
   </p>
   <p>
-    Separating the analytical library (<code>crispr_score_analyzer</code>) and CLI from the Streamlit interface mitigates these constraints in extended workflows. Investigators who begin interactively to screen a candidate panel or choose sensitive and resistant cell lines can move directly to scripted Python pipelines backed by identical ranking and correlation routines, merge external multi-omic covariates (such as <span class="gene">TP53</span> mutation status, <span class="gene">BRAF</span> V600E genotypes, or PAM50 subtypes), or apply downstream inferential methods including partial correlation, mixed-effects regression, and FDR control directly to package outputs. Maintaining a strict boundary between MIT-licensed software distributions and the Broad Institute DepMap non-commercial reference matrix keeps licensing compliance unambiguous across both academic scripts and institutional deployments.
+    Decoupling the <code class="code-brk">crispr_<wbr />score_<wbr />analyzer</code> library and CLI from the Streamlit interface addresses these boundaries in extended workflows. Investigators who start interactively to position a candidate gene panel or select sensitive and resistant cell lines can transition directly to scripted Python pipelines backed by identical ranking and correlation routines, merge external multi-omic covariates such as <span class="gene">TP53</span> mutation status, <span class="gene">BRAF</span> V600E genotypes, or PAM50 subtypes, and apply downstream inferential models including partial correlation, mixed-effects regression, and false discovery rate control. Keeping MIT-licensed software distributions strictly separate from the Broad Institute DepMap non-commercial reference matrix also preserves clear licensing compliance across academic pipelines and institutional deployments.
   </p>
 
-  <!-- Declarations -->
-  <h2>Declarations</h2>
+  <!-- Section 4: Materials and Methods (eLife order) -->
+  <h2>4. Materials and Methods</h2>
+
+  <h3>4.1 Reference dataset curation and nomenclature harmonization</h3>
+  <p>
+    To support reproducible local and hosted execution without runtime network fetches, the repository bundles a compressed <code>float32</code> binary matrix compiled from DepMap Public 26Q3 Chronos Gene Effect scores and matching cell-line metadata, released October 5, 2026 (DepMap, 2026). All 1,361 cancer cell lines and 18,434 genes were retained verbatim after validating unique <code>ModelID</code> rows and DepMap-style <code>SYMBOL (Entrez ID)</code> column headers, then left-joined on <code>ModelID</code> against deduplicated model metadata to attach <code>OncotreeLineage</code>—matched across all 1,361 models and 30 lineages—and <code>CellLineName</code>, defaulting to <code>ModelID</code> where blank. Quantization to <code>float32</code> introduces a maximum absolute rounding error of <span class="nowrap">1.19&nbsp;&times;&nbsp;10<sup>&minus;7</sup></span> across the first 100 genes while reducing storage more than fivefold; upstream and compiled checksums and build metadata are archived in the repository provenance manifest.
+  </p>
+  <p>
+    Software and dataset licensing are maintained separately. Application source code and the public-domain HGNC alias map distributed in Python packages are released under the MIT license, whereas rehosting the compiled DepMap matrix in the repository and hosted web instance is governed by Broad Institute DepMap Terms and Conditions for non-commercial research use only. Python wheel builds and MIT release archives exclude the bundled DepMap matrix.
+  </p>
+  <p>
+    For user-supplied UTF-8 CSV CRISPR score matrices, automatic gene-column recognition requires <code>SYMBOL (Entrez ID)</code> headers so numeric metadata columns are never silently parsed as genes; plain-symbol tables require explicit column selection in the sidebar or CLI. Ambiguous duplicate gene symbols and repeated metadata fields are excluded automatically and logged in a downloadable diagnostics table. Disease-subtype filtering activates automatically whenever <code class="code-brk">Oncotree<wbr />PrimaryDisease</code> or <code>primary_disease</code> is present in custom uploads. Gene queries accept arbitrary whitespace or punctuation delimiters, text or delimited lists, and pasted DepMap headers, and are harmonized offline via 40,402 unambiguous HGNC previous-symbol and alias mappings such as <span class="gene">HER2</span>&nbsp;&rarr;&nbsp;<span class="gene">ERBB2</span> (Seal <em>et al.</em>, 2023). Resolved aliases, duplicates, and unmatched symbols are reported explicitly with every run.
+  </p>
+
+  <h3>4.2 Cohort-scoped essentiality and lineage-selectivity estimators</h3>
+  <p>
+    Let <span class="math"><b>X</b> &isin; (&#8477; &cup; {{NA}})<sup><i>M</i>&times;<i>G</i></sup></span> denote the cell-line-by-gene Chronos matrix, and let <span class="math"><i>C</i> &sube; {{1, &hellip;, <i>M</i>}}</span> denote the active cohort defined by the selected cancer lineages and optional disease subtypes. For each gene <span class="math"><i>g</i></span> with finite observation set <span class="math"><i>C</i><sub><i>g</i></sub> = {{<i>i</i> &isin; <i>C</i> : <i>x</i><sub><i>ig</i></sub> &isin; &#8477;}}</span> and sample count <span class="math"><i>n</i><sub><i>g,C</i></sub> = |<i>C</i><sub><i>g</i></sub>| &gt; 0</span>, cohort-scoped essentiality is summarized by its <code>float64</code> arithmetic mean and ascending empirical percentile rank across all <span class="math"><i>G</i><sub><i>C</i></sub></span> valid genes:
+  </p>
+
+  <div class="eq-row">
+    <div class="eq-body">
+      <span class="overline"><i>x</i></span><sub><i>g,C</i></sub> =
+      <span class="frac"><span class="num">1</span><span class="den"><i>n</i><sub><i>g,C</i></sub></span></span>
+      <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>C</i><sub><i>g</i></sub></span></span>
+      <i>x</i><sub><i>ig</i></sub>,
+      <span class="eq-gap"></span>
+      <i>P</i><sub><i>g,C</i></sub> =
+      <span class="frac"><span class="num">100 &middot; rank(<span class="overline"><i>x</i></span><sub><i>g,C</i></sub>)</span><span class="den"><i>G</i><sub><i>C</i></sub></span></span>
+    </div>
+    <div class="eq-num">(1)</div>
+  </div>
+
+  <p>
+    Non-finite entries are excluded from sums and tracked separately in missingness diagnostics. Because Chronos scores are scaled so that non-essential genes center near 0 and core essential genes center near &minus;1 (Dempster <em>et al.</em>, 2021), a dashed visual guide at &minus;0.5 and two configurable reference anchors—defaulting to <span class="gene">MYC</span> and <span class="gene">PTEN</span>—orient multi-gene ranking curves and two-layer gene-set overlays without implying a binary classifier.
+  </p>
+  <p>
+    To quantify lineage selectivity while diagnosing intra-lineage skew, the lineage-preference estimator compares each lineage <span class="math">&ell;</span> meeting <span class="math"><i>n</i><sub><i>g</i>,&ell;</sub> &ge; 5</span> against the full-dataset distribution of gene <span class="math"><i>g</i></span>, independent of active sidebar filters, using three complementary statistics:
+  </p>
+
+  <div class="eq-row">
+    <div class="eq-body">
+      &Delta;<i>&mu;</i><sub><i>g</i>,&ell;</sub> = <span class="overline"><i>x</i></span><sub><i>g</i>,&ell;</sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i>,all</sub>,
+      <span class="eq-gap"></span>
+      &Delta;med<sub><i>g</i>,&ell;</sub> = med<sub><i>g</i>,&ell;</sub> &minus; med<sub><i>g</i>,all</sub>,
+      <span class="eq-gap"></span>
+      <i>f</i><sub><i>g</i>,&ell;</sub> =
+      <span class="frac"><span class="num">1</span><span class="den"><i>n</i><sub><i>g</i>,&ell;</sub></span></span>
+      <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>C</i><sub><i>g</i>,&ell;</sub></span></span>
+      <b>I</b>(<i>x</i><sub><i>ig</i></sub> &lt; &minus;0.5)
+    </div>
+    <div class="eq-num">(2)</div>
+  </div>
+
+  <p>
+    where <span class="math">med</span> denotes the sample median and <span class="math"><b>I</b>(&middot;)</span> is the indicator function. Comparing <span class="math">&Delta;<i>&mu;</i><sub><i>g</i>,&ell;</sub></span> against <span class="math">&Delta;med<sub><i>g</i>,&ell;</sub></span> distinguishes broadly shared lineage dependencies from bimodal or subtype-restricted vulnerabilities where a sensitive subpopulation pulls the mean well below the median. Paired cell-line tables expose the most and least dependent models with display names and <code>ModelID</code> identifiers within <span class="math"><i>C</i></span> for direct experimental selection.
+  </p>
+
+  <h3>4.3 Pairwise-complete vectorized co-dependency estimation</h3>
+  <p>
+    Given a query gene <span class="math"><i>q</i></span> and candidate partner <span class="math"><i>g</i> &ne; <i>q</i></span> within active cohort <span class="math"><i>C</i></span>, let <span class="math"><i>S</i><sub><i>q,g</i></sub> = {{<i>i</i> &isin; <i>C</i> : <i>x</i><sub><i>iq</i></sub>, <i>x</i><sub><i>ig</i></sub> &isin; &#8477;}}</span> be the shared finite cell-line index set with overlap size <span class="math"><i>n</i><sub><i>q,g</i></sub> = |<i>S</i><sub><i>q,g</i></sub>|</span>. Correlations are computed strictly over <span class="math"><i>S</i><sub><i>q,g</i></sub></span> without missing-value imputation whenever <span class="math"><i>n</i><sub><i>q,g</i></sub> &ge; <i>n</i><sub>min</sub> = min(10, max(3, <i>n</i><sub><i>q,C</i></sub>))</span> and both vectors have strictly positive sample variance over <span class="math"><i>S</i><sub><i>q,g</i></sub></span>:
+  </p>
+
+  <div class="eq-row">
+    <div class="eq-body">
+      <i>r</i><sub><i>q,g</i></sub>(<i>C</i>) =
+      <span class="frac frac-tall">
+        <span class="num">
+          <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>
+          (<i>x</i><sub><i>iq</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup>)(<i>x</i><sub><i>ig</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup>)
+        </span>
+        <span class="den">
+          <span style="font-size:13.5pt; vertical-align:-0.08em;">[</span>&thinsp;<span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>(<i>x</i><sub><i>iq</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup>)<sup>2</sup>
+          &thinsp;&middot;&thinsp;
+          <span class="sum-op"><span class="sym">&sum;</span><span class="lim"><i>i</i> &isin; <i>S</i><sub><i>q,g</i></sub></span></span>(<i>x</i><sub><i>ig</i></sub> &minus; <span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup>)<sup>2</sup>&thinsp;<span style="font-size:13.5pt; vertical-align:-0.08em;">]</span><sup>1/2</sup>
+        </span>
+      </span>
+    </div>
+    <div class="eq-num">(3)</div>
+  </div>
+
+  <p>
+    where <span class="math"><span class="overline"><i>x</i></span><sub><i>q</i></sub><sup>(<i>S</i>)</sup></span> and <span class="math"><span class="overline"><i>x</i></span><sub><i>g</i></sub><sup>(<i>S</i>)</sup></span> denote means computed over <span class="math"><i>S</i><sub><i>q,g</i></sub></span>. Spearman rank correlation <span class="math"><i>&rho;</i><sub><i>q,g</i></sub>(<i>C</i>)</span> applies the identical formula after replacing <span class="math"><i>x</i><sub>&middot;<i>q</i></sub></span> and <span class="math"><i>x</i><sub>&middot;<i>g</i></sub></span> with average-tie midranks on <span class="math"><i>S</i><sub><i>q,g</i></sub></span>.
+  </p>
+  <p>
+    To maintain interactive latency with bounded memory and no SciPy dependency, genome-wide scanning processes candidate genes in 2,048-column <code>float64</code> blocks after restricting rows to finite observations of <span class="math"><i>q</i></span>. Complete columns within each block are evaluated via a centered BLAS matrix–vector inner product, whereas incomplete columns use masked pairwise means and variances for Pearson <em>r</em> and per-column exact pairwise midranks for Spearman <em>&rho;</em>. Time complexity is <span class="math"><i>O</i>(|<i>C</i>|<i>G</i>)</span> for Pearson scans with <span class="math"><i>O</i>(2048&nbsp;&middot;&nbsp;|<i>C</i>|)</span> temporary memory. For multi-gene panels of 2 to 25 genes, the same pairwise estimator populates a symmetric correlation matrix linked to lineage-colored cell-line scatter plots reporting both Pearson <em>r</em> and Spearman <em>&rho;</em>.
+  </p>
+
+  <h3>4.4 Software implementation, post-hoc benchmarking, and verification</h3>
+  <p>
+    All analytical routines are packaged in the PEP 621 library <code class="code-brk">crispr_<wbr />score_<wbr />analyzer</code> requiring only NumPy, pandas, Plotly, Kaleido, and Pillow, exposing four modules for essentiality ranking, co-dependency scanning, plotting, and graphics export. The shared core powers the <code>crispr-score-analyzer</code> CLI and a bilingual English/Chinese Streamlit web interface. All interactive plots and white-background PDF, SVG, and 300-DPI PNG exports apply colorblind-safe Nature Publishing Group categorical hues and a 7-stop ColorBrewer <code>RdBu</code> diverging palette, converting WebGL scatter curves to vector paths on export. Input edits remain isolated until executed, and cohort changes invalidate downstream tables and exports to avoid stale state. Each session can export a self-contained ZIP archive containing ranked tables, lineage-preference summaries, schema and alias diagnostics, and run metadata with data SHA-256 digests and software versions. Software behavior is verified offline on deterministic synthetic fixtures by 98 automated unit, API, CLI, UI, and export tests across Python 3.11 and 3.12 via GitHub Actions.
+  </p>
+  <p>
+    All figures and quantitative metrics reported in Section&nbsp;2 are reproduced offline without SciPy by <code class="code-brk">preprint/<wbr />generate_figures.py</code> and <code class="code-brk">preprint/<wbr />reproduce_stats.py</code>. Post-hoc two-sided Pearson <em>p</em>-values in the Skin-restricted <span class="gene">BRAF</span> scan are evaluated from the exact Student-<em>t</em> distribution with <span class="math">df = <i>n</i><sub><i>q,g</i></sub> &minus; 2</span> via continued-fraction evaluation of the regularized incomplete beta function, alongside Bonferroni and Benjamini–Hochberg FDR adjustments and ordinary least-squares partial correlations on complete observations.
+  </p>
+
+  <!-- Additional Information -->
+  <h2>Additional Information</h2>
   <div class="declarations-block">
-    <p><strong>Acknowledgements:</strong> The author thanks Dr. Lin Deng and Dr. Zixi Wang (Institute of Molecular Physiology, Shenzhen Bay Laboratory) for constructive discussions and feedback.</p>
+    <p><strong>Acknowledgements:</strong> The author thanks Dr. Lin Deng and Dr. Zixi Wang at the Institute of Molecular Physiology, Shenzhen Bay Laboratory, for constructive discussions and feedback.</p>
     <p><strong>Funding:</strong> This work received no specific external funding.</p>
-    <p><strong>Competing Interests:</strong> The author declares no competing financial or non-financial interests.</p>
-    <p><strong>Ethics Statement:</strong> This study analyzes publicly available, de-identified cancer cell-line CRISPR dependency scores from DepMap Public 26Q3 and synthetic software test fixtures; no new human subjects, clinical records, or animal experiments were involved, and institutional ethics approval is not applicable.</p>
-    <p><strong>AI Assistance Disclosure:</strong> Large language model coding assistants (Claude, Codex, and Gemini/Antigravity agents) assisted with software refactoring, automated testing, and manuscript editing. All methodological specifications, quantitative analyses, biological interpretations, and final editorial decisions were verified and approved by the author.</p>
-    <p class="avail-p"><strong>Data Source and Terms:</strong> Built-in dependency data derive from DepMap Public 26Q3 Chronos Gene Effect scores (DepMap, 2026; released October 5, 2026; <a href="https://forum.depmap.org/t/announcing-the-26q3-release/4692">https://forum.depmap.org/t/announcing-the-26q3-release/4692</a>; Data Portal: <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>). The bundled matrix is governed by Broad Institute DepMap Terms and Conditions (non-commercial research use only; reposted in <code>data/DEPMAP_TERMS.md</code> and inside the hosted web application), separate from the MIT-licensed source code.</p>
+    <p><strong>Competing interests:</strong> The author declares no competing financial or non-financial interests.</p>
+    <p><strong>Ethics:</strong> This study analyzes publicly available, de-identified cancer cell-line CRISPR dependency scores from DepMap Public 26Q3 and synthetic software test fixtures. No new human subjects, clinical records, or animal experiments were involved, and institutional ethics approval is not applicable.</p>
+    <p><strong>AI assistance disclosure:</strong> Large language model coding assistants—Claude, Codex, and Gemini/Antigravity agents—assisted with software refactoring, automated testing, and manuscript editing. All methodological specifications, quantitative analyses, biological interpretations, and final editorial decisions were verified and approved by the author.</p>
     <p class="avail-p">
-      <strong>Data and Code Availability:</strong> Application source code (<code>v1.2.0</code>, commit <code>5c18f9b</code>) is archived at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0">https://github.com/ChanghaoKan/crispr-score-analyzer/releases/tag/v1.2.0</a> and on Zenodo (Kan, 2026; version 1.2.0 DOI: <code>10.5281/zenodo.24458535</code>; concept DOI: <code>10.5281/zenodo.19607602</code>); the hosted web instance runs at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Because Python wheels/sdists and MIT release archives exclude <code>data/depmap_chronos.npz</code> under DepMap terms, the modular <code>crispr_score_analyzer</code> library, CLI, manuscript sources, and statistical reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v5</code> (analytical kernels unchanged from <code>v1.2.0</code>). From a clean Python 3.12 environment, all figures and quantitative statistics in Tables&nbsp;1–2 and Figures&nbsp;1–3 can be reproduced via <code class="wrap-code">git clone https://github.com/ChanghaoKan/crispr-score-analyzer.git &amp;&amp; cd crispr-score-analyzer &amp;&amp; git checkout preprint-v5 &amp;&amp; python -m venv .venv &amp;&amp; .venv/bin/pip install -e <span class="nowrap">".[app,dev]"</span> &amp;&amp; .venv/bin/python preprint/generate_figures.py &amp;&amp; .venv/bin/python preprint/reproduce_stats.py</code>, verifying <code>data/depmap_chronos.npz</code> against <code>data/depmap_chronos.provenance.json</code> (<code>matrix_sha256</code>: <code class="wrap-code">ddf274da2aa5f89cf630bc8150dcd3a2c722466bd18ff6fb6d18fe161f8a0c67</code>, or rebuilding from upstream 26Q3 files via <code>scripts/build_builtin_matrix.py</code>).
+      <strong>Data and code availability:</strong> Application source code is released under the MIT license at <a href="https://github.com/ChanghaoKan/crispr-score-analyzer">https://github.com/ChanghaoKan/crispr-score-analyzer</a>, with archived release <code>v1.2.0</code> deposited on Zenodo (Kan, 2026; version DOI: <a href="https://doi.org/10.5281/zenodo.24458535">10.5281/zenodo.24458535</a>; concept DOI: <a href="https://doi.org/10.5281/zenodo.19607602">10.5281/zenodo.19607602</a>) and a hosted web application at <a href="https://crispr-score-analyzer-szbl-denglab.streamlit.app/">https://crispr-score-analyzer-szbl-denglab.streamlit.app/</a>. Built-in dependency data derive from DepMap Public 26Q3 Chronos Gene Effect scores (DepMap, 2026; <a href="https://depmap.org/portal/data_page/">https://depmap.org/portal/data_page/</a>) and are governed separately by Broad Institute DepMap Terms and Conditions for non-commercial research use only. The modular Python library, CLI, manuscript sources, and reproduction scripts (<code>preprint/generate_figures.py</code> and <code>preprint/reproduce_stats.py</code>) are pinned at repository tag <code>preprint-v6</code>, with upstream and compiled file checksums and setup instructions documented in the repository provenance manifest and README.
     </p>
   </div>
 

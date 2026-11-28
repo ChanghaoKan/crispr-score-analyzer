@@ -243,7 +243,13 @@ def main() -> None:
             lin_corrs.append((lin, len(grp), r_val))
     lin_corrs.sort(key=lambda x: -x[1])
     neg_n = sum(1 for _, _, rv in lin_corrs if rv < 0)
-    print(f"Lineages with n >= 15: {len(lin_corrs)} (negative r: {neg_n}/{len(lin_corrs)}, median r = {np.median([x[2] for x in lin_corrs]):+.3f})")
+    by_r = sorted(lin_corrs, key=lambda x: x[2])
+    print(
+        f"Lineages with n >= 15: {len(lin_corrs)} (negative r: {neg_n}/{len(lin_corrs)}, "
+        f"median r = {np.median([x[2] for x in lin_corrs]):+.3f}, "
+        f"range {by_r[0][2]:+.3f} [{by_r[0][0]}, n={by_r[0][1]}] to "
+        f"{by_r[-1][2]:+.3f} [{by_r[-1][0]}, n={by_r[-1][1]}])"
+    )
     for lin, cnt, rv in lin_corrs[:10]:
         print(f"  {lin:26s} n={cnt:3d}  r={rv:+.3f}")
 
